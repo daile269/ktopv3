@@ -31,6 +31,13 @@ function App() {
   const [highlightedTCells, setHighlightedTCells] = useState({});
   const [highlightedACells, setHighlightedACells] = useState({});
   const [highlightedBCells, setHighlightedBCells] = useState({});
+  // { tableIndex: true } — highlight cả cột T theo từng bảng
+  const [highlightedTColumns, setHighlightedTColumns] = useState({});
+  // true/false — highlight cả cột A hoặc B
+  const [highlightedAColumn, setHighlightedAColumn] = useState(false);
+  const [highlightedBColumn, setHighlightedBColumn] = useState(false);
+  // { colIndex: true } — highlight cả cột 0-9
+  const [highlightedDataColumns, setHighlightedDataColumns] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteOption, setDeleteOption] = useState("all");
   const [deleteDateFrom, setDeleteDateFrom] = useState("");
@@ -807,42 +814,47 @@ function App() {
     setHighlightedTCells((prev) => {
       const currentTable = prev[tableIndex] || {};
       const newTable = { ...currentTable };
-
       if (newTable[rowIndex]) {
         delete newTable[rowIndex];
       } else {
         newTable[rowIndex] = true;
       }
-
-      return {
-        ...prev,
-        [tableIndex]: newTable,
-      };
+      return { ...prev, [tableIndex]: newTable };
     });
   };
 
   const handleACellClick = (rowIndex) => {
     setHighlightedACells((prev) => {
-      const newHighlighted = { ...prev };
-      if (newHighlighted[rowIndex]) {
-        delete newHighlighted[rowIndex];
-      } else {
-        newHighlighted[rowIndex] = true;
-      }
-      return newHighlighted;
+      const next = { ...prev };
+      if (next[rowIndex]) delete next[rowIndex];
+      else next[rowIndex] = true;
+      return next;
     });
   };
 
   const handleBCellClick = (rowIndex) => {
     setHighlightedBCells((prev) => {
-      const newHighlighted = { ...prev };
-      if (newHighlighted[rowIndex]) {
-        delete newHighlighted[rowIndex];
-      } else {
-        newHighlighted[rowIndex] = true;
-      }
-      return newHighlighted;
+      const next = { ...prev };
+      if (next[rowIndex]) delete next[rowIndex];
+      else next[rowIndex] = true;
+      return next;
     });
+  };
+
+  // Click vào TIÊu ĐỀ cột A — toggle vàng nhạt cả cột A
+  const handleAColHeader = () => setHighlightedAColumn((prev) => !prev);
+  // Click vào TIÊu ĐỀ cột B — toggle vàng nhạt cả cột B
+  const handleBColHeader = () => setHighlightedBColumn((prev) => !prev);
+  // Click vào TIÊu ĐỀ cột T — toggle vàng nhạt cả cột T theo bảng
+  const handleTColHeader = (tableIndex) =>
+    setHighlightedTColumns((prev) => ({ ...prev, [tableIndex]: !prev[tableIndex] }));
+
+  // Click vào TIÊu ĐỀ cột 0-9 — toggle vàng nhạt cả cột
+  const handleDataColHeader = (colIndex) => {
+    setHighlightedDataColumns((prev) => ({
+      ...prev,
+      [colIndex]: !prev[colIndex],
+    }));
   };
 
   // Clear tất cả highlight
@@ -851,6 +863,10 @@ function App() {
     setHighlightedACells({});
     setHighlightedBCells({});
     setHighlightedCells({});
+    setHighlightedTColumns({});
+    setHighlightedAColumn(false);
+    setHighlightedBColumn(false);
+    setHighlightedDataColumns({});
   };
 
   // Navigate to input page
@@ -2018,7 +2034,7 @@ function App() {
                               backgroundColor: "rgba(255, 255, 255, 0.5)",
                               border: "1px solid #ddd",
                               padding: "4px 10px",
-                              borderRadius: "6px",
+                              borderRadius: "6px"
                             }}
                           />
                         </th>
@@ -2036,9 +2052,9 @@ function App() {
                           Thông
                         </th>
                         <th colSpan="10" className="group-header">
-                          Q{pageId.replace("q", "")} - Tham số: áp suất
-                          nước-nhiệt độ- độ ph- tỷ phần sinh hóa- mùa- f sinh
-                          học
+                          Q{pageId.replace("q", "")} - Tham số: áp
+                          suất nước-nhiệt độ- độ ph- tỷ phần sinh hóa- mùa- f
+                          sinh học
                         </th>
                       </tr>
                       <tr>
@@ -2055,13 +2071,44 @@ function App() {
                         ></th>
                         {tableIndex === 0 && (
                           <>
-                            <th className="col-header fixed">A</th>
-                            <th className="col-header fixed">B</th>
+                            <th
+                              className={`col-header fixed col-header-clickable ${
+                                highlightedAColumn ? "col-header-highlighted" : ""
+                              }`}
+                              onClick={handleAColHeader}
+                              title="Click để highlight cả cột A"
+                            >
+                              A
+                            </th>
+                            <th
+                              className={`col-header fixed col-header-clickable ${
+                                highlightedBColumn ? "col-header-highlighted" : ""
+                              }`}
+                              onClick={handleBColHeader}
+                              title="Click để highlight cả cột B"
+                            >
+                              B
+                            </th>
                           </>
                         )}
-                        <th className="col-header fixed">T{tableIndex + 1}</th>
+                        <th
+                          className={`col-header fixed col-header-clickable ${
+                            highlightedTColumns[tableIndex] ? "col-header-highlighted" : ""
+                          }`}
+                          onClick={() => handleTColHeader(tableIndex)}
+                          title="Click để highlight cả cột T"
+                        >
+                          T{tableIndex + 1}
+                        </th>
                         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                          <th key={num} className="col-header">
+                          <th
+                            key={num}
+                            className={`col-header col-header-clickable ${
+                              highlightedDataColumns[num] ? "col-header-highlighted" : ""
+                            }`}
+                            onClick={() => handleDataColHeader(num)}
+                            title={`Click để highlight cả cột ${num}`}
+                          >
                             {num}
                           </th>
                         ))}
@@ -2152,6 +2199,8 @@ function App() {
                                     className={`data-cell fixed value-col ${
                                       highlightedACells[rowIndex]
                                         ? "highlighted-t-cell"
+                                        : highlightedAColumn
+                                        ? "col-highlighted"
                                         : ""
                                     }`}
                                     onClick={() => handleACellClick(rowIndex)}
@@ -2179,6 +2228,8 @@ function App() {
                                     className={`data-cell fixed value-col ${
                                       highlightedBCells[rowIndex]
                                         ? "highlighted-t-cell"
+                                        : highlightedBColumn
+                                        ? "col-highlighted"
                                         : ""
                                     }`}
                                     onClick={() => handleBCellClick(rowIndex)}
@@ -2208,6 +2259,8 @@ function App() {
                                 className={`data-cell fixed value-col ${
                                   highlightedTCells[tableIndex]?.[rowIndex]
                                     ? "highlighted-t-cell"
+                                    : highlightedTColumns[tableIndex]
+                                    ? "col-highlighted"
                                     : ""
                                 }`}
                                 onClick={() =>
@@ -2233,6 +2286,8 @@ function App() {
                                       colIndex
                                     ]
                                       ? "highlighted-cell"
+                                      : highlightedDataColumns[colIndex]
+                                      ? "col-highlighted"
                                       : ""
                                   }`}
                                   onClick={() =>

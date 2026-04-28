@@ -386,6 +386,26 @@ body {
   font-size: 30px;
 }
 
+/* Ô nhập ngày tháng năm trong bảng tính */
+.date-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 28px;
+  padding: 4px 2px;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+/* Nổi màu hồng nhạt khi click vào ô ngày */
+.date-input:focus {
+  background: #fff0f5 !important;
+  outline: 2px solid #f48fb1 !important;
+  box-shadow: 0 0 0 4px rgba(244, 143, 177, 0.2) !important;
+  border-radius: 4px;
+}
+
 .grid-input {
   width: 100%;
   border: 1px solid #e0e0e0;
@@ -481,6 +501,38 @@ body {
   color: white !important;
   background: transparent !important;
 }
+
+/* Highlight cả cột A / B / T khi click vào ô bất kỳ trong cột */
+.data-cell.col-highlighted {
+  background-color: #fffde7 !important; /* Vàng nhạt */
+  border-top: 2px solid #fdd835 !important;
+  border-bottom: 2px solid #fdd835 !important;
+  box-shadow: inset 0 0 0 2000px rgba(255, 253, 231, 0.85) !important;
+}
+
+.data-cell.col-highlighted .grid-input {
+  background: transparent !important;
+  color: #ef4444 !important;
+}
+
+/* Thêm hiệu ứng cho tiêu đề cột có thể click */
+.col-header-clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.col-header-clickable:hover {
+  background-color: #f0f0f0 !important;
+  color: #007bff !important;
+}
+
+/* Màu cho tiêu đề khi cột đang được highlight */
+.col-header-highlighted {
+  background-color: #fdd835 !important; /* Vàng đậm cho tiêu đề */
+  color: #333 !important;
+  border-bottom: 2px solid #fbc02d !important;
+}
+
 
 /* Đảm bảo ô thông (input) nổi màu khi được highlight */
 .data-cell.highlighted-column .grid-input,

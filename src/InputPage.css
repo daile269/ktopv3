@@ -57,3 +57,11 @@
   padding: 8px !important;
   min-height: 40px;
 }
+
+/* Hiệu ứng nổi màu hồng nhạt khi click vào ô A, B trong Bảng thông */
+.schedule-table .cell-input:focus {
+  background-color: #fff0f5 !important;
+  outline: 2px solid #f48fb1 !important;
+  box-shadow: 0 0 0 3px rgba(244, 143, 177, 0.25) !important;
+}
+
