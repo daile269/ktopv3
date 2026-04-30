@@ -477,9 +477,9 @@ body {
 
 /* Highlight hàng */
 .data-cell.highlighted-row {
-  border-top: 2px solid #fbc02d !important;
-  border-bottom: 2px solid #fbc02d !important;
-  box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.4) !important; /* Lớp phủ vàng nhạt */
+  border-top: 2px solid #ffa500 !important;
+  border-bottom: 2px solid #ffa500 !important;
+  box-shadow: inset 0 0 0 2000px rgba(255, 165, 0, 0.3) !important; /* Lớp phủ cam nhạt */
   font-weight: 600;
 }
 

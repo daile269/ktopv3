@@ -38,6 +38,8 @@ function App() {
   const [highlightedBColumn, setHighlightedBColumn] = useState(false);
   // { colIndex: true } — highlight cả cột 0-9
   const [highlightedDataColumns, setHighlightedDataColumns] = useState({});
+  // { rowIndex: true } — highlight cả hàng
+  const [highlightedRows, setHighlightedRows] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteOption, setDeleteOption] = useState("all");
   const [deleteDateFrom, setDeleteDateFrom] = useState("");
@@ -857,6 +859,14 @@ function App() {
     }));
   };
 
+  // Click vào STT hoặc Ngày — toggle highlight cả hàng màu cam nhạt
+  const handleRowClick = (rowIndex) => {
+    setHighlightedRows((prev) => ({
+      ...prev,
+      [rowIndex]: !prev[rowIndex],
+    }));
+  };
+
   // Clear tất cả highlight
   const clearColumnHighlights = () => {
     setHighlightedTCells({});
@@ -867,6 +877,7 @@ function App() {
     setHighlightedAColumn(false);
     setHighlightedBColumn(false);
     setHighlightedDataColumns({});
+    setHighlightedRows({});
   };
 
   // Navigate to input page
@@ -2124,57 +2135,34 @@ function App() {
                           displayRowNumber++;
                           return (
                             <tr key={rowIndex}>
-                              <td className="data-cell fixed">
+                              <td
+                                className={`data-cell fixed ${
+                                  highlightedRows[rowIndex] ? "highlighted-row" : ""
+                                }`}
+                                onClick={() => handleRowClick(rowIndex)}
+                                style={{ cursor: "pointer" }}
+                              >
                                 {String(displayRowNumber).padStart(3, "0")}
                               </td>
-                              <td className="data-cell fixed date-col">
+                              <td
+                                className={`data-cell fixed date-col ${
+                                  highlightedRows[rowIndex] ? "highlighted-row" : ""
+                                }`}
+                                onClick={() => handleRowClick(rowIndex)}
+                                style={{ cursor: "pointer" }}
+                              >
                                 <input
                                   type="date"
                                   className="date-input"
                                   value={dateValues[rowIndex] || ""}
-                                  onChange={async (e) => {
-                                    const newDateValues = [...dateValues];
-                                    newDateValues[rowIndex] = e.target.value;
-                                    setDateValues(newDateValues);
-
-                                    // Sync sang tất cả Q1-Q10
-                                    const syncPromises = [];
-                                    for (let i = 1; i <= 10; i++) {
-                                      const qId = `q${i}`;
-                                      // Load data hiện tại của Q này
-                                      const result = await loadPageData(qId);
-                                      if (result.success && result.data) {
-                                        // Update dateValues và save lại
-                                        syncPromises.push(
-                                          savePageData(
-                                            qId,
-                                            result.data.aValues,
-                                            result.data.bValues,
-                                            result.data.zValues ||
-                                              Array(ROWS).fill(""),
-                                            newDateValues,
-                                            result.data.deletedRows || [],
-                                            sourceSTTValues,
-                                            purpleRangeFrom,
-                                            purpleRangeTo,
-                                            keepLastNRows,
-                                          ),
-                                        );
-                                      }
-                                    }
-                                    await Promise.all(syncPromises);
-                                  }}
-                                  style={{
-                                    width: "100%",
-                                    border: "none",
-                                    background: "transparent",
-                                    fontSize: "22px",
-                                    padding: "4px",
-                                  }}
+                                  style={{ pointerEvents: "none" }}
+                                  readOnly
                                 />
                               </td>
                               <td
-                                className="data-cell fixed"
+                                className={`data-cell fixed ${
+                                  highlightedRows[rowIndex] ? "highlighted-row" : ""
+                                }`}
                                 style={{ minWidth: "150px", width: "150px" }}
                               >
                                 <input
@@ -2201,6 +2189,8 @@ function App() {
                                         ? "highlighted-t-cell"
                                         : highlightedAColumn
                                         ? "col-highlighted"
+                                        : highlightedRows[rowIndex]
+                                        ? "highlighted-row"
                                         : ""
                                     }`}
                                     onClick={() => handleACellClick(rowIndex)}
@@ -2230,6 +2220,8 @@ function App() {
                                         ? "highlighted-t-cell"
                                         : highlightedBColumn
                                         ? "col-highlighted"
+                                        : highlightedRows[rowIndex]
+                                        ? "highlighted-row"
                                         : ""
                                     }`}
                                     onClick={() => handleBCellClick(rowIndex)}
@@ -2261,6 +2253,8 @@ function App() {
                                     ? "highlighted-t-cell"
                                     : highlightedTColumns[tableIndex]
                                     ? "col-highlighted"
+                                    : highlightedRows[rowIndex]
+                                    ? "highlighted-row"
                                     : ""
                                 }`}
                                 onClick={() =>
@@ -2288,6 +2282,8 @@ function App() {
                                       ? "highlighted-cell"
                                       : highlightedDataColumns[colIndex]
                                       ? "col-highlighted"
+                                      : highlightedRows[rowIndex]
+                                      ? "highlighted-row"
                                       : ""
                                   }`}
                                   onClick={() =>
