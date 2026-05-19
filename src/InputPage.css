@@ -56,12 +56,67 @@
   font-size: 30px !important;
   padding: 8px !important;
   min-height: 40px;
+  color: #ef4444;
+  font-weight: 600;
+  text-align: center;
 }
 
-/* Hiệu ứng nổi màu hồng nhạt khi click vào ô A, B trong Bảng thông */
+/* Hiệu ứng nổi màu xanh nhạt khi click vào ô để nhập liệu */
 .schedule-table .cell-input:focus {
-  background-color: #fff0f5 !important;
-  outline: 2px solid #f48fb1 !important;
-  box-shadow: 0 0 0 3px rgba(244, 143, 177, 0.25) !important;
+  background-color: #f0f8ff !important;
+  outline: 2px solid #4a90e2 !important;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.25) !important;
 }
+
+/* ===== HIGHLIGHT CỘT Q (Bảng thông) ===== */
+
+/* Ô data (td) khi cột đang active */
+.schedule-table td.draft-col-highlighted {
+  background-color: #fffde7 !important;  /* Vàng nhạt */
+  border-top: 1.5px solid #fbc02d !important;
+  border-bottom: 1.5px solid #fbc02d !important;
+  box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.45) !important;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Input bên trong ô highlight — giữ trong suốt để màu nền lộ ra */
+.schedule-table td.draft-col-highlighted .cell-input {
+  background: transparent !important;
+}
+
+/* Header (th) khi cột đang active */
+.schedule-table th.draft-col-header-highlighted {
+  background-color: #fdd835 !important;  /* Vàng đậm hơn cho header */
+  color: #333 !important;
+  box-shadow: 0 2px 6px rgba(251, 192, 45, 0.55);
+  transition: background-color 0.15s ease;
+}
+
+/* ===== HIGHLIGHT HÀNG (Bảng thông) ===== */
+.schedule-table td.draft-row-highlighted {
+  border-top: 2px solid #ffa500 !important;
+  border-bottom: 2px solid #ffa500 !important;
+  box-shadow: inset 0 0 0 2000px rgba(255, 165, 0, 0.3) !important; /* Cam nhạt */
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* ===== HIGHLIGHT Ô ĐƠN (Bảng thông - Màu cam giống cột A, B) ===== */
+.schedule-table td.draft-cell-highlighted {
+  background-color: #ff9800 !important; /* Màu cam */
+  border: 3px solid #e65100 !important;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Input bên trong ô highlight — giữ trong suốt để màu nền lộ ra */
+.schedule-table td.draft-col-highlighted .cell-input,
+.schedule-table td.draft-row-highlighted .cell-input {
+  background: transparent !important;
+}
+
+.schedule-table td.draft-cell-highlighted .cell-input {
+  background: transparent !important;
+  color: white !important; /* Chữ trắng khi ô nền cam */
+}
+
+
 

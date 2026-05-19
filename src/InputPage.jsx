@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo, useCallback } from "react";
+import { useState, useEffect, useMemo, memo, useCallback, Fragment } from "react";
 import "./App.css";
 import "./InputPage.css";
 import { savePageData, loadPageData } from "./dataService";
@@ -15,7 +15,14 @@ const TaskRow = memo(
     onZChange,
     onAChange,
     onBChange,
+    highlightedQCols,
+    highlightedRows,
+    highlightedCells,
+    onColClick,
+    onRowClick,
+    onCellClick,
   }) => {
+    const isRowHL = !!highlightedRows[rowIndex];
     return (
       <tr className={isSelected ? "selected-draft-row" : ""}>
         <td
@@ -31,16 +38,20 @@ const TaskRow = memo(
             checked={isSelected}
             onChange={() => onToggleSelect(rowIndex)}
             disabled={isDeleted}
-            style={{
-              transform: "scale(2.2)",
-              cursor: "pointer",
-            }}
+            style={{ transform: "scale(2.2)", cursor: "pointer" }}
           />
         </td>
-        <td style={{ textAlign: "center", fontSize: "20px" }}>
+        <td
+          onClick={() => onRowClick(rowIndex)}
+          className={isRowHL ? "draft-row-highlighted" : ""}
+          style={{ textAlign: "center", fontSize: "20px", cursor: "pointer", userSelect: "none" }}
+        >
           {String(displayRowNumber).padStart(3, "0")}
         </td>
-        <td style={{ width: "200px", minWidth: "200px" }}>
+        <td
+          style={{ width: "200px", minWidth: "200px" }}
+          className={isRowHL ? "draft-row-highlighted" : ""}
+        >
           <input
             type="text"
             className="cell-input"
@@ -48,75 +59,53 @@ const TaskRow = memo(
             value={isDeleted ? "" : zValue || ""}
             onChange={(e) => onZChange(rowIndex, e.target.value)}
             disabled={isDeleted}
-            style={{
-              textAlign: "center",
-              width: "100%",
-              padding: "8px",
-              fontSize: "12px !important",
-              fontWeight: "normal",
-            }}
+            style={{ textAlign: "center", width: "100%", padding: "8px", fontSize: "12px !important", fontWeight: "normal" }}
           />
         </td>
-        {/* Ngày đã bị loại bỏ */}
         {Array.from({ length: 10 }).map((_, qIndex) => {
           const qData = allQData[qIndex];
           const aV = isDeleted ? "" : qData?.aValues[rowIndex] || "";
           const bV = isDeleted ? "" : qData?.bValues[rowIndex] || "";
-          const color = qIndex % 2 === 0 ? "#fff" : "#f1f1f1";
-
+          const baseColor = qIndex % 2 === 0 ? "#fff" : "#f1f1f1";
+          const isColAHL = !!highlightedQCols[qIndex + "-a"];
+          const isColBHL = !!highlightedQCols[qIndex + "-b"];
+          const isCellAHL = !!highlightedCells[rowIndex]?.[qIndex]?.a;
+          const isCellBHL = !!highlightedCells[rowIndex]?.[qIndex]?.b;
+          const tdAClass = isCellAHL ? "draft-cell-highlighted" : isColAHL ? "draft-col-highlighted" : isRowHL ? "draft-row-highlighted" : "";
+          const tdBClass = isCellBHL ? "draft-cell-highlighted" : isColBHL ? "draft-col-highlighted" : isRowHL ? "draft-row-highlighted" : "";
           return (
             <span key={qIndex} style={{ display: "contents" }}>
               <td
-                style={{
-                  backgroundColor: color,
-                  borderRight: "2px solid #999",
-                }}
+                onClick={() => onCellClick(rowIndex, qIndex, "a")}
+                className={tdAClass}
+                style={{ backgroundColor: tdAClass ? undefined : baseColor, borderRight: "2px solid #999", cursor: "pointer" }}
               >
-                <input
-                  type="text"
-                  className="cell-input small"
-                  value={aV}
-                  onChange={(e) => onAChange(qIndex, rowIndex, e.target.value)}
-                  disabled={isDeleted}
-                />
+                <input type="text" className="cell-input small" value={aV} onChange={(e) => onAChange(qIndex, rowIndex, e.target.value)} disabled={isDeleted} />
               </td>
               <td
-                style={{
-                  backgroundColor: color,
-                  borderRight: "2px solid red",
-                }}
+                onClick={() => onCellClick(rowIndex, qIndex, "b")}
+                className={tdBClass}
+                style={{ backgroundColor: tdBClass ? undefined : baseColor, borderRight: "2px solid red", cursor: "pointer" }}
               >
-                <input
-                  type="text"
-                  className="cell-input small"
-                  value={bV}
-                  onChange={(e) => onBChange(qIndex, rowIndex, e.target.value)}
-                  disabled={isDeleted}
-                />
+                <input type="text" className="cell-input small" value={bV} onChange={(e) => onBChange(qIndex, rowIndex, e.target.value)} disabled={isDeleted} />
               </td>
             </span>
           );
         })}
-        <td style={{ textAlign: "center", fontSize: "20px" }}>
+        <td
+          onClick={() => onRowClick(rowIndex)}
+          className={isRowHL ? "draft-row-highlighted" : ""}
+          style={{ textAlign: "center", fontSize: "20px", cursor: "pointer", userSelect: "none" }}
+        >
           {String(displayRowNumber).padStart(3, "0")}
         </td>
-        <td
-          style={{
-            textAlign: "center",
-            width: "80px !important",
-            minWidth: "80px !important",
-            padding: 0,
-          }}
-        >
+        <td style={{ textAlign: "center", width: "80px !important", minWidth: "80px !important", padding: 0 }}>
           <input
             type="checkbox"
             checked={isSelected}
             onChange={() => onToggleSelect(rowIndex)}
             disabled={isDeleted}
-            style={{
-              transform: "scale(2.2)",
-              cursor: "pointer",
-            }}
+            style={{ transform: "scale(2.2)", cursor: "pointer" }}
           />
         </td>
       </tr>
@@ -147,6 +136,10 @@ function InputPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState("");
   const [selectedRows, setSelectedRows] = useState({}); // { rowIndex: true }
+  // === Highlight states (giống bảng tính) ===
+  const [highlightedQCols, setHighlightedQCols] = useState({}); // { qIndex: true } — multi-col
+  const [highlightedRows, setHighlightedRows] = useState({});   // { rowIndex: true }
+  const [highlightedCells, setHighlightedCells] = useState({}); // { rowIndex: { qIndex: { a, b } } }
   const [showAddModal, setShowAddModal] = useState(false);
   const [isAddingToCalc, setIsAddingToCalc] = useState(false);
   const [transferDate, setTransferDate] = useState(() => {
@@ -408,6 +401,30 @@ function InputPage() {
       else next[rowIndex] = true;
       return next;
     });
+  }, []);
+
+  // === Highlight handlers (giống bảng tính) ===
+  const handleRowClick = useCallback((rowIndex) => {
+    setHighlightedRows((prev) => ({ ...prev, [rowIndex]: !prev[rowIndex] }));
+  }, []);
+
+  const handleColClick = useCallback((qIndex) => {
+    setHighlightedQCols((prev) => ({ ...prev, [qIndex]: !prev[qIndex] }));
+  }, []);
+
+  const handleCellClick = useCallback((rowIndex, qIndex, ab) => {
+    setHighlightedCells((prev) => {
+      const rowData = prev[rowIndex] || {};
+      const qData = rowData[qIndex] || {};
+      const newQ = { ...qData, [ab]: !qData[ab] };
+      return { ...prev, [rowIndex]: { ...rowData, [qIndex]: newQ } };
+    });
+  }, []);
+
+  const clearHighlights = useCallback(() => {
+    setHighlightedQCols({});
+    setHighlightedRows({});
+    setHighlightedCells({});
   }, []);
 
   const handleZChange = useCallback((rIdx, val) => {
@@ -1067,6 +1084,18 @@ function InputPage() {
               </button>
               <button
                 className="toolbar-btn"
+                onClick={clearHighlights}
+                style={{
+                  fontSize: "20px",
+                  background: "#6c757d",
+                  color: "white",
+                  border: "none",
+                }}
+              >
+                🔄 Xóa màu d.c
+              </button>
+              <button
+                className="toolbar-btn"
                 onClick={() => (window.location.href = "/q1")}
                 style={{
                   fontSize: "20px",
@@ -1121,18 +1150,30 @@ function InputPage() {
                   </th>
                   {/* Ngày đã bị loại bỏ */}
                   {Array.from({ length: 10 }, (_, qIndex) => {
-                    // Màu background: Q lẻ màu ghi nhạt, Q chẵn màu xanh nhạt
-                    const color = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd"; // Q lẻ (index 0,2,4,6,8) = ghi, Q chẵn (index 1,3,5,7,9) = xanh
-
+                    const baseColor = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd";
+                    const isBothActive = !!highlightedQCols[qIndex + "-a"] && !!highlightedQCols[qIndex + "-b"];
                     return (
                       <th
                         key={qIndex}
                         colSpan="2"
+                        onClick={() => {
+                          setHighlightedQCols((prev) => {
+                            const both = prev[qIndex + "-a"] && prev[qIndex + "-b"];
+                            return {
+                              ...prev,
+                              [qIndex + "-a"]: !both,
+                              [qIndex + "-b"]: !both,
+                            };
+                          });
+                        }}
+                        className={isBothActive ? "draft-col-header-highlighted" : ""}
                         style={{
-                          backgroundColor: color,
+                          backgroundColor: isBothActive ? undefined : baseColor,
                           borderLeft: "2px solid red",
                           borderRight: "2px solid red",
                           borderBottom: "2px solid black",
+                          cursor: "pointer",
+                          userSelect: "none",
                         }}
                       >
                         Q{qIndex + 1}
@@ -1156,32 +1197,41 @@ function InputPage() {
                 </tr>
                 <tr>
                   {Array.from({ length: 10 }, (_, qIndex) => {
-                    const color = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd"; // Q lẻ = ghi, Q chẵn = xanh
-
+                    const baseColor = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd";
+                    const isActiveA = !!highlightedQCols[qIndex + "-a"];
+                    const isActiveB = !!highlightedQCols[qIndex + "-b"];
                     return (
-                      <>
+                      <Fragment key={qIndex}>
                         <th
                           key={`a-${qIndex}`}
+                          onClick={() => handleColClick(qIndex + "-a")}
+                          className={isActiveA ? "draft-col-header-highlighted" : ""}
                           style={{
-                            backgroundColor: color,
+                            backgroundColor: isActiveA ? undefined : baseColor,
                             borderLeft: "2px solid red",
                             borderRight: "2px solid #999",
                             minWidth: "60px",
+                            cursor: "pointer",
+                            userSelect: "none",
                           }}
                         >
                           A
                         </th>
                         <th
                           key={`b-${qIndex}`}
+                          onClick={() => handleColClick(qIndex + "-b")}
+                          className={isActiveB ? "draft-col-header-highlighted" : ""}
                           style={{
-                            backgroundColor: color,
+                            backgroundColor: isActiveB ? undefined : baseColor,
                             borderRight: "2px solid red",
                             minWidth: "60px",
+                            cursor: "pointer",
+                            userSelect: "none",
                           }}
                         >
                           B
                         </th>
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tr>
@@ -1198,6 +1248,12 @@ function InputPage() {
                     allQData={allQData}
                     onToggleSelect={handleToggleSelect}
                     onZChange={handleZChange}
+                    highlightedQCols={highlightedQCols}
+                    highlightedRows={highlightedRows}
+                    highlightedCells={highlightedCells}
+                    onColClick={handleColClick}
+                    onRowClick={handleRowClick}
+                    onCellClick={handleCellClick}
                     onAChange={handleAChange}
                     onBChange={handleBChange}
                   />
