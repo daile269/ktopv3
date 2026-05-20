@@ -397,12 +397,8 @@ function InputPage() {
   // formatDateSimple removed
 
   const handleToggleSelect = useCallback((rowIndex, currentQueue) => {
-    const count = currentQueue.filter((item) => item.rowIndex === rowIndex).length;
-    if (count >= MAX_PER_ROW) {
-      alert(`⚠️ Dòng ${String(rowIndex).padStart(3, "0")} đã đạt tối đa ${MAX_PER_ROW} lần trong hàng đợi!`);
-      return;
-    }
     setQueue((prev) => [...prev, { rowIndex, displaySTT: rowIndex }]);
+    setHighlightedRows({ [rowIndex]: true });
   }, []);
 
   const handleAddToQueue = useCallback((currentQueue) => {
@@ -445,7 +441,11 @@ function InputPage() {
 
   // === Highlight handlers (giống bảng tính) ===
   const handleRowClick = useCallback((rowIndex) => {
-    setHighlightedRows((prev) => ({ ...prev, [rowIndex]: !prev[rowIndex] }));
+    setHighlightedRows((prev) => {
+      // Nếu đang click vào hàng đã highlight thì tắt, ngược lại chỉ giữ hàng mới
+      if (prev[rowIndex]) return {};
+      return { [rowIndex]: true };
+    });
   }, []);
 
   const handleColClick = useCallback((qIndex) => {
