@@ -135,7 +135,9 @@ function InputPage() {
   const [purpleRangeTo, setPurpleRangeTo] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState("");
-  const [selectedRows, setSelectedRows] = useState({}); // { rowIndex: true }
+  const [selectedRows, setSelectedRows] = useState([]); // [rowIndex, ...] — giữ thứ tự click
+  const [queue, setQueue] = useState([]); // [{ rowIndex, displaySTT }, ...]
+  const MAX_PER_ROW = 4;
   // === Highlight states (giống bảng tính) ===
   const [highlightedQCols, setHighlightedQCols] = useState({}); // { qIndex: true } — multi-col
   const [highlightedRows, setHighlightedRows] = useState({});   // { rowIndex: true }
@@ -396,11 +398,47 @@ function InputPage() {
 
   const handleToggleSelect = useCallback((rowIndex) => {
     setSelectedRows((prev) => {
-      const next = { ...prev };
-      if (next[rowIndex]) delete next[rowIndex];
-      else next[rowIndex] = true;
-      return next;
+      if (prev.includes(rowIndex)) return prev.filter((r) => r !== rowIndex);
+      return [...prev, rowIndex];
     });
+  }, []);
+
+  const handleAddToQueue = useCallback((currentQueue) => {
+    if (selectedRows.length === 0) {
+      alert("⚠️ Vui lòng chọn ít nhất một dòng!");
+      return;
+    }
+    // Đếm số lần mỗi rowIndex đã có trong queue hiện tại
+    const existingCounts = {};
+    for (const item of currentQueue) {
+      existingCounts[item.rowIndex] = (existingCounts[item.rowIndex] || 0) + 1;
+    }
+    const toAdd = [];
+    const skipped = [];
+    for (const rowIndex of selectedRows) {
+      const count = existingCounts[rowIndex] || 0;
+      if (count >= MAX_PER_ROW) {
+        skipped.push(String(rowIndex).padStart(3, "0"));
+      } else {
+        toAdd.push({ rowIndex, displaySTT: rowIndex });
+        existingCounts[rowIndex] = count + 1;
+      }
+    }
+    if (toAdd.length > 0) {
+      setQueue([...currentQueue, ...toAdd]);
+    }
+    if (skipped.length > 0) {
+      alert(`⚠️ Dòng ${skipped.join(", ")} đã đạt tối đa ${MAX_PER_ROW} lần trong hàng đợi!`);
+    }
+    setSelectedRows([]);
+  }, [selectedRows]);
+
+  const handleRemoveFromQueue = useCallback((queueIndex) => {
+    setQueue((prev) => prev.filter((_, i) => i !== queueIndex));
+  }, []);
+
+  const handleClearQueue = useCallback(() => {
+    setQueue([]);
   }, []);
 
   // === Highlight handlers (giống bảng tính) ===
@@ -666,11 +704,11 @@ function InputPage() {
   };
 
   const handleConfirmAddToApp = async () => {
-    const selectedIndices = Object.keys(selectedRows)
-      .map(Number)
-      .sort((a, b) => a - b);
+    const selectedIndices = queue.length > 0
+      ? queue.map((item) => item.rowIndex)
+      : [...selectedRows];
     if (selectedIndices.length === 0) {
-      alert("⚠️ Vui lòng chọn ít nhất một dòng!");
+      alert("⚠️ Vui lòng chọn ít nhất một dòng hoặc thêm vào hàng đợi!");
       return;
     }
 
@@ -678,8 +716,8 @@ function InputPage() {
     setSaveStatus("🚀 Đang thêm dòng vào bảng tính...");
 
     try {
-      // VALIDATE: Kiểm tra xem các dòng được chọn có giá trị A hoặc B không
-      for (const idx of selectedIndices) {
+      // VALIDATE: Kiểm tra xem các dòng được chọn có giá trị A hoặc B không (chỉ check unique)
+      for (const idx of [...new Set(selectedIndices)]) {
         let hasValueInAnyQ = false;
         for (let q = 0; q < 10; q++) {
           if (
@@ -819,7 +857,8 @@ function InputPage() {
       localStorage.setItem("lastBatchInfo", JSON.stringify(batchInfo));
       setLastBatch(batchInfo);
 
-      setSelectedRows({});
+      setSelectedRows([]);
+      setQueue([]);
       setShowAddModal(false);
       setShowSuccessModal(true);
     } catch (err) {
@@ -1072,6 +1111,18 @@ function InputPage() {
               </button>
               <button
                 className="toolbar-btn"
+                onClick={() => handleAddToQueue(queue)}
+                style={{
+                  fontSize: "20px",
+                  background: "#fd7e14",
+                  color: "white",
+                  border: "none",
+                }}
+              >
+                📋 Thêm vào hàng đợi ({queue.length})
+              </button>
+              <button
+                className="toolbar-btn"
                 onClick={() => setShowAddModal(true)}
                 style={{
                   fontSize: "20px",
@@ -1119,6 +1170,80 @@ function InputPage() {
               )}
             </div>
           </div>
+
+          {/* Queue Panel */}
+          {queue.length > 0 && (
+            <div
+              style={{
+                margin: "10px 0",
+                padding: "10px 15px",
+                background: "#fff3e0",
+                border: "2px solid #fd7e14",
+                borderRadius: "8px",
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "6px",
+              }}
+            >
+              <span style={{ fontSize: "18px", fontWeight: "bold", marginRight: "6px", whiteSpace: "nowrap" }}>
+                📋 Hàng đợi:
+              </span>
+              {queue.map((item, idx) => (
+                <span key={idx} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
+                  {idx > 0 && (
+                    <span style={{ fontSize: "16px", color: "#888", margin: "0 2px" }}>→</span>
+                  )}
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      background: "#fd7e14",
+                      color: "white",
+                      borderRadius: "6px",
+                      padding: "3px 8px",
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      gap: "4px",
+                    }}
+                  >
+                    {String(item.displaySTT).padStart(3, "0")}
+                    <button
+                      onClick={() => handleRemoveFromQueue(idx)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "white",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        padding: "0 2px",
+                        lineHeight: 1,
+                      }}
+                      title="Xóa khỏi hàng đợi"
+                    >
+                      ×
+                    </button>
+                  </span>
+                </span>
+              ))}
+              <button
+                onClick={handleClearQueue}
+                style={{
+                  marginLeft: "10px",
+                  background: "#dc3545",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "4px 12px",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Xóa hết
+              </button>
+            </div>
+          )}
 
           <div
             style={{
@@ -1243,7 +1368,7 @@ function InputPage() {
                     rowIndex={rowIndex}
                     displayRowNumber={idx}
                     isDeleted={deletedRows[rowIndex]}
-                    isSelected={!!selectedRows[rowIndex]}
+                    isSelected={selectedRows.includes(rowIndex)}
                     zValue={zValues[rowIndex]}
                     allQData={allQData}
                     onToggleSelect={handleToggleSelect}
@@ -1336,11 +1461,35 @@ function InputPage() {
               }}
             >
               <p>Lần chọn mới:</p>
-              <div style={{ fontWeight: "bold", color: "#6f42c1" }}>
-                {Object.keys(selectedRows).length > 0
-                  ? formatSttRanges(Object.keys(selectedRows))
-                  : "Chưa chọn dòng nào!"}
-              </div>
+              {queue.length > 0 ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
+                  {queue.map((item, idx) => (
+                    <span key={idx} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
+                      {idx > 0 && (
+                        <span style={{ fontSize: "16px", color: "#888", margin: "0 2px" }}>→</span>
+                      )}
+                      <span
+                        style={{
+                          background: "#fd7e14",
+                          color: "white",
+                          borderRadius: "6px",
+                          padding: "3px 10px",
+                          fontSize: "18px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {String(item.displaySTT).padStart(3, "0")}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontWeight: "bold", color: "#6f42c1" }}>
+                  {selectedRows.length > 0
+                    ? formatSttRanges(selectedRows.map(String))
+                    : "Chưa chọn dòng nào!"}
+                </div>
+              )}
             </div>
 
             <div
@@ -1401,7 +1550,7 @@ function InputPage() {
               <button
                 onClick={handleConfirmAddToApp}
                 disabled={
-                  isAddingToCalc || Object.keys(selectedRows).length === 0
+                  isAddingToCalc || (queue.length === 0 && selectedRows.length === 0)
                 }
                 style={{
                   padding: "10px 20px",
