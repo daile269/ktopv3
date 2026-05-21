@@ -26,6 +26,7 @@ const TaskRow = memo(
     return (
       <tr className={isSelected ? "selected-draft-row" : ""}>
         <td
+          className={isRowHL ? "draft-row-highlighted" : ""}
           style={{
             textAlign: "center",
             width: "60px !important",
@@ -99,7 +100,10 @@ const TaskRow = memo(
         >
           {String(displayRowNumber).padStart(3, "0")}
         </td>
-        <td style={{ textAlign: "center", width: "80px !important", minWidth: "80px !important", padding: 0 }}>
+        <td
+          className={isRowHL ? "draft-row-highlighted" : ""}
+          style={{ textAlign: "center", width: "80px !important", minWidth: "80px !important", padding: 0 }}
+        >
           <input
             type="checkbox"
             checked={isSelected}
@@ -441,11 +445,10 @@ function InputPage() {
 
   // === Highlight handlers (giống bảng tính) ===
   const handleRowClick = useCallback((rowIndex) => {
-    setHighlightedRows((prev) => {
-      // Nếu đang click vào hàng đã highlight thì tắt, ngược lại chỉ giữ hàng mới
-      if (prev[rowIndex]) return {};
-      return { [rowIndex]: true };
-    });
+    setHighlightedRows((prev) => ({
+      ...prev,
+      [rowIndex]: !prev[rowIndex],
+    }));
   }, []);
 
   const handleColClick = useCallback((qIndex) => {
@@ -1190,19 +1193,19 @@ function InputPage() {
                           display: "inline-flex",
                           flexDirection: "column",
                           alignItems: "center",
-                          background: "#fd7e14",
+                          background: "#a8d5a2",
                           color: "black",
                           borderRadius: "6px",
                           padding: "4px 12px",
                           fontSize: "30px",
-                          fontWeight: "bold",
+                          fontWeight: "normal",
                           gap: "1px",
                           position: "relative",
                         }}
                       >
                         <span>{String(item.displaySTT).padStart(3, "0")}</span>
                         <span style={{ fontSize: "30px", fontWeight: "normal", opacity: 0.9 }}>
-                          lượt {luot}
+                          L{luot}
                         </span>
                         <button
                           onClick={() => handleRemoveFromQueue(idx)}
