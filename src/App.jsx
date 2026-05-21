@@ -13,10 +13,10 @@ function App() {
   const [allTValues, setAllTValues] = useState(
     Array(10)
       .fill(null)
-      .map(() => Array(126).fill("")),
+      .map(() => Array(125).fill("")),
   );
-  const [dateValues, setDateValues] = useState(Array(126).fill(""));
-  const [sourceSTTValues, setSourceSTTValues] = useState(Array(126).fill(""));
+  const [dateValues, setDateValues] = useState(Array(125).fill(""));
+  const [sourceSTTValues, setSourceSTTValues] = useState(Array(125).fill(""));
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -24,8 +24,8 @@ function App() {
   const [error, setError] = useState("");
   const [pageLabel, setPageLabel] = useState("");
 
-  const [aValues, setAValues] = useState(Array(126).fill(""));
-  const [bValues, setBValues] = useState(Array(126).fill(""));
+  const [aValues, setAValues] = useState(Array(125).fill(""));
+  const [bValues, setBValues] = useState(Array(125).fill(""));
 
   const [highlightedCells, setHighlightedCells] = useState({});
   const [highlightedTCells, setHighlightedTCells] = useState({});
@@ -53,8 +53,8 @@ function App() {
   const [keepLastNRows, setKeepLastNRows] = useState("");
   const [purpleRangeFrom, setPurpleRangeFrom] = useState(0);
   const [purpleRangeTo, setPurpleRangeTo] = useState(0);
-  const [deletedRows, setDeletedRows] = useState(Array(126).fill(false));
-  const [zValues, setZValues] = useState(Array(126).fill(""));
+  const [deletedRows, setDeletedRows] = useState(Array(125).fill(false));
+  const [zValues, setZValues] = useState(Array(125).fill(""));
   const [showDeleteFirstRowModal, setShowDeleteFirstRowModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showKeepLastNRowsModal, setShowKeepLastNRowsModal] = useState(false);
@@ -84,7 +84,7 @@ function App() {
   const scrollTimeoutRef = useRef(null);
 
   const TOTAL_TABLES = 10;
-  const ROWS = 126;
+  const ROWS = 125;
   const pathname = window.location.pathname.slice(1);
   const pageId = pathname || "q1";
 
@@ -2127,7 +2127,7 @@ function App() {
                     </thead>
                     <tbody>
                       {(() => {
-                        let displayRowNumber = -1;
+                        let displayRowNumber = 0;
                         return tableData.map((row, rowIndex) => {
                           // Skip deleted rows
                           if (deletedRows[rowIndex]) return null;
@@ -2142,7 +2142,7 @@ function App() {
                                 onClick={() => handleRowClick(rowIndex)}
                                 style={{ cursor: "pointer" }}
                               >
-                                {String(displayRowNumber).padStart(3, "0")}
+                                {displayRowNumber}
                               </td>
                               <td
                                 className={`data-cell fixed date-col ${

@@ -47,7 +47,7 @@ const TaskRow = memo(
           className={isRowHL ? "draft-row-highlighted" : ""}
           style={{ textAlign: "center", fontSize: "20px", cursor: "pointer", userSelect: "none" }}
         >
-          {String(displayRowNumber).padStart(3, "0")}
+          {displayRowNumber}
         </td>
         <td
           style={{ width: "200px", minWidth: "200px" }}
@@ -98,7 +98,7 @@ const TaskRow = memo(
           className={isRowHL ? "draft-row-highlighted" : ""}
           style={{ textAlign: "center", fontSize: "20px", cursor: "pointer", userSelect: "none" }}
         >
-          {String(displayRowNumber).padStart(3, "0")}
+          {displayRowNumber}
         </td>
         <td
           className={isRowHL ? "draft-row-highlighted" : ""}
@@ -118,9 +118,9 @@ const TaskRow = memo(
 );
 
 function InputPage() {
-  const MIN_ROWS = 126; // Minimum rows
-  const [keepLastNRows, setKeepLastNRows] = useState(126);
-  const ROWS = Math.max(MIN_ROWS, keepLastNRows); // Dynamic: min 126, or larger from DB
+  const MIN_ROWS = 125; // Minimum rows
+  const [keepLastNRows, setKeepLastNRows] = useState(125);
+  const ROWS = Math.max(MIN_ROWS, keepLastNRows); // Dynamic: min 125, or larger from DB
 
   // State cho A, B của 10Q
   const [allQData, setAllQData] = useState(
@@ -188,7 +188,7 @@ function InputPage() {
         setDateValues(d.dateValues || Array(ROWS).fill(""));
         setZValues(d.zValues || Array(ROWS).fill(""));
         setDeletedRows(d.deletedRows || Array(ROWS).fill(false));
-        setKeepLastNRows(d.keepLastNRows || 126);
+        setKeepLastNRows(d.keepLastNRows || 125);
         setPurpleRangeFrom(d.purpleRangeFrom || 0);
         setPurpleRangeTo(d.purpleRangeTo || 0);
       } else {
@@ -209,7 +209,7 @@ function InputPage() {
     };
 
     loadData();
-  }, [ROWS]);
+  }, []);
 
   // Helper để format STT thành dãy (VD: 049-051, 055)
   const formatSttRanges = (sttArray) => {
@@ -875,7 +875,7 @@ function InputPage() {
 
   const sortedIndices = useMemo(() => {
     return Array.from(
-      { length: dateValues.length || MIN_ROWS },
+      { length: MIN_ROWS },
       (_, i) => i,
     ).sort((a, b) => {
       const aDeleted = deletedRows[a] || false;
@@ -1050,9 +1050,15 @@ function InputPage() {
                 type="number"
                 min="1"
                 value={keepLastNRows}
-                onChange={(e) =>
-                  setKeepLastNRows(parseInt(e.target.value) || 1)
-                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "") {
+                    setKeepLastNRows("");
+                  } else {
+                    const n = parseInt(val);
+                    if (!isNaN(n) && n >= 1) setKeepLastNRows(n);
+                  }
+                }}
                 style={{
                   width: "80px",
                   padding: "6px",
@@ -1376,7 +1382,7 @@ function InputPage() {
                   <TaskRow
                     key={rowIndex}
                     rowIndex={rowIndex}
-                    displayRowNumber={idx}
+                    displayRowNumber={idx + 1}
                     isDeleted={deletedRows[rowIndex]}
                     isSelected={selectedRows.includes(rowIndex)}
                     zValue={zValues[rowIndex]}
