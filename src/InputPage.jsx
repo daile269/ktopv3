@@ -47,7 +47,7 @@ const TaskRow = memo(
           className={isRowHL ? "draft-row-highlighted" : ""}
           style={{ textAlign: "center", fontSize: "20px", cursor: "pointer", userSelect: "none" }}
         >
-          {displayRowNumber}
+          {String(displayRowNumber).padStart(2, "0")}
         </td>
         <td
           style={{ width: "200px", minWidth: "200px" }}
@@ -98,7 +98,7 @@ const TaskRow = memo(
           className={isRowHL ? "draft-row-highlighted" : ""}
           style={{ textAlign: "center", fontSize: "20px", cursor: "pointer", userSelect: "none" }}
         >
-          {displayRowNumber}
+          {String(displayRowNumber).padStart(2, "0")}
         </td>
         <td
           className={isRowHL ? "draft-row-highlighted" : ""}
@@ -225,8 +225,8 @@ function InputPage() {
       } else {
         ranges.push(
           start === end
-            ? String(start).padStart(3, "0")
-            : `${String(start).padStart(3, "0")}-${String(end).padStart(3, "0")}`,
+            ? String(start).padStart(2, "0")
+            : `${String(start).padStart(2, "0")}-${String(end).padStart(2, "0")}`,
         );
         start = sorted[i];
         end = sorted[i];
@@ -234,8 +234,8 @@ function InputPage() {
     }
     ranges.push(
       start === end
-        ? String(start).padStart(3, "0")
-        : `${String(start).padStart(3, "0")}-${String(end).padStart(3, "0")}`,
+        ? String(start).padStart(2, "0")
+        : `${String(start).padStart(2, "0")}-${String(end).padStart(2, "0")}`,
     );
     return "STT: " + ranges.join(", ");
   };
@@ -420,7 +420,7 @@ function InputPage() {
     for (const rowIndex of selectedRows) {
       const count = existingCounts[rowIndex] || 0;
       if (count >= MAX_PER_ROW) {
-        skipped.push(String(rowIndex).padStart(3, "0"));
+        skipped.push(String(rowIndex).padStart(2, "0"));
       } else {
         toAdd.push({ rowIndex, displaySTT: rowIndex });
         existingCounts[rowIndex] = count + 1;
@@ -813,7 +813,7 @@ function InputPage() {
           activeZ.push(""); // Không chép cột Z sang bảng tính
           activeD.push(transferDate);
           activeDel.push(false);
-          activeSourceSTT.push(String(idx).padStart(3, "0"));
+          activeSourceSTT.push(String(idx).padStart(2, "0"));
         });
 
         // Consolidate at top by padding at the bottom (push)
@@ -853,7 +853,7 @@ function InputPage() {
 
       // LƯU LẠI LỊCH SỬ LẦN VỪA CHUYỂN
       const batchInfo = {
-        stts: selectedIndices.map((idx) => String(idx).padStart(3, "0")),
+        stts: selectedIndices.map((idx) => String(idx).padStart(2, "0")),
         zValues: selectedIndices.map((idx) => zValues[idx] || ""),
         date: transferDate,
       };
@@ -1184,7 +1184,7 @@ function InputPage() {
               }}
             >
               <span style={{ fontSize: "30px", fontWeight: "bold", marginRight: "6px", whiteSpace: "nowrap" }}>
-                📋 Hàng đợi:
+                📋 Dòng đợi:
               </span>
               {(() => {
                 return queue.map((item, idx) => {
@@ -1209,7 +1209,7 @@ function InputPage() {
                           position: "relative",
                         }}
                       >
-                        <span>{String(item.displaySTT).padStart(3, "0")}</span>
+                        <span>{String(item.displaySTT).padStart(2, "0")}</span>
                         <span style={{ fontSize: "30px", fontWeight: "normal", opacity: 0.9 }}>
                           L{luot}
                         </span>
@@ -1382,7 +1382,7 @@ function InputPage() {
                   <TaskRow
                     key={rowIndex}
                     rowIndex={rowIndex}
-                    displayRowNumber={idx + 1}
+                    displayRowNumber={idx}
                     isDeleted={deletedRows[rowIndex]}
                     isSelected={selectedRows.includes(rowIndex)}
                     zValue={zValues[rowIndex]}
@@ -1493,7 +1493,7 @@ function InputPage() {
                         fontWeight: "bold",
                       }}
                     >
-                      {String(item.displaySTT).padStart(3, "0")}
+                      {String(item.displaySTT).padStart(2, "0")}
                     </span>
                   </span>
                 )) : (

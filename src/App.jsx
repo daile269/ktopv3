@@ -2127,7 +2127,7 @@ function App() {
                     </thead>
                     <tbody>
                       {(() => {
-                        let displayRowNumber = 0;
+                        let displayRowNumber = -1;
                         return tableData.map((row, rowIndex) => {
                           // Skip deleted rows
                           if (deletedRows[rowIndex]) return null;
@@ -2142,7 +2142,7 @@ function App() {
                                 onClick={() => handleRowClick(rowIndex)}
                                 style={{ cursor: "pointer" }}
                               >
-                                {displayRowNumber}
+                                {String(displayRowNumber).padStart(2, "0")}
                               </td>
                               <td
                                 className={`data-cell fixed date-col ${
