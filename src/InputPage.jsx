@@ -1430,12 +1430,12 @@ function InputPage({ accessWarningContent = null }) {
         <div className="modal-overlay">
           <div
             className="modal-content"
-            style={{ maxWidth: "800px", width: "95%" }}
+            style={{ maxWidth: "1100px", width: "95%" }}
           >
             <h2
               style={{
-                fontSize: "40px",
-                marginBottom: "20px",
+                fontSize: "56px",
+                marginBottom: "28px",
                 fontWeight: "bold",
               }}
             >
@@ -1450,7 +1450,7 @@ function InputPage({ accessWarningContent = null }) {
                 background: "#e3f2fd",
                 borderRadius: "8px",
                 border: "1px solid #90caf9",
-                fontSize: "22px",
+                fontSize: "40px",
               }}
             >
               <strong>Lần chọn trước:</strong>
@@ -1478,6 +1478,7 @@ function InputPage({ accessWarningContent = null }) {
                         marginTop: "10px",
                         color: "#1976d2",
                         fontWeight: "bold",
+                        fontSize: "42px",
                       }}
                     >
                       {formatSttRanges(lastBatch.stts)}
@@ -1494,7 +1495,7 @@ function InputPage({ accessWarningContent = null }) {
                 border: "1px solid #ddd",
                 padding: "10px",
                 marginBottom: "20px",
-                fontSize: "22px",
+                fontSize: "40px",
               }}
             >
               <p>Lần chọn mới:</p>
@@ -1502,7 +1503,7 @@ function InputPage({ accessWarningContent = null }) {
                 {queue.length > 0 ? queue.map((item, idx) => (
                   <span key={idx} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
                     {idx > 0 && (
-                      <span style={{ fontSize: "16px", color: "#888", margin: "0 2px" }}>→</span>
+                      <span style={{ fontSize: "32px", color: "#888", margin: "0 2px" }}>→</span>
                     )}
                     <span
                       style={{
@@ -1510,7 +1511,7 @@ function InputPage({ accessWarningContent = null }) {
                         color: "white",
                         borderRadius: "6px",
                         padding: "3px 10px",
-                        fontSize: "18px",
+                        fontSize: "36px",
                         fontWeight: "bold",
                       }}
                     >
@@ -1533,7 +1534,7 @@ function InputPage({ accessWarningContent = null }) {
             >
               <label
                 style={{
-                  fontSize: "20px",
+                  fontSize: "40px",
                   fontWeight: "bold",
                   display: "block",
                   marginBottom: "10px",
@@ -1552,7 +1553,7 @@ function InputPage({ accessWarningContent = null }) {
                 style={{
                   width: "100%",
                   padding: "10px",
-                  fontSize: "20px",
+                  fontSize: "36px",
                   borderRadius: "4px",
                   border: "1px solid #ccc",
                 }}
@@ -1569,11 +1570,11 @@ function InputPage({ accessWarningContent = null }) {
               <button
                 onClick={() => setShowAddModal(false)}
                 style={{
-                  padding: "10px 20px",
+                  padding: "14px 28px",
                   borderRadius: "8px",
                   border: "1px solid #ccc",
                   background: "white",
-                  fontSize: "22px",
+                  fontSize: "36px",
                 }}
               >
                 Chọn lại
@@ -1584,12 +1585,12 @@ function InputPage({ accessWarningContent = null }) {
                   isAddingToCalc || queue.length === 0
                 }
                 style={{
-                  padding: "10px 20px",
+                  padding: "14px 28px",
                   borderRadius: "8px",
                   background: "#6f42c1",
                   color: "white",
                   border: "none",
-                  fontSize: "20px",
+                  fontSize: "36px",
                   cursor: isAddingToCalc ? "not-allowed" : "pointer",
                   opacity: isAddingToCalc ? 0.7 : 1,
                 }}

@@ -123,15 +123,18 @@ function SelectRowsPage({ accessWarningContent = null }) {
     return count;
   }, [deletedRows, hasRowData]);
 
-  const queueCounts = useMemo(() => {
-    const counts = {};
-    queue.forEach((item) => {
-      counts[item.rowIndex] = (counts[item.rowIndex] || 0) + 1;
-    });
-    return counts;
-  }, [queue]);
-
   const formatStt = (value) => String(value).padStart(2, "0");
+
+  const formatDisplayDate = (value) => {
+    if (!value) return "";
+    const text = String(value);
+    if (text.includes("/")) return text;
+    const parts = text.split("-");
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return text;
+  };
 
   const handleSelectRow = useCallback(
     (rowIndex) => {
@@ -572,9 +575,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
 
   const renderCell = (rowIndex) => {
     const isDeleted = deletedRows[rowIndex];
-    const queuedCount = queueCounts[rowIndex] || 0;
-    const isHighlighted = highlightedRows[rowIndex];
-    const hasData = hasRowData(rowIndex);
+    const isHighlighted = !!highlightedRows[rowIndex];
 
     return (
       <td key={rowIndex} style={{ padding: "6px" }}>
@@ -587,42 +588,17 @@ function SelectRowsPage({ accessWarningContent = null }) {
             minWidth: "90px",
             height: "74px",
             borderRadius: "8px",
-            border: isHighlighted
-              ? "4px solid #6f42c1"
-              : queuedCount > 0
-                ? "4px solid #198754"
-                : hasData
-                  ? "2px solid #0d6efd"
-                  : "1px solid #bbb",
-            background: isDeleted
-              ? "#d6d6d6"
-              : queuedCount > 0
-                ? "#d1e7dd"
-                : hasData
-                  ? "#e7f3ff"
-                  : "#fff",
-            color: isDeleted ? "#777" : "#111",
+            border: isHighlighted ? "4px solid #dc3545" : "1px solid #cfcfcf",
+            background: isHighlighted ? "#ffeb3b" : "#f4f5f5",
+            color: "#111",
             cursor: isDeleted ? "not-allowed" : "pointer",
-            fontSize: "32px",
+            fontSize: "44px",
             fontWeight: "bold",
             position: "relative",
           }}
           title={`Chọn dòng thông ${formatStt(rowIndex)}`}
         >
           {formatStt(rowIndex)}
-          {queuedCount > 0 && (
-            <span
-              style={{
-                position: "absolute",
-                right: "6px",
-                bottom: "4px",
-                fontSize: "16px",
-                color: "#0f5132",
-              }}
-            >
-              x{queuedCount}
-            </span>
-          )}
         </button>
       </td>
     );
@@ -751,8 +727,8 @@ function SelectRowsPage({ accessWarningContent = null }) {
 
       {showAddModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "800px", width: "95%" }}>
-            <h2 style={{ fontSize: "40px", marginBottom: "20px", fontWeight: "bold" }}>
+          <div className="modal-content" style={{ maxWidth: "1100px", width: "95%" }}>
+            <h2 style={{ fontSize: "56px", marginBottom: "28px", fontWeight: "bold" }}>
               Thông báo
             </h2>
 
@@ -763,7 +739,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
                 background: "#e3f2fd",
                 borderRadius: "8px",
                 border: "1px solid #90caf9",
-                fontSize: "22px",
+                fontSize: "40px",
               }}
             >
               <strong>Lần chọn trước:</strong>
@@ -774,9 +750,9 @@ function SelectRowsPage({ accessWarningContent = null }) {
                   <div>
                     Ngày chuyển:{" "}
                     <span style={{ color: "#1976d2", fontWeight: "bold" }}>
-                      {lastBatch.date}
+                      {formatDisplayDate(lastBatch.date)}
                     </span>
-                    <div style={{ marginTop: "10px", color: "#1976d2", fontWeight: "bold" }}>
+                    <div style={{ marginTop: "10px", color: "#1976d2", fontWeight: "bold", fontSize: "42px" }}>
                       STT: {lastBatch.stts?.join(", ")}
                     </div>
                   </div>
@@ -791,7 +767,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
                 border: "1px solid #ddd",
                 padding: "10px",
                 marginBottom: "20px",
-                fontSize: "22px",
+                fontSize: "40px",
               }}
             >
               <p>Lần chọn mới:</p>
@@ -799,14 +775,14 @@ function SelectRowsPage({ accessWarningContent = null }) {
                 {queue.length > 0 ? (
                   queue.map((item, index) => (
                     <span key={`${item.rowIndex}-${index}`} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
-                      {index > 0 && <span style={{ fontSize: "16px", color: "#888" }}>→</span>}
+                      {index > 0 && <span style={{ fontSize: "32px", color: "#888" }}>→</span>}
                       <span
                         style={{
                           background: "#fd7e14",
                           color: "white",
                           borderRadius: "6px",
                           padding: "3px 10px",
-                          fontSize: "18px",
+                          fontSize: "36px",
                           fontWeight: "bold",
                         }}
                       >
@@ -821,7 +797,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
             </div>
 
             <div style={{ marginBottom: "20px", padding: "15px", background: "#f0f0f0", borderRadius: "8px" }}>
-              <label style={{ fontSize: "20px", fontWeight: "bold", display: "block", marginBottom: "10px" }}>
+              <label style={{ fontSize: "40px", fontWeight: "bold", display: "block", marginBottom: "10px" }}>
                 Chọn ngày để lưu vào bảng tính:
               </label>
               <input
@@ -835,7 +811,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
                 style={{
                   width: "100%",
                   padding: "10px",
-                  fontSize: "20px",
+                  fontSize: "36px",
                   borderRadius: "4px",
                   border: "1px solid #ccc",
                 }}
@@ -845,7 +821,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
             <div style={{ display: "flex", gap: "10px", justifyContent: "space-between" }}>
               <button
                 onClick={() => setShowAddModal(false)}
-                style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid #ccc", background: "white", fontSize: "22px" }}
+                style={{ padding: "14px 28px", borderRadius: "8px", border: "1px solid #ccc", background: "white", fontSize: "36px" }}
               >
                 Chọn lại
               </button>
@@ -853,12 +829,12 @@ function SelectRowsPage({ accessWarningContent = null }) {
                 onClick={handleConfirmAddToApp}
                 disabled={isAddingToCalc || queue.length === 0}
                 style={{
-                  padding: "10px 20px",
+                  padding: "14px 28px",
                   borderRadius: "8px",
                   background: "#6f42c1",
                   color: "white",
                   border: "none",
-                  fontSize: "20px",
+                  fontSize: "36px",
                   cursor: isAddingToCalc ? "not-allowed" : "pointer",
                   opacity: isAddingToCalc ? 0.7 : 1,
                 }}
