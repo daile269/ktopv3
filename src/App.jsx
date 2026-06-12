@@ -713,9 +713,33 @@ function App() {
     return purpleCells;
   };
 
+  const getFuturePurpleCellsInfo = () => {
+    const purpleCells = {};
+
+    allTableData.forEach((tableData, tableIndex) => {
+      const tablePurpleCells = [];
+      const futureRow = getFutureRow(tableData);
+
+      futureRow.forEach((cell) => {
+        if (cell.color === "purple" || cell.color === "purple-red") {
+          tablePurpleCells.push(cell.value);
+        }
+      });
+
+      if (tablePurpleCells.length > 0) {
+        purpleCells[`T${tableIndex + 1}`] = tablePurpleCells;
+      }
+    });
+
+    return purpleCells;
+  };
+
   // Format purple cells info thành string để hiển thị
   const formatPurpleCellsInfo = () => {
-    const purpleCells = getPurpleCellsInfo();
+    const purpleCells = {
+      ...getPurpleCellsInfo(),
+      ...getFuturePurpleCellsInfo(),
+    };
     const entries = Object.entries(purpleCells);
 
     if (entries.length === 0) {

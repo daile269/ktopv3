@@ -509,12 +509,12 @@ function SelectRowsPage({ accessWarningContent = null }) {
           gap: "6px",
         }}
       >
-        <span style={{ fontSize: "30px", fontWeight: "bold", marginRight: "6px" }}>
+        <span style={{ fontSize: "36px", fontWeight: "bold", marginRight: "6px" }}>
           Dòng đợi:
         </span>
         {queue.map((item, index) => (
           <span key={`${item.rowIndex}-${index}`} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
-            {index > 0 && <span style={{ fontSize: "22px", color: "#888" }}>→</span>}
+            {index > 0 && <span style={{ fontSize: "36px", color: "#888" }}>→</span>}
             <span
               style={{
                 display: "inline-flex",
@@ -523,13 +523,14 @@ function SelectRowsPage({ accessWarningContent = null }) {
                 background: "#a8d5a2",
                 color: "black",
                 borderRadius: "6px",
-                padding: "4px 12px",
-                fontSize: "30px",
+                padding: "6px 14px",
+                fontSize: "44px",
+                fontWeight: "bold",
                 position: "relative",
               }}
             >
               <span>{formatStt(item.displaySTT)}</span>
-              <span style={{ fontSize: "30px", opacity: 0.9 }}>L{index + 1}</span>
+              <span style={{ fontSize: "44px", fontWeight: "bold", opacity: 0.9 }}>L{index + 1}</span>
               <button
                 onClick={() => handleRemoveFromQueue(index)}
                 style={{
@@ -540,9 +541,9 @@ function SelectRowsPage({ accessWarningContent = null }) {
                   border: "none",
                   color: "white",
                   cursor: "pointer",
-                  fontSize: "11px",
-                  width: "16px",
-                  height: "16px",
+                  fontSize: "14px",
+                  width: "20px",
+                  height: "20px",
                   borderRadius: "50%",
                   lineHeight: 1,
                   padding: 0,
@@ -563,7 +564,8 @@ function SelectRowsPage({ accessWarningContent = null }) {
             border: "none",
             borderRadius: "6px",
             padding: "6px 16px",
-            fontSize: "30px",
+            fontSize: "36px",
+            fontWeight: "bold",
             cursor: "pointer",
           }}
         >
