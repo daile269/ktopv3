@@ -64,14 +64,14 @@ app.get("/api/pages/:pageId", async (req, res) => {
       });
     }
 
-    // Pad arrays to 126 rows
-    const ROWS = 126;
-    const aValues = [...page.aValues];
-    const bValues = [...page.bValues];
-    const zValues = page.zValues ? [...page.zValues] : [];
-    const dateValues = [...page.dateValues];
-    const deletedRows = [...page.deletedRows];
-    const sourceSTTValues = page.sourceSTTValues ? [...page.sourceSTTValues] : [];
+    // Pad arrays to 110 rows
+    const ROWS = 110;
+    const aValues = [...page.aValues].slice(0, ROWS);
+    const bValues = [...page.bValues].slice(0, ROWS);
+    const zValues = page.zValues ? [...page.zValues].slice(0, ROWS) : [];
+    const dateValues = [...page.dateValues].slice(0, ROWS);
+    const deletedRows = [...page.deletedRows].slice(0, ROWS);
+    const sourceSTTValues = page.sourceSTTValues ? [...page.sourceSTTValues].slice(0, ROWS) : [];
 
     while (aValues.length < ROWS) aValues.push("");
     while (bValues.length < ROWS) bValues.push("");
@@ -91,7 +91,7 @@ app.get("/api/pages/:pageId", async (req, res) => {
         sourceSTTValues,
         purpleRangeFrom: page.purpleRangeFrom || 0,
         purpleRangeTo: page.purpleRangeTo || 0,
-        keepLastNRows: page.keepLastNRows || 126,
+        keepLastNRows: Math.min(page.keepLastNRows || 110, 110),
         allQData: page.allQData,
         pageLabel: page.pageLabel || "",
       },
@@ -130,6 +130,8 @@ app.post("/api/pages/:pageId", async (req, res) => {
 
     console.log(`💾 Saving data for page: ${pageId}`);
 
+    const ROWS = 110;
+
     // Find last index with data
     let lastIndex = -1;
     const aLen = aValues ? aValues.length : 0;
@@ -153,17 +155,17 @@ app.post("/api/pages/:pageId", async (req, res) => {
 
     // Trim empty values at the end
     const trimmedA =
-      lastIndex >= 0 && aValues ? aValues.slice(0, lastIndex + 1) : [];
+      lastIndex >= 0 && aValues ? aValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [];
     const trimmedB =
-      lastIndex >= 0 && bValues ? bValues.slice(0, lastIndex + 1) : [];
+      lastIndex >= 0 && bValues ? bValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [];
     const trimmedZ =
-      lastIndex >= 0 && zValues ? zValues.slice(0, lastIndex + 1) : [];
+      lastIndex >= 0 && zValues ? zValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [];
     const trimmedDates =
-      lastIndex >= 0 && dateValues ? dateValues.slice(0, lastIndex + 1) : [];
+      lastIndex >= 0 && dateValues ? dateValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [];
     const trimmedDeleted =
-      lastIndex >= 0 && deletedRows ? deletedRows.slice(0, lastIndex + 1) : [];
+      lastIndex >= 0 && deletedRows ? deletedRows.slice(0, Math.min(lastIndex + 1, ROWS)) : [];
     const trimmedSourceSTT =
-      lastIndex >= 0 && sourceSTTValues ? sourceSTTValues.slice(0, lastIndex + 1) : [];
+      lastIndex >= 0 && sourceSTTValues ? sourceSTTValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [];
 
     // Update or create page
     const page = await Page.findOneAndUpdate(
@@ -178,7 +180,7 @@ app.post("/api/pages/:pageId", async (req, res) => {
         sourceSTTValues: trimmedSourceSTT,
         purpleRangeFrom: purpleRangeFrom || 0,
         purpleRangeTo: purpleRangeTo || 0,
-        keepLastNRows: keepLastNRows || 126,
+        keepLastNRows: Math.min(keepLastNRows || 110, 110),
         allQData,
         pageLabel: pageLabel || "",
         updatedAt: new Date(),

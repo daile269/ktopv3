@@ -1,0 +1,1036 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import "./App.css";
+import "./InputPage.css";
+import { loadPageData, savePageData } from "./dataService";
+
+const ROWS = 110;
+const COLS = 11;
+const GRID_ROWS = 10;
+const MAX_PER_ROW = 4;
+
+function SelectRowsPage({ accessWarningContent = null }) {
+  const [allQData, setAllQData] = useState(
+    Array(10)
+      .fill(null)
+      .map(() => ({
+        aValues: Array(ROWS).fill(""),
+        bValues: Array(ROWS).fill(""),
+      })),
+  );
+  const [dateValues, setDateValues] = useState(Array(ROWS).fill(""));
+  const [zValues, setZValues] = useState(Array(ROWS).fill(""));
+  const [deletedRows, setDeletedRows] = useState(Array(ROWS).fill(false));
+  const [purpleRangeFrom, setPurpleRangeFrom] = useState(0);
+  const [purpleRangeTo, setPurpleRangeTo] = useState(0);
+  const [keepLastNRows, setKeepLastNRows] = useState(ROWS);
+  const [queue, setQueue] = useState([]);
+  const [highlightedRows, setHighlightedRows] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isAddingToCalc, setIsAddingToCalc] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [showDeleteFirstRowModal, setShowDeleteFirstRowModal] = useState(false);
+  const [showDeleteLastRowModal, setShowDeleteLastRowModal] = useState(false);
+  const [showDeleteByRowsModal, setShowDeleteByRowsModal] = useState(false);
+  const [deleteOption, setDeleteOption] = useState("all");
+  const [deleteRowFrom, setDeleteRowFrom] = useState("");
+  const [deleteRowTo, setDeleteRowTo] = useState("");
+  const [transferDate, setTransferDate] = useState(
+    () =>
+      localStorage.getItem("lastTransferDate") ||
+      new Date().toISOString().split("T")[0],
+  );
+  const [lastBatch, setLastBatch] = useState(() => {
+    const saved = localStorage.getItem("lastBatchInfo");
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      const result = await loadPageData("master_draft");
+
+      if (result.success && result.data) {
+        const data = result.data;
+        setAllQData(
+          data.allQData ||
+            Array(10)
+              .fill(null)
+              .map(() => ({
+                aValues: Array(ROWS).fill(""),
+                bValues: Array(ROWS).fill(""),
+              })),
+        );
+        setDateValues(data.dateValues || Array(ROWS).fill(""));
+        setZValues(data.zValues || Array(ROWS).fill(""));
+        setDeletedRows(data.deletedRows || Array(ROWS).fill(false));
+        setPurpleRangeFrom(data.purpleRangeFrom || 0);
+        setPurpleRangeTo(data.purpleRangeTo || 0);
+        setKeepLastNRows(Math.min(data.keepLastNRows || ROWS, ROWS));
+      }
+
+      setIsLoading(false);
+    };
+
+    loadData();
+  }, []);
+
+  const saveDraft = useCallback(
+    async (nextDeletedRows = deletedRows, nextKeepLastNRows = keepLastNRows) => {
+      return savePageData(
+        "master_draft",
+        null,
+        null,
+        zValues,
+        dateValues,
+        nextDeletedRows,
+        null,
+        purpleRangeFrom,
+        purpleRangeTo,
+        nextKeepLastNRows,
+        allQData,
+      );
+    },
+    [
+      allQData,
+      dateValues,
+      deletedRows,
+      keepLastNRows,
+      purpleRangeFrom,
+      purpleRangeTo,
+      zValues,
+    ],
+  );
+
+  const hasRowData = useCallback(
+    (rowIndex) => {
+      if (dateValues[rowIndex] || zValues[rowIndex]) return true;
+      return allQData.some(
+        (qData) => qData?.aValues[rowIndex] || qData?.bValues[rowIndex],
+      );
+    },
+    [allQData, dateValues, zValues],
+  );
+
+  const visibleDataCount = useMemo(() => {
+    let count = 0;
+    for (let i = 0; i < ROWS; i++) {
+      if (!deletedRows[i] && hasRowData(i)) count++;
+    }
+    return count;
+  }, [deletedRows, hasRowData]);
+
+  const queueCounts = useMemo(() => {
+    const counts = {};
+    queue.forEach((item) => {
+      counts[item.rowIndex] = (counts[item.rowIndex] || 0) + 1;
+    });
+    return counts;
+  }, [queue]);
+
+  const formatStt = (value) => String(value).padStart(2, "0");
+
+  const handleSelectRow = useCallback(
+    (rowIndex) => {
+      if (deletedRows[rowIndex]) {
+        alert(`Dòng ${formatStt(rowIndex)} đã bị xóa, không thể chọn!`);
+        return;
+      }
+
+      const count = queue.filter((item) => item.rowIndex === rowIndex).length;
+      if (count >= MAX_PER_ROW) {
+        alert(
+          `Dòng ${formatStt(rowIndex)} đã đạt tối đa ${MAX_PER_ROW} lần trong dòng đợi!`,
+        );
+        return;
+      }
+
+      setQueue((prev) => [...prev, { rowIndex, displaySTT: rowIndex }]);
+      setHighlightedRows({ [rowIndex]: true });
+    },
+    [deletedRows, queue],
+  );
+
+  const handleRemoveFromQueue = useCallback((queueIndex) => {
+    setQueue((prev) => prev.filter((_, index) => index !== queueIndex));
+  }, []);
+
+  const handleClearQueue = useCallback(() => {
+    setQueue([]);
+  }, []);
+
+  const handleSave = async () => {
+    setSaveStatus("Đang lưu...");
+    const result = await saveDraft();
+
+    if (result.success) {
+      setSaveStatus("Đã lưu Bảng chọn dòng thông!");
+      alert("Đã lưu dữ liệu Bảng chọn dòng thông thành công!");
+    } else {
+      setSaveStatus("Lỗi!");
+      alert("Lỗi khi lưu vào Master: " + (result.error || "Không xác định"));
+    }
+
+    setTimeout(() => setSaveStatus(""), 2000);
+  };
+
+  const handleKeepLastNRows = async () => {
+    const keepRows = parseInt(keepLastNRows);
+
+    if (!keepRows || keepRows <= 0 || keepRows > ROWS) {
+      alert(`Số dòng tồn tại tối đa là ${ROWS} (STT 00-109)!`);
+      return;
+    }
+
+    const nonDeletedRowsWithData = [];
+    for (let i = 0; i < ROWS; i++) {
+      if (!deletedRows[i] && hasRowData(i)) {
+        nonDeletedRowsWithData.push(i);
+      }
+    }
+
+    if (nonDeletedRowsWithData.length === 0) {
+      alert("Không có dòng nào có dữ liệu!");
+      return;
+    }
+
+    if (!confirm(`Bạn có chắc muốn chỉ giữ lại ${keepRows} dòng cuối cùng?`)) {
+      return;
+    }
+
+    const rowsToKeep = nonDeletedRowsWithData.slice(-keepRows);
+    const nextDeletedRows = [...deletedRows];
+
+    for (let i = 0; i < ROWS; i++) {
+      if (!deletedRows[i] && !rowsToKeep.includes(i)) {
+        nextDeletedRows[i] = true;
+      }
+    }
+
+    setDeletedRows(nextDeletedRows);
+    setSaveStatus("Đang lưu...");
+    await saveDraft(nextDeletedRows, keepRows);
+    setSaveStatus(`Đã giữ ${keepRows} dòng cuối!`);
+    alert(`Đã giữ lại ${keepRows} dòng cuối cùng!`);
+    setTimeout(() => setSaveStatus(""), 2000);
+  };
+
+  const confirmDeleteAll = async () => {
+    const nextDeletedRows = Array(ROWS).fill(true);
+    const emptyAllQData = Array(10)
+      .fill(null)
+      .map(() => ({
+        aValues: Array(ROWS).fill(""),
+        bValues: Array(ROWS).fill(""),
+      }));
+
+    setDeletedRows(nextDeletedRows);
+    setAllQData(emptyAllQData);
+    setZValues(Array(ROWS).fill(""));
+    setDateValues(Array(ROWS).fill(""));
+    setQueue([]);
+
+    await savePageData(
+      "master_draft",
+      null,
+      null,
+      Array(ROWS).fill(""),
+      Array(ROWS).fill(""),
+      nextDeletedRows,
+      null,
+      purpleRangeFrom,
+      purpleRangeTo,
+      keepLastNRows,
+      emptyAllQData,
+    );
+
+    setShowDeleteAllModal(false);
+    alert("Đã xóa tất cả dữ liệu Bảng chọn dòng thông!");
+  };
+
+  const handleDeleteFirstRow = async () => {
+    const firstRowIndex = Array.from({ length: ROWS }, (_, i) => i).find(
+      (rowIndex) => !deletedRows[rowIndex] && hasRowData(rowIndex),
+    );
+
+    if (firstRowIndex === undefined) {
+      alert("Không có dòng nào để xóa!");
+      setShowDeleteFirstRowModal(false);
+      return;
+    }
+
+    const nextDeletedRows = [...deletedRows];
+    nextDeletedRows[firstRowIndex] = true;
+    setDeletedRows(nextDeletedRows);
+    await saveDraft(nextDeletedRows);
+    setShowDeleteFirstRowModal(false);
+    alert("Đã xóa dòng cũ nhất!");
+  };
+
+  const handleDeleteLastRow = async () => {
+    let lastRowIndex = -1;
+    for (let i = ROWS - 1; i >= 0; i--) {
+      if (!deletedRows[i] && hasRowData(i)) {
+        lastRowIndex = i;
+        break;
+      }
+    }
+
+    if (lastRowIndex === -1) {
+      alert("Không có dòng nào để xóa!");
+      setShowDeleteLastRowModal(false);
+      return;
+    }
+
+    const nextDeletedRows = [...deletedRows];
+    nextDeletedRows[lastRowIndex] = true;
+    setDeletedRows(nextDeletedRows);
+    await saveDraft(nextDeletedRows);
+    setShowDeleteLastRowModal(false);
+    alert("Đã xóa dòng mới nhất!");
+  };
+
+  const confirmDeleteByRows = async () => {
+    const from = parseInt(deleteRowFrom);
+    const to = parseInt(deleteRowTo);
+
+    if (isNaN(from) || isNaN(to) || from < 0 || to < from || to >= ROWS) {
+      alert("Dãy STT không hợp lệ!");
+      return;
+    }
+
+    const nextDeletedRows = [...deletedRows];
+    let count = 0;
+    for (let rowIndex = from; rowIndex <= to; rowIndex++) {
+      if (!nextDeletedRows[rowIndex]) {
+        nextDeletedRows[rowIndex] = true;
+        count++;
+      }
+    }
+
+    setDeletedRows(nextDeletedRows);
+    setQueue((prev) =>
+      prev.filter(
+        (item) => item.rowIndex < from || item.rowIndex > to,
+      ),
+    );
+    await saveDraft(nextDeletedRows);
+    setShowDeleteByRowsModal(false);
+    alert(`Đã xóa ${count} dòng theo STT!`);
+  };
+
+  const handleDelete = () => {
+    if (deleteOption === "all") {
+      setShowDeleteModal(false);
+      setShowDeleteAllModal(true);
+      return;
+    }
+
+    if (deleteOption === "firstRow") {
+      setShowDeleteModal(false);
+      setShowDeleteFirstRowModal(true);
+      return;
+    }
+
+    if (deleteOption === "lastRow") {
+      setShowDeleteModal(false);
+      setShowDeleteLastRowModal(true);
+      return;
+    }
+
+    if (deleteOption === "rows") {
+      if (!deleteRowFrom || !deleteRowTo) {
+        alert("Vui lòng nhập STT!");
+        return;
+      }
+      setShowDeleteModal(false);
+      setShowDeleteByRowsModal(true);
+    }
+  };
+
+  const handleConfirmAddToApp = async () => {
+    const selectedIndices = queue.map((item) => item.rowIndex);
+    if (selectedIndices.length === 0) {
+      alert("Vui lòng chọn ít nhất một dòng!");
+      return;
+    }
+
+    setIsAddingToCalc(true);
+    setSaveStatus("Đang thêm dòng vào bảng tính...");
+
+    try {
+      for (const rowIndex of [...new Set(selectedIndices)]) {
+        const hasValueInAnyQ = allQData.some(
+          (qData) =>
+            String(qData?.aValues[rowIndex] || "").trim() !== "" ||
+            String(qData?.bValues[rowIndex] || "").trim() !== "",
+        );
+
+        if (!hasValueInAnyQ) {
+          alert(`Dòng thông ${formatStt(rowIndex)} đang trống A và B!`);
+          setIsAddingToCalc(false);
+          setSaveStatus("");
+          return;
+        }
+      }
+
+      for (let i = 1; i <= 10; i++) {
+        const qId = `q${i}`;
+        const currentData = await loadPageData(qId);
+        const existingPurpleFrom =
+          currentData.success && currentData.data
+            ? currentData.data.purpleRangeFrom
+            : 0;
+        const existingPurpleTo =
+          currentData.success && currentData.data
+            ? currentData.data.purpleRangeTo
+            : 0;
+        const existingKeepN =
+          currentData.success && currentData.data
+            ? Math.min(currentData.data.keepLastNRows || ROWS, ROWS)
+            : ROWS;
+
+        let activeA = [];
+        let activeB = [];
+        let activeZ = [];
+        let activeD = [];
+        let activeDel = [];
+        let activeSourceSTT = [];
+
+        if (currentData.success && currentData.data) {
+          const data = currentData.data;
+          const aVals = data.aValues || [];
+          const bVals = data.bValues || [];
+          const zVals = data.zValues || [];
+          const dVals = data.dateValues || [];
+          const delFlags = data.deletedRows || [];
+          const sourceVals = data.sourceSTTValues || [];
+
+          for (let rowIndex = 0; rowIndex < aVals.length; rowIndex++) {
+            const hasAnyData =
+              String(aVals[rowIndex] || "").trim() !== "" ||
+              String(bVals[rowIndex] || "").trim() !== "" ||
+              String(zVals[rowIndex] || "").trim() !== "" ||
+              String(dVals[rowIndex] || "").trim() !== "";
+
+            if (hasAnyData) {
+              activeA.push(aVals[rowIndex] || "");
+              activeB.push(bVals[rowIndex] || "");
+              activeZ.push(zVals[rowIndex] || "");
+              activeD.push(dVals[rowIndex] || "");
+              activeDel.push(delFlags[rowIndex] === undefined ? false : delFlags[rowIndex]);
+              activeSourceSTT.push(sourceVals[rowIndex] || "");
+            }
+          }
+        }
+
+        selectedIndices.forEach((rowIndex) => {
+          activeA.push(allQData[i - 1].aValues[rowIndex] || "");
+          activeB.push(allQData[i - 1].bValues[rowIndex] || "");
+          activeZ.push("");
+          activeD.push(transferDate);
+          activeDel.push(false);
+          activeSourceSTT.push(formatStt(rowIndex));
+        });
+
+        if (activeA.length > existingKeepN) {
+          activeA = activeA.slice(-existingKeepN);
+          activeB = activeB.slice(-existingKeepN);
+          activeZ = activeZ.slice(-existingKeepN);
+          activeD = activeD.slice(-existingKeepN);
+          activeDel = activeDel.slice(-existingKeepN);
+          activeSourceSTT = activeSourceSTT.slice(-existingKeepN);
+        } else {
+          while (activeA.length < existingKeepN) {
+            activeA.push("");
+            activeB.push("");
+            activeZ.push("");
+            activeD.push("");
+            activeDel.push(true);
+            activeSourceSTT.push("");
+          }
+        }
+
+        await savePageData(
+          qId,
+          activeA,
+          activeB,
+          activeZ,
+          activeD,
+          activeDel,
+          activeSourceSTT,
+          existingPurpleFrom,
+          existingPurpleTo,
+          existingKeepN,
+        );
+      }
+
+      const batchInfo = {
+        stts: selectedIndices.map(formatStt),
+        zValues: selectedIndices.map((rowIndex) => zValues[rowIndex] || ""),
+        date: transferDate,
+      };
+      localStorage.setItem("lastBatchInfo", JSON.stringify(batchInfo));
+      localStorage.setItem("lastTransferDate", transferDate);
+      setLastBatch(batchInfo);
+      setQueue([]);
+      setShowAddModal(false);
+      setShowSuccessModal(true);
+      setSaveStatus("Đã thêm mới vào bảng tính!");
+    } catch (error) {
+      console.error("Error adding rows:", error);
+      alert("Lỗi trong quá trình thêm!");
+    } finally {
+      setIsAddingToCalc(false);
+      setTimeout(() => setSaveStatus(""), 2000);
+    }
+  };
+
+  const renderQueue = () => {
+    if (queue.length === 0) return null;
+
+    return (
+      <div
+        style={{
+          margin: "10px 0",
+          padding: "10px 15px",
+          background: "#fff3e0",
+          border: "2px solid #fd7e14",
+          borderRadius: "8px",
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "6px",
+        }}
+      >
+        <span style={{ fontSize: "30px", fontWeight: "bold", marginRight: "6px" }}>
+          Dòng đợi:
+        </span>
+        {queue.map((item, index) => (
+          <span key={`${item.rowIndex}-${index}`} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
+            {index > 0 && <span style={{ fontSize: "22px", color: "#888" }}>→</span>}
+            <span
+              style={{
+                display: "inline-flex",
+                flexDirection: "column",
+                alignItems: "center",
+                background: "#a8d5a2",
+                color: "black",
+                borderRadius: "6px",
+                padding: "4px 12px",
+                fontSize: "30px",
+                position: "relative",
+              }}
+            >
+              <span>{formatStt(item.displaySTT)}</span>
+              <span style={{ fontSize: "30px", opacity: 0.9 }}>L{index + 1}</span>
+              <button
+                onClick={() => handleRemoveFromQueue(index)}
+                style={{
+                  position: "absolute",
+                  top: "-6px",
+                  right: "-6px",
+                  background: "#dc3545",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "11px",
+                  width: "16px",
+                  height: "16px",
+                  borderRadius: "50%",
+                  lineHeight: 1,
+                  padding: 0,
+                }}
+                title="Xóa khỏi dòng đợi"
+              >
+                ×
+              </button>
+            </span>
+          </span>
+        ))}
+        <button
+          onClick={handleClearQueue}
+          style={{
+            marginLeft: "10px",
+            background: "#dc3545",
+            color: "black",
+            border: "none",
+            borderRadius: "6px",
+            padding: "6px 16px",
+            fontSize: "30px",
+            cursor: "pointer",
+          }}
+        >
+          Xóa hết
+        </button>
+      </div>
+    );
+  };
+
+  const renderCell = (rowIndex) => {
+    const isDeleted = deletedRows[rowIndex];
+    const queuedCount = queueCounts[rowIndex] || 0;
+    const isHighlighted = highlightedRows[rowIndex];
+    const hasData = hasRowData(rowIndex);
+
+    return (
+      <td key={rowIndex} style={{ padding: "6px" }}>
+        <button
+          type="button"
+          onClick={() => handleSelectRow(rowIndex)}
+          disabled={isDeleted}
+          style={{
+            width: "100%",
+            minWidth: "90px",
+            height: "74px",
+            borderRadius: "8px",
+            border: isHighlighted
+              ? "4px solid #6f42c1"
+              : queuedCount > 0
+                ? "4px solid #198754"
+                : hasData
+                  ? "2px solid #0d6efd"
+                  : "1px solid #bbb",
+            background: isDeleted
+              ? "#d6d6d6"
+              : queuedCount > 0
+                ? "#d1e7dd"
+                : hasData
+                  ? "#e7f3ff"
+                  : "#fff",
+            color: isDeleted ? "#777" : "#111",
+            cursor: isDeleted ? "not-allowed" : "pointer",
+            fontSize: "32px",
+            fontWeight: "bold",
+            position: "relative",
+          }}
+          title={`Chọn dòng thông ${formatStt(rowIndex)}`}
+        >
+          {formatStt(rowIndex)}
+          {queuedCount > 0 && (
+            <span
+              style={{
+                position: "absolute",
+                right: "6px",
+                bottom: "4px",
+                fontSize: "16px",
+                color: "#0f5132",
+              }}
+            >
+              x{queuedCount}
+            </span>
+          )}
+        </button>
+      </td>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: "20px", textAlign: "center" }}>
+        <div className="spinner"></div>
+        <p>Đang tải dữ liệu...</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          width: "100%",
+          textAlign: "center",
+          backgroundColor: "#f8f9fa",
+          borderBottom: "2px solid #dee2e6",
+          zIndex: 100,
+        }}
+      >
+        <h1
+          style={{
+            fontSize: "32px",
+            fontWeight: "bold",
+            fontStyle: "italic",
+            margin: 0,
+            color: "#cf3535ff",
+          }}
+        >
+          Dự án cải tạo môi trường thềm lục địa biển Việt Nam -
+          <span style={{ fontSize: "18px", marginLeft: "8px" }}>
+            Mai Kiên - SĐT: 0964636709, email: maikien06091966@gmail.com
+          </span>
+        </h1>
+      </div>
+
+      <div className="app-container">
+        <div style={{ width: "100%", padding: "20px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "12px",
+              marginTop: "10px",
+              marginBottom: "20px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "3px solid #007bff",
+                padding: "10px 15px",
+                borderRadius: "8px",
+                backgroundColor: "#e7f3ff",
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                className="toolbar-btn"
+                onClick={() => setShowAddModal(true)}
+                style={{ fontSize: "30px", background: "#6f42c1", color: "white", border: "none" }}
+              >
+                ➕ Chọn dòng thông và nhập ngày tháng năm
+              </button>
+              <button
+                className="toolbar-btn"
+                onClick={() => (window.location.href = "/q1")}
+                style={{ fontSize: "30px", background: "#28a745", color: "white", border: "none" }}
+              >
+                🔍 Về bảng tính
+              </button>
+              <button
+                className="toolbar-btn"
+                onClick={() => (window.location.href = "/input")}
+                style={{ fontSize: "30px", background: "#17a2b8", color: "white", border: "none" }}
+              >
+                🔍 Về bảng thông
+              </button>
+              {accessWarningContent}
+              {saveStatus && (
+                <span style={{ color: "#28a745", fontSize: "18px", marginLeft: "10px" }}>
+                  {saveStatus}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {renderQueue()}
+
+          <div
+            style={{
+              border: "2px solid #198754",
+              borderRadius: "8px",
+              padding: "14px",
+              background: "#f8fff9",
+              overflowX: "auto",
+            }}
+          >
+            <table style={{ borderCollapse: "separate", borderSpacing: 0, width: "100%" }}>
+              <tbody>
+                {Array.from({ length: GRID_ROWS }).map((_, row) => (
+                  <tr key={row}>
+                    {Array.from({ length: COLS }).map((__, col) => {
+                      const rowIndex = col * GRID_ROWS + row;
+                      return renderCell(rowIndex);
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {showAddModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "800px", width: "95%" }}>
+            <h2 style={{ fontSize: "40px", marginBottom: "20px", fontWeight: "bold" }}>
+              Thông báo
+            </h2>
+
+            <div
+              style={{
+                marginBottom: "20px",
+                padding: "15px",
+                background: "#e3f2fd",
+                borderRadius: "8px",
+                border: "1px solid #90caf9",
+                fontSize: "22px",
+              }}
+            >
+              <strong>Lần chọn trước:</strong>
+              <div style={{ marginTop: "10px" }}>
+                {!lastBatch ? (
+                  "Chưa có lịch sử chuyển dòng trong phiên làm việc này."
+                ) : (
+                  <div>
+                    Ngày chuyển:{" "}
+                    <span style={{ color: "#1976d2", fontWeight: "bold" }}>
+                      {lastBatch.date}
+                    </span>
+                    <div style={{ marginTop: "10px", color: "#1976d2", fontWeight: "bold" }}>
+                      STT: {lastBatch.stts?.join(", ")}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div
+              style={{
+                maxHeight: "150px",
+                overflowY: "auto",
+                border: "1px solid #ddd",
+                padding: "10px",
+                marginBottom: "20px",
+                fontSize: "22px",
+              }}
+            >
+              <p>Lần chọn mới:</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
+                {queue.length > 0 ? (
+                  queue.map((item, index) => (
+                    <span key={`${item.rowIndex}-${index}`} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
+                      {index > 0 && <span style={{ fontSize: "16px", color: "#888" }}>→</span>}
+                      <span
+                        style={{
+                          background: "#fd7e14",
+                          color: "white",
+                          borderRadius: "6px",
+                          padding: "3px 10px",
+                          fontSize: "18px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {formatStt(item.displaySTT)}
+                      </span>
+                    </span>
+                  ))
+                ) : (
+                  <span style={{ color: "#999" }}>Chưa chọn dòng nào!</span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "20px", padding: "15px", background: "#f0f0f0", borderRadius: "8px" }}>
+              <label style={{ fontSize: "20px", fontWeight: "bold", display: "block", marginBottom: "10px" }}>
+                Chọn ngày để lưu vào bảng tính:
+              </label>
+              <input
+                type="date"
+                value={transferDate}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setTransferDate(value);
+                  localStorage.setItem("lastTransferDate", value);
+                }}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  fontSize: "20px",
+                  borderRadius: "4px",
+                  border: "1px solid #ccc",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", justifyContent: "space-between" }}>
+              <button
+                onClick={() => setShowAddModal(false)}
+                style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid #ccc", background: "white", fontSize: "22px" }}
+              >
+                Chọn lại
+              </button>
+              <button
+                onClick={handleConfirmAddToApp}
+                disabled={isAddingToCalc || queue.length === 0}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "8px",
+                  background: "#6f42c1",
+                  color: "white",
+                  border: "none",
+                  fontSize: "20px",
+                  cursor: isAddingToCalc ? "not-allowed" : "pointer",
+                  opacity: isAddingToCalc ? 0.7 : 1,
+                }}
+              >
+                {isAddingToCalc ? "Đang thêm..." : "OK chọn"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSuccessModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "500px", width: "90%", textAlign: "center", padding: "40px 20px" }}>
+            <h2 style={{ fontSize: "40px", fontWeight: "bold", marginBottom: "20px", color: "#000" }}>
+              THÀNH CÔNG!
+            </h2>
+            <p style={{ fontSize: "28px", fontWeight: "bold", marginBottom: "40px", color: "#000" }}>
+              Đã thêm dữ liệu vào bảng tính thành công.
+            </p>
+            <button
+              onClick={() => (window.location.href = "/q1")}
+              style={{
+                width: "100%",
+                padding: "20px",
+                borderRadius: "15px",
+                background: "#000",
+                color: "white",
+                fontSize: "32px",
+                fontWeight: "bold",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              OK TOÁN VỀ BẢNG TÍNH
+            </button>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              style={{
+                marginTop: "20px",
+                background: "none",
+                border: "none",
+                color: "#333",
+                fontSize: "22px",
+                fontWeight: "bold",
+                cursor: "pointer",
+                textDecoration: "underline",
+              }}
+            >
+              Ở lại trang này
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-content" onClick={(event) => event.stopPropagation()} style={{ maxWidth: "600px", width: "95%" }}>
+            <h3 style={{ fontSize: "24px", marginBottom: "20px" }}>
+              Xóa dữ liệu Bảng chọn dòng thông
+            </h3>
+            <div className="modal-body">
+              <div className="radio-group" style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+                {[
+                  ["all", "Xóa tất cả dữ liệu"],
+                  ["firstRow", "Xóa dòng cũ nhất"],
+                  ["lastRow", "Xóa dòng mới nhất"],
+                  ["rows", "Xóa theo khoảng STT dòng"],
+                ].map(([value, label]) => (
+                  <label key={value} style={{ fontSize: "22px", display: "flex", alignItems: "center", gap: "12px" }}>
+                    <input
+                      type="radio"
+                      value={value}
+                      checked={deleteOption === value}
+                      onChange={(event) => setDeleteOption(event.target.value)}
+                      style={{ width: "22px", height: "22px" }}
+                    />
+                    {label}
+                  </label>
+                ))}
+
+                {deleteOption === "rows" && (
+                  <div style={{ paddingLeft: "35px", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="109"
+                      placeholder="Từ STT"
+                      value={deleteRowFrom}
+                      onChange={(event) => setDeleteRowFrom(event.target.value)}
+                      style={{ width: "100px", fontSize: "18px", padding: "5px" }}
+                    />
+                    <span>đến</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="109"
+                      placeholder="Đến STT"
+                      value={deleteRowTo}
+                      onChange={(event) => setDeleteRowTo(event.target.value)}
+                      style={{ width: "100px", fontSize: "18px", padding: "5px" }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+              <button onClick={() => setShowDeleteModal(false)} style={{ padding: "8px 16px", fontSize: "18px" }}>
+                Hủy
+              </button>
+              <button
+                onClick={handleDelete}
+                style={{ padding: "8px 16px", fontSize: "18px", background: "#dc3545", color: "white", border: "none", borderRadius: "4px" }}
+              >
+                Đồng ý xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteAllModal && (
+        <ConfirmModal
+          title="Xác nhận xóa tất cả dữ liệu Bảng chọn dòng thông?"
+          onCancel={() => setShowDeleteAllModal(false)}
+          onConfirm={confirmDeleteAll}
+        />
+      )}
+      {showDeleteFirstRowModal && (
+        <ConfirmModal
+          title="Xác nhận xóa dòng cũ nhất?"
+          onCancel={() => setShowDeleteFirstRowModal(false)}
+          onConfirm={handleDeleteFirstRow}
+        />
+      )}
+      {showDeleteLastRowModal && (
+        <ConfirmModal
+          title="Xác nhận xóa dòng mới nhất?"
+          onCancel={() => setShowDeleteLastRowModal(false)}
+          onConfirm={handleDeleteLastRow}
+        />
+      )}
+      {showDeleteByRowsModal && (
+        <ConfirmModal
+          title={`Xác nhận xóa dữ liệu từ STT ${deleteRowFrom} đến ${deleteRowTo}?`}
+          onCancel={() => setShowDeleteByRowsModal(false)}
+          onConfirm={confirmDeleteByRows}
+        />
+      )}
+    </>
+  );
+}
+
+function ConfirmModal({ title, onCancel, onConfirm }) {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ textAlign: "center" }}>
+        <h3 style={{ fontSize: "22px" }}>{title}</h3>
+        <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", gap: "10px" }}>
+          <button onClick={onCancel} style={{ padding: "8px 16px", fontSize: "18px" }}>
+            Hủy
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{ padding: "8px 16px", fontSize: "18px", background: "#dc3545", color: "white", border: "none" }}
+          >
+            Xác nhận Xóa
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default SelectRowsPage;

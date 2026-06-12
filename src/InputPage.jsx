@@ -39,7 +39,7 @@ const TaskRow = memo(
             checked={isSelected}
             onChange={() => onToggleSelect(rowIndex)}
             disabled={isDeleted}
-            style={{ transform: "scale(2.2)", cursor: "pointer" }}
+            style={{ transform: "scale(4.2)", cursor: "pointer" }}
           />
         </td>
         <td
@@ -109,7 +109,7 @@ const TaskRow = memo(
             checked={isSelected}
             onChange={() => onToggleSelect(rowIndex)}
             disabled={isDeleted}
-            style={{ transform: "scale(2.2)", cursor: "pointer" }}
+            style={{ transform: "scale(4.2)", cursor: "pointer" }}
           />
         </td>
       </tr>
@@ -117,10 +117,10 @@ const TaskRow = memo(
   },
 );
 
-function InputPage() {
-  const MIN_ROWS = 125; // Minimum rows
-  const [keepLastNRows, setKeepLastNRows] = useState(125);
-  const ROWS = Math.max(MIN_ROWS, keepLastNRows); // Dynamic: min 125, or larger from DB
+function InputPage({ accessWarningContent = null }) {
+  const MIN_ROWS = 110; // Minimum rows
+  const [keepLastNRows, setKeepLastNRows] = useState(110);
+  const ROWS = MIN_ROWS;
 
   // State cho A, B của 10Q
   const [allQData, setAllQData] = useState(
@@ -188,7 +188,7 @@ function InputPage() {
         setDateValues(d.dateValues || Array(ROWS).fill(""));
         setZValues(d.zValues || Array(ROWS).fill(""));
         setDeletedRows(d.deletedRows || Array(ROWS).fill(false));
-        setKeepLastNRows(d.keepLastNRows || 125);
+        setKeepLastNRows(Math.min(d.keepLastNRows || 110, MIN_ROWS));
         setPurpleRangeFrom(d.purpleRangeFrom || 0);
         setPurpleRangeTo(d.purpleRangeTo || 0);
       } else {
@@ -294,6 +294,11 @@ function InputPage() {
 
     if (!n || n <= 0) {
       alert("⚠️ Vui lòng nhập số dòng hợp lệ (> 0)");
+      return;
+    }
+
+    if (n > MIN_ROWS) {
+      alert(`So dong ton tai toi da la ${MIN_ROWS} (STT 00-109)!`);
       return;
     }
 
@@ -430,7 +435,7 @@ function InputPage() {
       setQueue([...currentQueue, ...toAdd]);
     }
     if (skipped.length > 0) {
-      alert(`⚠️ Dòng ${skipped.join(", ")} đã đạt tối đa ${MAX_PER_ROW} lần trong hàng đợi!`);
+      alert(`⚠️ Dòng ${skipped.join(", ")} đã đạt tối đa ${MAX_PER_ROW} lần trong dòng đợi!`);
     }
     setSelectedRows([]);
   }, [selectedRows]);
@@ -944,7 +949,7 @@ function InputPage() {
               justifyContent: "center",
               alignItems: "center",
               marginBottom: "20px",
-              marginTop: "40px",
+              marginTop: "65px",
             }}
           >
             {/* <div
@@ -1049,6 +1054,7 @@ function InputPage() {
               <input
                 type="number"
                 min="1"
+                max={MIN_ROWS}
                 value={keepLastNRows}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -1056,7 +1062,9 @@ function InputPage() {
                     setKeepLastNRows("");
                   } else {
                     const n = parseInt(val);
-                    if (!isNaN(n) && n >= 1) setKeepLastNRows(n);
+                    if (!isNaN(n) && n >= 1) {
+                      setKeepLastNRows(Math.min(n, MIN_ROWS));
+                    }
                   }
                 }}
                 style={{
@@ -1154,6 +1162,19 @@ function InputPage() {
               >
                 🔍 Về bảng tính
               </button>
+              <button
+                className="toolbar-btn"
+                onClick={() => (window.location.href = "/chon-dong-thong")}
+                style={{
+                  fontSize: "30px",
+                  background: "#17a2b8",
+                  color: "white",
+                  border: "none",
+                }}
+              >
+                📋Về Bảng chọn dòng thông
+              </button>
+              {accessWarningContent}
               {saveStatus && (
                 <span
                   style={{
@@ -1233,7 +1254,7 @@ function InputPage() {
                             justifyContent: "center",
                             padding: 0,
                           }}
-                          title="Xóa khỏi hàng đợi"
+                          title="Xóa khỏi dòng đợi"
                         >
                           ×
                         </button>
@@ -1281,7 +1302,7 @@ function InputPage() {
                       fontSize: "14px",
                     }}
                   >
-                    Ch
+                    Chọn
                   </th>
                   <th rowSpan="2" style={{ padding: "8px 4px" }}>
                     STT
@@ -1333,7 +1354,7 @@ function InputPage() {
                       fontSize: "14px",
                     }}
                   >
-                    Ch
+                    Chọn
                   </th>
                 </tr>
                 <tr>

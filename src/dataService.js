@@ -38,7 +38,7 @@ export const savePageData = async (
   sourceSTTValues = [],
   purpleRangeFrom = 0,
   purpleRangeTo = 0,
-  keepLastNRows = 125,
+  keepLastNRows = 110,
   allQData = undefined,
   pageLabel = "",
 ) => {
@@ -96,19 +96,19 @@ export const loadPageData = async (pageId) => {
     if (result.success && result.data) {
       const data = result.data;
 
-      // Pad data về 125 rows (match với App.jsx)
-      const ROWS = 125;
+      // Pad data về 110 rows (match với App.jsx)
+      const ROWS = 110;
 
       // Ensure data is always an array
-      const a = Array.isArray(data.aValues) ? [...data.aValues] : [];
-      const b = Array.isArray(data.bValues) ? [...data.bValues] : [];
-      const z = Array.isArray(data.zValues) ? [...data.zValues] : [];
-      const dates = Array.isArray(data.dateValues) ? [...data.dateValues] : [];
+      const a = Array.isArray(data.aValues) ? [...data.aValues].slice(0, ROWS) : [];
+      const b = Array.isArray(data.bValues) ? [...data.bValues].slice(0, ROWS) : [];
+      const z = Array.isArray(data.zValues) ? [...data.zValues].slice(0, ROWS) : [];
+      const dates = Array.isArray(data.dateValues) ? [...data.dateValues].slice(0, ROWS) : [];
       const deleted = Array.isArray(data.deletedRows)
-        ? [...data.deletedRows]
+        ? [...data.deletedRows].slice(0, ROWS)
         : [];
       const sourceSTTs = Array.isArray(data.sourceSTTValues)
-        ? [...data.sourceSTTValues]
+        ? [...data.sourceSTTValues].slice(0, ROWS)
         : [];
 
       // Pad với empty strings/false
@@ -130,7 +130,7 @@ export const loadPageData = async (pageId) => {
           sourceSTTValues: sourceSTTs,
           purpleRangeFrom: data.purpleRangeFrom || 0,
           purpleRangeTo: data.purpleRangeTo || 0,
-          keepLastNRows: data.keepLastNRows || 125,
+          keepLastNRows: Math.min(data.keepLastNRows || 110, 110),
           allQData: data.allQData,
           pageLabel: data.pageLabel || "",
         },

@@ -76,7 +76,7 @@ Lấy dữ liệu của một page cụ thể (q1, q2, ..., q10).
     "deletedRows": [...],
     "purpleRangeFrom": 0,
     "purpleRangeTo": 0,
-    "keepLastNRows": 125
+    "keepLastNRows": 110
   }
 }
 ```
@@ -99,7 +99,7 @@ Lưu dữ liệu cho một page.
   "deletedRows": [...],
   "purpleRangeFrom": 0,
   "purpleRangeTo": 0,
-  "keepLastNRows": 125
+  "keepLastNRows": 110
 }
 ```
 

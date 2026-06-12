@@ -3,6 +3,7 @@ import "./App.css";
 import "./TopToolbar.css";
 import { savePageData, loadPageData, deletePageData } from "./dataService";
 import InputPage from "./InputPage";
+import SelectRowsPage from "./SelectRowsPage";
 
 function App() {
   const [allTableData, setAllTableData] = useState(
@@ -13,10 +14,10 @@ function App() {
   const [allTValues, setAllTValues] = useState(
     Array(10)
       .fill(null)
-      .map(() => Array(125).fill("")),
+      .map(() => Array(110).fill("")),
   );
-  const [dateValues, setDateValues] = useState(Array(125).fill(""));
-  const [sourceSTTValues, setSourceSTTValues] = useState(Array(125).fill(""));
+  const [dateValues, setDateValues] = useState(Array(110).fill(""));
+  const [sourceSTTValues, setSourceSTTValues] = useState(Array(110).fill(""));
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -24,8 +25,8 @@ function App() {
   const [error, setError] = useState("");
   const [pageLabel, setPageLabel] = useState("");
 
-  const [aValues, setAValues] = useState(Array(125).fill(""));
-  const [bValues, setBValues] = useState(Array(125).fill(""));
+  const [aValues, setAValues] = useState(Array(110).fill(""));
+  const [bValues, setBValues] = useState(Array(110).fill(""));
 
   const [highlightedCells, setHighlightedCells] = useState({});
   const [highlightedTCells, setHighlightedTCells] = useState({});
@@ -53,8 +54,8 @@ function App() {
   const [keepLastNRows, setKeepLastNRows] = useState("");
   const [purpleRangeFrom, setPurpleRangeFrom] = useState(0);
   const [purpleRangeTo, setPurpleRangeTo] = useState(0);
-  const [deletedRows, setDeletedRows] = useState(Array(125).fill(false));
-  const [zValues, setZValues] = useState(Array(125).fill(""));
+  const [deletedRows, setDeletedRows] = useState(Array(110).fill(false));
+  const [zValues, setZValues] = useState(Array(110).fill(""));
   const [showDeleteFirstRowModal, setShowDeleteFirstRowModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showKeepLastNRowsModal, setShowKeepLastNRowsModal] = useState(false);
@@ -74,6 +75,8 @@ function App() {
     const saved = localStorage.getItem("viewedQs");
     return saved ? JSON.parse(saved) : {};
   });
+  const [showAccessWarningModal, setShowAccessWarningModal] = useState(false);
+  const [accessWarningDate, setAccessWarningDate] = useState("");
   const [deleteRowFrom, setDeleteRowFrom] = useState("");
   const [deleteRowTo, setDeleteRowTo] = useState("");
   const [showDeleteByRowsModal, setShowDeleteByRowsModal] = useState(false);
@@ -82,11 +85,156 @@ function App() {
   const tableRefs = useRef([]);
   const isScrollingRef = useRef(null);
   const scrollTimeoutRef = useRef(null);
+  const accessCheckDoneRef = useRef(false);
 
   const TOTAL_TABLES = 10;
-  const ROWS = 125;
+  const ROWS = 110;
   const pathname = window.location.pathname.slice(1);
   const pageId = pathname || "q1";
+
+  const getTodayAccessInfo = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    return {
+      storageDate: `${year}-${month}-${day}`,
+      displayDate: `${day}/${month}/${year}`,
+    };
+  };
+
+  const normalizeAccessDate = (value) => {
+    if (!value) return "";
+
+    const text = String(value).trim();
+    const isoDate = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoDate) {
+      return `${isoDate[1]}-${isoDate[2]}-${isoDate[3]}`;
+    }
+
+    const displayDate = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (displayDate) {
+      return `${displayDate[3]}-${displayDate[2]}-${displayDate[1]}`;
+    }
+
+    const parsedDate = new Date(text);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      const year = parsedDate.getFullYear();
+      const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
+      const day = String(parsedDate.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    return text;
+  };
+
+  const renderAccessWarning = (showModal = true) => {
+    if (!accessWarningDate) return null;
+
+    return (
+      <>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            marginLeft: "8px",
+            padding: "8px 14px",
+            backgroundColor: "#fff7ed",
+            border: "2px solid #f59e0b",
+            borderRadius: "8px",
+            color: "#7c2d12",
+            fontSize: "20px",
+            fontWeight: "bold",
+            textAlign: "center",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Truy cập ({accessWarningDate.slice(0, 5)})
+        </div>
+
+        {showModal && showAccessWarningModal && (
+          <div className="modal-overlay">
+            <div
+              className="modal-content"
+              style={{
+                maxWidth: "520px",
+                width: "90%",
+                textAlign: "center",
+                backgroundColor: "#fff7ed",
+                border: "2px solid #f59e0b",
+              }}
+            >
+              <div className="modal-header">
+                
+              </div>
+              <div className="modal-body">
+                <p
+                  style={{
+                    fontSize: "36px",
+                    fontWeight: "bold",
+                    color: "#f59e0b",
+                    lineHeight: 1.5,
+                    margin: "20px 0",
+                  }}
+                >
+                  Truy cập {accessWarningDate}.
+                </p>
+              </div>
+              <div className="modal-footer" style={{ justifyContent: "center" }}>
+                <button
+                  className="btn-delete access-warning-ok-button"
+                  onClick={() => setShowAccessWarningModal(false)}
+                  style={{
+                    fontSize: "36px",
+                    padding: "12px 28px",
+                    backgroundColor: "#f59e0b",
+                  }}
+                >
+                  Đã hiểu
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  useEffect(() => {
+    if (accessCheckDoneRef.current) return;
+    accessCheckDoneRef.current = true;
+
+    const ACCESS_DATE_KEY = "ktop_last_access_date";
+    const ACCESS_COUNT_KEY = "ktop_daily_access_count";
+    const ACCESS_MODAL_SHOWN_KEY = "ktop_access_modal_shown_date";
+    const { storageDate, displayDate } = getTodayAccessInfo();
+    const lastAccessDate = localStorage.getItem(ACCESS_DATE_KEY);
+    const normalizedLastAccessDate = normalizeAccessDate(lastAccessDate);
+    const modalShownDate = sessionStorage.getItem(ACCESS_MODAL_SHOWN_KEY);
+
+    if (normalizedLastAccessDate === storageDate) {
+      const previousAccessCount = parseInt(
+        localStorage.getItem(ACCESS_COUNT_KEY) || "1",
+        10,
+      );
+      const accessCount = Math.max(previousAccessCount || 1, 1) + 1;
+      localStorage.setItem(ACCESS_DATE_KEY, storageDate);
+      localStorage.setItem(ACCESS_COUNT_KEY, String(accessCount));
+
+      if (accessCount > 1) {
+        setAccessWarningDate(displayDate);
+        if (modalShownDate !== storageDate) {
+          setShowAccessWarningModal(true);
+          sessionStorage.setItem(ACCESS_MODAL_SHOWN_KEY, storageDate);
+        }
+      }
+      return;
+    }
+
+    localStorage.setItem(ACCESS_DATE_KEY, storageDate);
+    localStorage.setItem(ACCESS_COUNT_KEY, "1");
+  }, []);
 
   // Reset tất cả trạng thái "đã xem" (gọi khi thêm hàng mới)
   const resetViewedQs = () => {
@@ -137,7 +285,7 @@ function App() {
           setPurpleRangeTo(loadedPurpleTo);
 
           if (result.data.keepLastNRows) {
-            setKeepLastNRows(result.data.keepLastNRows);
+            setKeepLastNRows(Math.min(result.data.keepLastNRows, ROWS));
           } else {
             let nonDeletedCount = 0;
             for (let i = 0; i < ROWS; i++) {
@@ -200,6 +348,101 @@ function App() {
       }
     }
     return table;
+  };
+
+  const getPurpleTablesForData = (
+    qAValues,
+    qBValues,
+    qDateValues,
+    qDeletedRows,
+    rangeFrom = purpleRangeFrom,
+    rangeTo = purpleRangeTo,
+  ) => {
+    const purpleTables = {};
+    const from = Number(rangeFrom) || 0;
+    const to = Number(rangeTo) || 0;
+
+    if (from > to) return purpleTables;
+
+    let actualRows = 0;
+    for (let i = ROWS - 1; i >= 0; i--) {
+      if (qAValues?.[i] || qBValues?.[i] || qDateValues?.[i]) {
+        actualRows = i + 1;
+        break;
+      }
+    }
+
+    if (actualRows === 0) return purpleTables;
+
+    let lastRowIndex = -1;
+    for (let i = actualRows - 1; i >= 0; i--) {
+      if (
+        !qDeletedRows?.[i] &&
+        (qAValues?.[i] || qBValues?.[i] || qDateValues?.[i])
+      ) {
+        lastRowIndex = i;
+        break;
+      }
+    }
+
+    if (lastRowIndex === -1) return purpleTables;
+
+    const tValuesArr = Array(TOTAL_TABLES)
+      .fill(null)
+      .map(() => Array(ROWS).fill(""));
+
+    for (let tableIndex = 0; tableIndex < TOTAL_TABLES; tableIndex++) {
+      let v1, v2;
+      if (tableIndex === 0) {
+        v1 = qAValues || [];
+        v2 = qBValues || [];
+      } else if (tableIndex === 1) {
+        v1 = qBValues || [];
+        v2 = tValuesArr[0];
+      } else {
+        v1 = tValuesArr[tableIndex - 2];
+        v2 = tValuesArr[tableIndex - 1];
+      }
+
+      for (let row = 0; row < actualRows; row++) {
+        if (v1[row] === "" && v2[row] === "" && !qDateValues?.[row]) {
+          tValuesArr[tableIndex][row] = "";
+          continue;
+        }
+
+        const n1 = parseInt(v1[row]) || 0;
+        const n2 = parseInt(v2[row]) || 0;
+        tValuesArr[tableIndex][row] = String((n1 + n2) % 10);
+      }
+    }
+
+    tValuesArr.forEach((tValues, tableIndex) => {
+      const tablePurpleCells = [];
+
+      for (let col = 0; col < 10; col++) {
+        let y = 1;
+        for (let row = 0; row < actualRows; row++) {
+          if (qDeletedRows?.[row]) continue;
+          if (tValues[row] === "" && !qDateValues?.[row]) continue;
+
+          const tVal = tValues[row] !== "" ? parseInt(tValues[row]) : -1;
+          const isPurple = y >= from && y <= to;
+
+          if (row === lastRowIndex && isPurple) {
+            tablePurpleCells.push(`${col}-${y}`);
+          }
+
+          y++;
+          if (col === tVal && tVal !== -1) y = 1;
+        }
+      }
+
+      if (tablePurpleCells.length > 0) {
+        purpleTables[`T${tableIndex + 1}`] = tablePurpleCells;
+      }
+    });
+
+    return purpleTables;
   };
 
   const generateAllTables = () => {
@@ -280,6 +523,21 @@ function App() {
         const qId = `q${i}`;
         const res = await loadPageData(qId);
         if (res.success && res.data) {
+          const purpleTables = getPurpleTablesForData(
+            res.data.aValues || Array(ROWS).fill(""),
+            res.data.bValues || Array(ROWS).fill(""),
+            res.data.dateValues || Array(ROWS).fill(""),
+            res.data.deletedRows || Array(ROWS).fill(false),
+          );
+
+          if (Object.keys(purpleTables).length > 0) {
+            info[qId] = {
+              hasPurple: true,
+              range: `${purpleRangeFrom || 0}-${purpleRangeTo || 0}`,
+            };
+          }
+          continue;
+
           const {
             aValues: qa,
             bValues: qb,
@@ -288,31 +546,52 @@ function App() {
             purpleRangeFrom: pf,
             purpleRangeTo: pt,
           } = res.data;
-          if (pf !== undefined && pt !== undefined) {
+          const activePurpleFrom = Number(purpleRangeFrom);
+          const activePurpleTo = Number(purpleRangeTo);
+          if (activePurpleFrom <= activePurpleTo) {
             let lastIdx = -1;
             for (let r = ROWS - 1; r >= 0; r--) {
-              if (
-                !qdel?.[r] &&
-                qd?.[r] !== "" &&
-                qd?.[r] !== undefined &&
-                qd?.[r] !== null
-              ) {
+              const hasRowData =
+                (qd?.[r] !== "" && qd?.[r] !== undefined && qd?.[r] !== null) ||
+                (qa?.[r] !== "" && qa?.[r] !== undefined && qa?.[r] !== null) ||
+                (qb?.[r] !== "" && qb?.[r] !== undefined && qb?.[r] !== null);
+              if (!qdel?.[r] && hasRowData) {
                 lastIdx = r;
                 break;
               }
             }
             if (lastIdx !== -1) {
-              const t1 = [],
-                t2 = [];
-              for (let r = 0; r <= lastIdx; r++) {
-                const nA = parseInt(qa?.[r]) || 0;
-                const nB = parseInt(qb?.[r]) || 0;
-                const valT1 = (nA + nB) % 10;
-                t1.push(valT1);
-                t2.push((nB + valT1) % 10);
+              const tValuesArr = Array(TOTAL_TABLES)
+                .fill(null)
+                .map(() => Array(ROWS).fill(""));
+
+              for (let tableIndex = 0; tableIndex < TOTAL_TABLES; tableIndex++) {
+                let v1, v2;
+                if (tableIndex === 0) {
+                  v1 = qa || [];
+                  v2 = qb || [];
+                } else if (tableIndex === 1) {
+                  v1 = qb || [];
+                  v2 = tValuesArr[0];
+                } else {
+                  v1 = tValuesArr[tableIndex - 2];
+                  v2 = tValuesArr[tableIndex - 1];
+                }
+
+                for (let r = 0; r <= lastIdx; r++) {
+                  if (v1[r] === "" && v2[r] === "" && !qd?.[r]) {
+                    tValuesArr[tableIndex][r] = "";
+                    continue;
+                  }
+
+                  const n1 = parseInt(v1[r]) || 0;
+                  const n2 = parseInt(v2[r]) || 0;
+                  tValuesArr[tableIndex][r] = String((n1 + n2) % 10);
+                }
               }
+
               let hasP = false;
-              [t1, t2].forEach((tv) => {
+              tValuesArr.forEach((tv) => {
                 for (let c = 0; c < 10; c++) {
                   let y = 1;
                   for (let r = 0; r <= lastIdx; r++) {
@@ -324,8 +603,8 @@ function App() {
 
                     if (
                       r === lastIdx &&
-                      Number(y) >= Number(pf) &&
-                      Number(y) <= Number(pt)
+                      Number(y) >= activePurpleFrom &&
+                      Number(y) <= activePurpleTo
                     ) {
                       hasP = true;
                       break;
@@ -336,7 +615,12 @@ function App() {
                   if (hasP) break;
                 }
               });
-              if (hasP) info[qId] = { hasPurple: true, range: `${pf}-${pt}` };
+              if (hasP) {
+                info[qId] = {
+                  hasPurple: true,
+                  range: `${activePurpleFrom}-${activePurpleTo}`,
+                };
+              }
             }
           }
         }
@@ -344,10 +628,22 @@ function App() {
       setQPurpleInfo(info);
     };
     loadAllInfo();
-  }, [purpleRangeFrom, purpleRangeTo]);
+  }, [pageId, purpleRangeFrom, purpleRangeTo, isDataLoaded]);
 
   if (pathname === "input") {
-    return <InputPage />;
+    return (
+      <>
+        <InputPage accessWarningContent={renderAccessWarning(false)} />
+      </>
+    );
+  }
+
+  if (pathname === "chon-dong-thong") {
+    return (
+      <>
+        <SelectRowsPage accessWarningContent={renderAccessWarning(false)} />
+      </>
+    );
   }
 
   // Handle sync scroll
@@ -398,11 +694,11 @@ function App() {
 
     // Chỉ kiểm tra hàng dưới cùng (BỎ T1 VÀ T2)
     // Chỉ kiểm tra hàng dưới cùng của T1 và T2 theo yêu cầu mới
-    [0, 1].forEach((tableIndex) => {
+    allTableData.forEach((tableData, tableIndex) => {
       const tablePurpleCells = [];
 
-      if (allTableData[tableIndex] && allTableData[tableIndex][lastRowIndex]) {
-        allTableData[tableIndex][lastRowIndex].forEach((cell, colIndex) => {
+      if (tableData && tableData[lastRowIndex]) {
+        tableData[lastRowIndex].forEach((cell) => {
           if (cell.color === "purple" || cell.color === "purple-red") {
             tablePurpleCells.push(cell.value);
           }
@@ -1552,6 +1848,11 @@ function App() {
         return;
       }
 
+      if (n > ROWS) {
+        alert(`So dong ton tai toi da la ${ROWS} (STT 00-109)!`);
+        return;
+      }
+
       // Set loading state
       setIsSavingKeepLastNRows(true);
 
@@ -1605,6 +1906,8 @@ function App() {
       setIsSavingKeepLastNRows(false);
     }
   };
+
+  const currentPageHasPurple = Object.keys(getPurpleCellsInfo()).length > 0;
 
   return (
     <div className="app-container-full">
@@ -1809,6 +2112,7 @@ function App() {
             style={{
               display: "flex",
               alignItems: "center",
+              gap: "10px",
               border: "3px solid #007bff",
               borderRadius: "8px",
               padding: "8px 12px",
@@ -1826,6 +2130,21 @@ function App() {
             >
               📥 Về Bảng thông để chọn dòng thông
             </button>
+            <button
+              onClick={() => (window.location.href = "/chon-dong-thong")}
+              className="toolbar-button"
+              style={{
+                fontSize: "25px",
+                padding: "8px 16px",
+                borderRadius: "8px",
+                backgroundColor: "#17a2b8",
+                color: "white",
+                border: "none",
+                fontWeight: "bold",
+              }}
+            >
+              📋 Về Bảng chọn dòng thông
+            </button>
           </div>
 
           {/* Q Navigation Buttons */}
@@ -1836,9 +2155,13 @@ function App() {
             {/* <label style={{ fontSize: "35px", fontWeight: "bold" }}>Q:</label> */}
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
               const qId = `q${num}`;
-              const hasPurple = qPurpleInfo[qId]?.hasPurple;
-              const range = qPurpleInfo[qId]?.range;
               const isActive = pageId === qId;
+              const hasPurple =
+                qPurpleInfo[qId]?.hasPurple ||
+                (isActive && currentPageHasPurple);
+              const range =
+                qPurpleInfo[qId]?.range ||
+                `${purpleRangeFrom || 0}-${purpleRangeTo || 0}`;
               const isViewed = viewedQs[qId];
 
               // Xác định màu background
@@ -1850,8 +2173,8 @@ function App() {
               }
 
               // Nếu đang active (đang xem), ưu tiên màu xanh
-              if (isActive) {
-                bgColor = "#4a90e2"; // màu xanh lá
+              if (isActive && !hasPurple) {
+                bgColor = "#4a90e2"; // active khong co bao mau
               }
 
               return (
@@ -1863,19 +2186,23 @@ function App() {
                   className="toolbar-button"
                   style={{
                     backgroundColor: bgColor,
-                    color: isActive ? "white" : "#333",
+                    color: isActive && !hasPurple ? "white" : "#333",
                     fontWeight: isActive || hasPurple ? "bold" : "normal",
-                    border: isActive
+                    border: isActive && !hasPurple
                       ? "3px solid #4a90e2"
-                      : "1px solid #d0d0d0",
+                      : hasPurple
+                        ? "2px solid #f59e0b"
+                        : "1px solid #d0d0d0",
                     padding: "6px 12px",
                     fontSize: "30px",
                     minWidth: "60px",
                     borderRadius: "8px",
                     cursor: "pointer",
-                    boxShadow: isActive
+                    boxShadow: isActive && !hasPurple
                       ? "0 0 10px rgba(40, 167, 69, 0.5)"
-                      : "none",
+                      : hasPurple
+                        ? "0 0 10px rgba(245, 158, 11, 0.45)"
+                        : "none",
                   }}
                   title={
                     hasPurple
@@ -1986,6 +2313,7 @@ function App() {
                 : 0}
             </button>
           </div>
+          {renderAccessWarning()}
         </div>
       </div>
 
