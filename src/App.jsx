@@ -6,15 +6,17 @@ import InputPage from "./InputPage";
 import SelectRowsPage from "./SelectRowsPage";
 
 function App() {
+  const TOTAL_TABLES = 5; // số bảng T mỗi Q
+  const ROWS = 110;
   const [allTableData, setAllTableData] = useState(
-    Array(10)
+    Array(TOTAL_TABLES)
       .fill(null)
       .map(() => []),
   );
   const [allTValues, setAllTValues] = useState(
-    Array(10)
+    Array(TOTAL_TABLES)
       .fill(null)
-      .map(() => Array(110).fill("")),
+      .map(() => Array(ROWS).fill("")),
   );
   const [dateValues, setDateValues] = useState(Array(110).fill(""));
   const [sourceSTTValues, setSourceSTTValues] = useState(Array(110).fill(""));
@@ -87,8 +89,7 @@ function App() {
   const scrollTimeoutRef = useRef(null);
   const accessCheckDoneRef = useRef(false);
 
-  const TOTAL_TABLES = 10;
-  const ROWS = 110;
+  
   const pathname = window.location.pathname.slice(1);
   const pageId = pathname || "q1";
 
@@ -151,7 +152,7 @@ function App() {
             ...badgeStyle,
           }}
         >
-          Truy cập ({accessWarningDate.slice(0, 5)})
+          TC ({accessWarningDate.slice(0, 5)})
         </div>
 
         {showModal && showAccessWarningModal && (
@@ -454,11 +455,11 @@ function App() {
         break;
       }
     }
-    const newTValuesArr = Array(10)
+    const newTValuesArr = Array(TOTAL_TABLES)
       .fill(null)
       .map(() => Array(ROWS).fill(""));
     const newTableDataArr = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < TOTAL_TABLES; i++) {
       let v1, v2;
       if (i === 0) {
         v1 = aValues;
@@ -480,7 +481,7 @@ function App() {
         const n2 = parseInt(v2[r]) || 0;
         newTValuesArr[i][r] = String((n1 + n2) % 10);
       }
-      // skipColor = true for T3-T10 (i > 1)
+      // skipColor = true for T3-Tn (i > 1)
       newTableDataArr.push(generateTableDataArr(newTValuesArr[i], false)); // Hiện báo màu ở tất cả các bảng
     }
     setAllTValues(newTValuesArr);
@@ -2007,7 +2008,7 @@ function App() {
                 marginRight: "10px",
               }}
             >
-              Bảng tính - APP {import.meta.env.VITE_APP_STT || ""}
+              Bt - {import.meta.env.VITE_APP_STT || ""}
               {import.meta.env.VITE_SITE_ID === "site_a" ? "A" : "B"}
             </button>
             <button
@@ -2016,13 +2017,13 @@ function App() {
               style={{ fontSize: "25px", fontWeight: "bold" }}
               title="Cài đặt xóa dữ liệu các bảng tính Q1-Q10"
             >
-              🗑️ Xóa dữ liệu
+              🗑️ Xóa dl
             </button>
             <button onClick={clearColumnHighlights} className="toolbar-button" style={{ fontSize: "25px", fontWeight: "bold" }}>
               🔄 X màu d.c
             </button>
             <button onClick={handleSaveData} className="toolbar-button success" style={{ fontSize: "25px", fontWeight: "bold" }}>
-              💾 Lưu dữ liệu
+              💾 Lưu dl
             </button>
           </div>
 
@@ -2152,7 +2153,7 @@ function App() {
                 borderRadius: "8px",
               }}
             >
-              📥 Về Bảng thông để chọn dòng thông
+              📥 Về BT
             </button>
             <button
               onClick={() => (window.location.href = "/chon-dong-thong")}
@@ -2167,7 +2168,7 @@ function App() {
                 fontWeight: "bold",
               }}
             >
-              📋 Về Bảng chọn dòng thông
+              📋 Chọn dòng thông
             </button>
           </div>
 
@@ -2177,7 +2178,7 @@ function App() {
             style={{ display: "flex", gap: "8px", alignItems: "center" }}
           >
             {/* <label style={{ fontSize: "35px", fontWeight: "bold" }}>Q:</label> */}
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
+            {[1,2,3,4,5,6,7,8,9,10].map((num) => {
               const qId = `q${num}`;
               const isActive = pageId === qId;
               const hasPurple =
@@ -2331,7 +2332,7 @@ function App() {
               }}
               title="Tổng số dòng đã được tính toán (không bao gồm dòng tương lai)"
             >
-              📊 Dòng đã toán:{" "}
+              📊 D đã toán:{" "}
               {allTableData[0]
                 ? allTableData[0].filter((_, i) => !deletedRows[i]).length
                 : 0}
