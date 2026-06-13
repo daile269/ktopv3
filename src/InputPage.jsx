@@ -45,7 +45,7 @@ const TaskRow = memo(
         <td
           onClick={() => onRowClick(rowIndex)}
           className={isRowHL ? "draft-row-highlighted" : ""}
-          style={{ textAlign: "center", fontSize: "20px", cursor: "pointer", userSelect: "none" }}
+          style={{ textAlign: "center", fontSize: "35px", fontWeight: "bold", cursor: "pointer", userSelect: "none" }}
         >
           {String(displayRowNumber).padStart(2, "0")}
         </td>
@@ -60,7 +60,7 @@ const TaskRow = memo(
             value={isDeleted ? "" : zValue || ""}
             onChange={(e) => onZChange(rowIndex, e.target.value)}
             disabled={isDeleted}
-            style={{ textAlign: "center", width: "100%", padding: "8px", fontSize: "12px !important", fontWeight: "normal" }}
+            style={{ textAlign: "center", width: "100%", padding: "8px", fontSize: "35px", fontWeight: "500", color: "#222" }}
           />
         </td>
         {Array.from({ length: 10 }).map((_, qIndex) => {
@@ -96,7 +96,7 @@ const TaskRow = memo(
         <td
           onClick={() => onRowClick(rowIndex)}
           className={isRowHL ? "draft-row-highlighted" : ""}
-          style={{ textAlign: "center", fontSize: "20px", cursor: "pointer", userSelect: "none" }}
+          style={{ textAlign: "center", fontSize: "35px", fontWeight: "bold", cursor: "pointer", userSelect: "none" }}
         >
           {String(displayRowNumber).padStart(2, "0")}
         </td>

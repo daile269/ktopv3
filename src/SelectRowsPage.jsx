@@ -7,6 +7,7 @@ const ROWS = 110;
 const COLS = 11;
 const GRID_ROWS = 10;
 const MAX_PER_ROW = 4;
+const LAST_SELECTED_ROW_KEY = "ktop_select_last_row";
 
 function SelectRowsPage({ accessWarningContent = null }) {
   const [allQData, setAllQData] = useState(
@@ -24,7 +25,12 @@ function SelectRowsPage({ accessWarningContent = null }) {
   const [purpleRangeTo, setPurpleRangeTo] = useState(0);
   const [keepLastNRows, setKeepLastNRows] = useState(ROWS);
   const [queue, setQueue] = useState([]);
-  const [highlightedRows, setHighlightedRows] = useState({});
+  const [highlightedRows, setHighlightedRows] = useState(() => {
+    const savedRow = parseInt(localStorage.getItem(LAST_SELECTED_ROW_KEY), 10);
+    return !Number.isNaN(savedRow) && savedRow >= 0 && savedRow < ROWS
+      ? { [savedRow]: true }
+      : {};
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -152,6 +158,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
       }
 
       setQueue((prev) => [...prev, { rowIndex, displaySTT: rowIndex }]);
+      localStorage.setItem(LAST_SELECTED_ROW_KEY, String(rowIndex));
       setHighlightedRows({ [rowIndex]: true });
     },
     [deletedRows, queue],
@@ -509,7 +516,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
           gap: "6px",
         }}
       >
-        <span style={{ fontSize: "36px", fontWeight: "bold", marginRight: "6px" }}>
+        <span style={{ fontSize: "36px", fontWeight: 500, marginRight: "6px", color: "#222" }}>
           Dòng đợi:
         </span>
         {queue.map((item, index) => (
@@ -521,16 +528,16 @@ function SelectRowsPage({ accessWarningContent = null }) {
                 flexDirection: "column",
                 alignItems: "center",
                 background: "#a8d5a2",
-                color: "black",
+                color: "#222",
                 borderRadius: "6px",
                 padding: "6px 14px",
                 fontSize: "44px",
-                fontWeight: "bold",
+                fontWeight: 500,
                 position: "relative",
               }}
             >
               <span>{formatStt(item.displaySTT)}</span>
-              <span style={{ fontSize: "44px", fontWeight: "bold", opacity: 0.9 }}>L{index + 1}</span>
+              <span style={{ fontSize: "44px", fontWeight: 500, opacity: 0.9 }}>L{index + 1}</span>
               <button
                 onClick={() => handleRemoveFromQueue(index)}
                 style={{
@@ -560,12 +567,12 @@ function SelectRowsPage({ accessWarningContent = null }) {
           style={{
             marginLeft: "10px",
             background: "#dc3545",
-            color: "black",
+            color: "#222",
             border: "none",
             borderRadius: "6px",
             padding: "6px 16px",
             fontSize: "36px",
-            fontWeight: "bold",
+            fontWeight: 500,
             cursor: "pointer",
           }}
         >
@@ -592,10 +599,10 @@ function SelectRowsPage({ accessWarningContent = null }) {
             borderRadius: "8px",
             border: isHighlighted ? "4px solid #dc3545" : "1px solid #cfcfcf",
             background: isHighlighted ? "#ffeb3b" : "#f4f5f5",
-            color: "#111",
+            color: "#222",
             cursor: isDeleted ? "not-allowed" : "pointer",
             fontSize: "44px",
-            fontWeight: "bold",
+            fontWeight: 500,
             position: "relative",
           }}
           title={`Chọn dòng thông ${formatStt(rowIndex)}`}
