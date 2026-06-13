@@ -129,7 +129,7 @@ function App() {
     return text;
   };
 
-  const renderAccessWarning = (showModal = true) => {
+  const renderAccessWarning = (showModal = true, badgeStyle = {}) => {
     if (!accessWarningDate) return null;
 
     return (
@@ -144,10 +144,11 @@ function App() {
             border: "2px solid #f59e0b",
             borderRadius: "8px",
             color: "#7c2d12",
-            fontSize: "20px",
+            fontSize: "30px",
             fontWeight: "bold",
             textAlign: "center",
             whiteSpace: "nowrap",
+            ...badgeStyle,
           }}
         >
           Truy cập ({accessWarningDate.slice(0, 5)})
@@ -641,7 +642,7 @@ function App() {
   if (pathname === "chon-dong-thong") {
     return (
       <>
-        <SelectRowsPage accessWarningContent={renderAccessWarning(false)} />
+        <SelectRowsPage accessWarningContent={renderAccessWarning(false, { fontSize: "30px" })} />
       </>
     );
   }
@@ -1996,7 +1997,7 @@ function App() {
               className="toolbar-button"
               disabled
               style={{
-                fontSize: "22px",
+                fontSize: "25px",
                 fontWeight: "bold",
                 backgroundColor: "#ffc107",
                 color: "#000",
@@ -2014,14 +2015,15 @@ function App() {
             <button
               onClick={() => setShowDeleteModal(true)}
               className="toolbar-button danger"
+              style={{ fontSize: "25px", fontWeight: "bold" }}
               title="Cài đặt xóa dữ liệu các bảng tính Q1-Q10"
             >
               🗑️ Xóa dữ liệu
             </button>
-            <button onClick={clearColumnHighlights} className="toolbar-button">
+            <button onClick={clearColumnHighlights} className="toolbar-button" style={{ fontSize: "25px", fontWeight: "bold" }}>
               🔄 X màu d.c
             </button>
-            <button onClick={handleSaveData} className="toolbar-button success">
+            <button onClick={handleSaveData} className="toolbar-button success" style={{ fontSize: "25px", fontWeight: "bold" }}>
               💾 Lưu dữ liệu
             </button>
           </div>
@@ -2065,7 +2067,7 @@ function App() {
               }}
               className="toolbar-button"
               style={{
-                fontSize: "18px",
+                fontSize: "25px",
                 padding: "6px 12px",
                 backgroundColor: "#6c757d",
                 color: "white",
@@ -2117,7 +2119,7 @@ function App() {
               }}
               className="toolbar-button"
               style={{
-                fontSize: "18px",
+                fontSize: "25px",
                 padding: "6px 12px",
                 backgroundColor: "#6c757d",
                 color: "white",
@@ -2312,14 +2314,14 @@ function App() {
             <button
               onClick={handleGoToTable}
               className="toolbar-button primary"
-              style={{ fontSize: "18px", padding: "8px 16px" }}
+              style={{ fontSize: "25px", fontWeight: "bold", padding: "8px 16px" }}
             >
               Xem
             </button>
             <button
               className="toolbar-button"
               style={{
-                fontSize: "18px",
+                fontSize: "25px",
                 padding: "8px 16px",
                 backgroundColor: "#17a2b8",
                 color: "white",
