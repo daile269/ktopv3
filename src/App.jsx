@@ -737,14 +737,12 @@ function App() {
 
   // Format purple cells info thành string để hiển thị
   const formatPurpleCellsInfo = () => {
-    const purpleCells = {
-      ...getPurpleCellsInfo(),
-      ...getFuturePurpleCellsInfo(),
-    };
+    // Chỉ dùng các ô dự đoán (dòng tương lai) cho MQ — không lấy từ hàng cuối thực
+    const purpleCells = getFuturePurpleCellsInfo();
     const entries = Object.entries(purpleCells);
 
     if (entries.length === 0) {
-      return "Không có bảng nào được BM";
+      return "Không có báo màu";
     }
 
     // Chỉ hiển thị tên các bảng T, không hiển thị chi tiết ô
