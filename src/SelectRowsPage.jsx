@@ -530,7 +530,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
                 background: "#a8d5a2",
                 color: "#222",
                 borderRadius: "6px",
-                padding: "6px 14px",
+                padding: "4px 10px",
                 fontSize: "44px",
                 fontWeight: 500,
                 position: "relative",
@@ -587,17 +587,17 @@ function SelectRowsPage({ accessWarningContent = null }) {
     const isHighlighted = !!highlightedRows[rowIndex];
 
     return (
-      <td key={rowIndex} style={{ padding: "6px" }}>
+      <td key={rowIndex} style={{ padding: "4px" }}>
         <button
           type="button"
           onClick={() => handleSelectRow(rowIndex)}
           disabled={isDeleted}
           style={{
             width: "100%",
-            minWidth: "90px",
-            height: "74px",
-            borderRadius: "8px",
-            border: isHighlighted ? "4px solid #dc3545" : "1px solid #cfcfcf",
+            minWidth: "70px",
+            height: "60px",
+            borderRadius: "6px",
+            border: isHighlighted ? "3px solid #dc3545" : "1px solid #cfcfcf",
             background: isHighlighted ? "#ffeb3b" : "#f4f5f5",
             color: "#222",
             cursor: isDeleted ? "not-allowed" : "pointer",
@@ -623,11 +623,10 @@ function SelectRowsPage({ accessWarningContent = null }) {
   }
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <div
         style={{
-          position: "sticky",
-          top: 0,
+          flexShrink: 0,
           width: "100%",
           textAlign: "center",
           backgroundColor: "#f8f9fa",
@@ -651,8 +650,8 @@ function SelectRowsPage({ accessWarningContent = null }) {
         </h1>
       </div>
 
-      <div className="app-container">
-        <div style={{ width: "100%", padding: "20px" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#ffffff" }}>
+        <div style={{ flexShrink: 0, padding: "20px 20px 0 20px" }}>
           <div
             style={{
               display: "flex",
@@ -708,7 +707,9 @@ function SelectRowsPage({ accessWarningContent = null }) {
           </div>
 
           {renderQueue()}
+        </div>
 
+        <div style={{ flex: 1, padding: "10px 20px 20px 20px", overflowY: "auto", minHeight: 0 }}>
           <div
             style={{
               border: "2px solid #198754",
@@ -993,7 +994,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
           onConfirm={confirmDeleteByRows}
         />
       )}
-    </>
+    </div>
   );
 }
 

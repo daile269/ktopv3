@@ -167,7 +167,7 @@ body {
   width: 100%;
   border: none;
   padding: 6px 8px;
-  font-size:  15px;
+  font-size: 15px;
   text-align: center;
   background: transparent;
   outline: none;
@@ -227,7 +227,8 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  position: relative; /* For loading overlay */
+  position: relative;
+  /* For loading overlay */
 }
 
 /* Loading Overlay */
@@ -259,8 +260,13 @@ body {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-spinner p {
@@ -273,8 +279,10 @@ body {
   flex: 1;
   overflow: auto;
   background: #fafafa;
-  max-height: calc(100vh - 300px); /* Chiều cao viewport trừ đi toolbar (~150px) */
-  padding-bottom: 100px; /* Thêm padding để không bị cắt phần cuối */
+  max-height: calc(100vh - 300px);
+  /* Chiều cao viewport trừ đi toolbar (~150px) */
+  padding-bottom: 100px;
+  /* Thêm padding để không bị cắt phần cuối */
 }
 
 .data-grid {
@@ -283,14 +291,16 @@ body {
   background: #ffffff;
   border: 1px solid #e0e0e0;
   font-size: 13px;
-  table-layout: fixed; /* Fix alignment issues */
+  table-layout: fixed;
+  /* Fix alignment issues */
 }
 
 .data-grid thead {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #ffffff; /* Background để không bị trong suốt */
+  background: #ffffff;
+  /* Background để không bị trong suốt */
 }
 
 .data-grid thead tr {
@@ -338,16 +348,19 @@ body {
   color: #666;
   text-align: center;
   font-size: 30px;
-  width: 120px; /* Width cố định cho các cột 0-9 */
+  width: 120px;
+  /* Width cố định cho các cột 0-9 */
   min-width: 120px;
   position: sticky;
-  top: 41px; /* Offset để nằm dưới group-header */
+  top: 41px;
+  /* Offset để nằm dưới group-header */
   z-index: 9;
 }
 
 .col-header.fixed {
   background: #f0f0f0 !important;
-  width: 80px; /* Width cố định cho STT, A, B, T */
+  width: 80px;
+  /* Width cố định cho STT, A, B, T */
   min-width: 80px;
   font-size: 30px;
 }
@@ -357,12 +370,15 @@ body {
   /* padding: 4px; */
   text-align: center;
   font-size: 35px;
-  line-height: 1; /* Giảm line-height để ô thấp hơn */
+  line-height: 1;
+  /* Giảm line-height để ô thấp hơn */
   font-weight: 500;
   transition: all 0.15s;
   background: #ffffff;
-  cursor: pointer; /* Cho biết có thể click */
-  white-space: nowrap; /* Ngăn xuống dòng */
+  cursor: pointer;
+  /* Cho biết có thể click */
+  white-space: nowrap;
+  /* Ngăn xuống dòng */
 }
 
 .data-cell.fixed {
@@ -378,7 +394,8 @@ body {
 }
 
 .data-cell.date-col {
-  width: 190px !important; /* Width cố định cho Ngày */
+  width: 190px !important;
+  /* Width cố định cho Ngày */
   min-width: 190px !important;
   max-width: 210px !important;
   text-align: left;
@@ -410,13 +427,14 @@ body {
   width: 100%;
   border: 1px solid #e0e0e0;
   padding: 6px 8px;
-  font-size:35px;
+  font-size: 35px;
   text-align: center;
   background: #ffffff;
   border-radius: 2px;
   outline: none;
   transition: all 0.2s;
-  color: #ef4444; /* Text màu đỏ */
+  color: #ef4444;
+  /* Text màu đỏ */
   font-weight: 600;
 }
 
@@ -431,7 +449,8 @@ body {
 
 /* Màu cho các ô dữ liệu */
 .data-cell.white {
-  background-color: #fff; /* Màu vàng nhạt */
+  background-color: #fff;
+  /* Màu vàng nhạt */
   color: #333;
 }
 
@@ -470,16 +489,20 @@ body {
 
 /* Highlight cells và rows - Chuyển sang tông VÀNG NHẠT */
 .data-cell.highlighted-cell {
-  border: 4px solid #fdd835 !important; /* Border vàng đậm */
-  background-color: #fffde7 !important; /* Nền vàng nhạt hẳn */
-  box-shadow: 0 0 10px rgba(253, 216, 53, 0.5); /* Hiệu ứng tỏa sáng vàng */
+  border: 4px solid #fdd835 !important;
+  /* Border vàng đậm */
+  background-color: #fffde7 !important;
+  /* Nền vàng nhạt hẳn */
+  box-shadow: 0 0 10px rgba(253, 216, 53, 0.5);
+  /* Hiệu ứng tỏa sáng vàng */
 }
 
 /* Highlight hàng */
 .data-cell.highlighted-row {
   border-top: 2px solid #ffa500 !important;
   border-bottom: 2px solid #ffa500 !important;
-  box-shadow: inset 0 0 0 2000px rgba(255, 165, 0, 0.3) !important; /* Lớp phủ cam nhạt */
+  box-shadow: inset 0 0 0 2000px rgba(255, 165, 0, 0.3) !important;
+  /* Lớp phủ cam nhạt */
   font-weight: 600;
 }
 
@@ -487,12 +510,14 @@ body {
 .data-cell.highlighted-column {
   border-left: 2px solid #fbc02d !important;
   border-right: 2px solid #fbc02d !important;
-  box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.4) !important; /* Lớp phủ vàng nhạt */
+  box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.4) !important;
+  /* Lớp phủ vàng nhạt */
 }
 
 /* Highlight ô T lẻ (Màu cam) */
 .data-cell.highlighted-t-cell {
-  background-color: #ff9800 !important; /* Cam */
+  background-color: #ff9800 !important;
+  /* Cam */
   border: 3px solid #e65100 !important;
   color: white !important;
 }
@@ -503,13 +528,14 @@ body {
 }
 
 /* Highlight cả cột A / B / T khi click vào ô bất kỳ trong cột */
- .data-cell.col-highlighted {
-  background-color: #fff3e0 !important; /* Cam nhạt (nền) */
+.data-cell.col-highlighted {
+  background-color: orange !important;
+  /* Cam nhạt (nền) */
   /* border-top: 2px solid #ffd08a !important;
   border-bottom: 2px solid #ffd08a !important; */
-  box-shadow: inset 0 0 0 2000px rgba(255, 224, 178, 0.85) !important;
+  /* box-shadow: inset 0 0 0 2000px rgba(255, 224, 178, 0.85) !important; */
   font-weight: 600;
- }
+}
 
 .data-cell.col-highlighted .grid-input {
   background: transparent !important;
@@ -529,11 +555,12 @@ body {
 
 /* Màu cho tiêu đề khi cột đang được highlight */
 .col-header-highlighted {
-  background-color: #ffcc80 !important; /* Cam nhạt cho tiêu đề */
+  background-color: #ffcc80 !important;
+  /* Cam nhạt cho tiêu đề */
   color: #333 !important;
   border-bottom: 2px solid #ffb74d !important;
   font-weight: 700;
- }
+}
 
 
 /* Đảm bảo ô thông (input) nổi màu khi được highlight */
@@ -605,14 +632,14 @@ body {
   .app-container {
     flex-direction: column;
   }
-  
+
   .left-panel {
     width: 100%;
     max-height: 360px;
     border-right: none;
     border-bottom: 1px solid #e0e0e0;
   }
-  
+
   .right-panel {
     flex: 1;
   }
@@ -622,17 +649,17 @@ body {
   .panel-toolbar {
     flex-wrap: wrap;
   }
-  
+
   .data-grid {
     font-size: 11px;
   }
-  
+
   .col-header {
     padding: 6px 8px;
     font-size: 11px;
     min-width: 50px;
   }
-  
+
   .data-cell {
     padding: 8px;
     font-size: 11px;
@@ -652,11 +679,13 @@ body {
 
 .table-section {
   flex: 0 0 auto;
-  width: 1870px; /* Adjusted to match sum of columns */
+  width: 1870px;
+  /* Adjusted to match sum of columns */
 }
 
 .table-section.first-table {
-  width: 2070px; /* Adjusted to match sum of columns (includes A, B) */
+  width: 2070px;
+  /* Adjusted to match sum of columns (includes A, B) */
 }
 
 .table-title {

@@ -2173,6 +2173,7 @@ function App() {
               📋 Chọn dòng thông
             </button>
           </div>
+          {renderAccessWarning()}
 
           {/* Q Navigation Buttons */}
           <div
@@ -2340,7 +2341,6 @@ function App() {
                 : 0}
             </button>
           </div>
-          {renderAccessWarning()}
         </div>
       </div>
 
