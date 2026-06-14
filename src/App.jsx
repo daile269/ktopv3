@@ -40,6 +40,7 @@ function App() {
   const [highlightedAColumn, setHighlightedAColumn] = useState(false);
   const [highlightedBColumn, setHighlightedBColumn] = useState(false);
   // { colIndex: true } — highlight cả cột 0-9
+  // { tableIndex: { colIndex: true } } — highlight cột 0-9 theo từng bảng
   const [highlightedDataColumns, setHighlightedDataColumns] = useState({});
   // { rowIndex: true } — highlight cả hàng
   const [highlightedRows, setHighlightedRows] = useState({});
@@ -1171,12 +1172,18 @@ function App() {
   const handleTColHeader = (tableIndex) =>
     setHighlightedTColumns((prev) => ({ ...prev, [tableIndex]: !prev[tableIndex] }));
 
-  // Click vào TIÊu ĐỀ cột 0-9 — toggle vàng nhạt cả cột
-  const handleDataColHeader = (colIndex) => {
-    setHighlightedDataColumns((prev) => ({
-      ...prev,
-      [colIndex]: !prev[colIndex],
-    }));
+  // Click vào TIÊu Đề cột 0-9 — toggle vàng nhạt cho cột trong bảng hiện tại
+  const handleDataColHeader = (tableIndex, colIndex) => {
+    setHighlightedDataColumns((prev) => {
+      const table = prev[tableIndex] || {};
+      return {
+        ...prev,
+        [tableIndex]: {
+          ...table,
+          [colIndex]: !table[colIndex],
+        },
+      };
+    });
   };
 
   // Click vào STT hoặc Ngày — toggle highlight cả hàng màu cam nhạt
@@ -2468,9 +2475,11 @@ function App() {
                           <th
                             key={num}
                             className={`col-header col-header-clickable ${
-                              highlightedDataColumns[num] ? "col-header-highlighted" : ""
+                              highlightedDataColumns[tableIndex]?.[num]
+                                ? "col-header-highlighted"
+                                : ""
                             }`}
-                            onClick={() => handleDataColHeader(num)}
+                            onClick={() => handleDataColHeader(tableIndex, num)}
                             title={`Click để highlight cả cột ${num}`}
                           >
                             {num}
@@ -2630,12 +2639,12 @@ function App() {
                                   key={colIndex}
                                   className={`data-cell ${cell.color} ${
                                     highlightedCells[tableIndex]?.[rowIndex]?.[
-                                      colIndex
-                                    ]
-                                      ? "highlighted-cell"
-                                      : highlightedDataColumns[colIndex]
-                                      ? "col-highlighted"
-                                      : highlightedRows[rowIndex]
+                                        colIndex
+                                      ]
+                                        ? "highlighted-cell"
+                                        : highlightedDataColumns[tableIndex]?.[colIndex]
+                                        ? "col-highlighted"
+                                        : highlightedRows[rowIndex]
                                       ? "highlighted-row"
                                       : ""
                                   }`}
