@@ -188,7 +188,7 @@ function InputPage({ accessWarningContent = null }) {
         setDateValues(d.dateValues || Array(ROWS).fill(""));
         setZValues(d.zValues || Array(ROWS).fill(""));
         setDeletedRows(d.deletedRows || Array(ROWS).fill(false));
-        setKeepLastNRows(d.keepLastNRows || MIN_ROWS);
+        setKeepLastNRows(d.keepLastNRows || 110);
         setPurpleRangeFrom(d.purpleRangeFrom || 0);
         setPurpleRangeTo(d.purpleRangeTo || 0);
       } else {
@@ -761,8 +761,8 @@ function InputPage({ accessWarningContent = null }) {
             : 0;
         const existingKeepN =
           currentData.success && currentData.data
-            ? currentData.data.keepLastNRows
-            : MIN_ROWS;
+            ? currentData.data.keepLastNRows || 110
+            : 110;
 
         let activeA = [],
           activeB = [],

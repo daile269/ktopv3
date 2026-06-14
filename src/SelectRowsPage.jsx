@@ -23,7 +23,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
   const [deletedRows, setDeletedRows] = useState(Array(ROWS).fill(false));
   const [purpleRangeFrom, setPurpleRangeFrom] = useState(0);
   const [purpleRangeTo, setPurpleRangeTo] = useState(0);
-  const [keepLastNRows, setKeepLastNRows] = useState(ROWS);
+  const [keepLastNRows, setKeepLastNRows] = useState(110);
   const [queue, setQueue] = useState([]);
   const [highlightedRows, setHighlightedRows] = useState(() => {
     const savedRow = parseInt(localStorage.getItem(LAST_SELECTED_ROW_KEY), 10);
@@ -75,7 +75,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
         setDeletedRows(data.deletedRows || Array(ROWS).fill(false));
         setPurpleRangeFrom(data.purpleRangeFrom || 0);
         setPurpleRangeTo(data.purpleRangeTo || 0);
-        setKeepLastNRows(Math.min(data.keepLastNRows || ROWS, ROWS));
+        setKeepLastNRows(Math.min(data.keepLastNRows || 110, ROWS));
       }
 
       setIsLoading(false);
@@ -400,8 +400,8 @@ function SelectRowsPage({ accessWarningContent = null }) {
             : 0;
         const existingKeepN =
           currentData.success && currentData.data
-            ? currentData.data.keepLastNRows || ROWS
-            : ROWS;
+            ? currentData.data.keepLastNRows || 110
+            : 110;
 
         let activeA = [];
         let activeB = [];

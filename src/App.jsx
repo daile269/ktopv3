@@ -290,11 +290,7 @@ function App() {
           if (result.data.keepLastNRows || result.data.keepLastNRows === 0) {
             setKeepLastNRows(result.data.keepLastNRows);
           } else {
-            let nonDeletedCount = 0;
-            for (let i = 0; i < ROWS; i++) {
-              if (!result.data.deletedRows?.[i]) nonDeletedCount++;
-            }
-            setKeepLastNRows(nonDeletedCount);
+            setKeepLastNRows(110);
           }
           setIsDataLoaded(true);
         } else {
