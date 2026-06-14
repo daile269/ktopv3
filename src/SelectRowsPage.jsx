@@ -3,7 +3,7 @@ import "./App.css";
 import "./InputPage.css";
 import { loadPageData, savePageData } from "./dataService";
 
-const ROWS = 110;
+const ROWS = 5000;
 const COLS = 11;
 const GRID_ROWS = 10;
 const MAX_PER_ROW = 4;
@@ -400,7 +400,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
             : 0;
         const existingKeepN =
           currentData.success && currentData.data
-            ? Math.min(currentData.data.keepLastNRows || ROWS, ROWS)
+            ? currentData.data.keepLastNRows || ROWS
             : ROWS;
 
         let activeA = [];
@@ -446,22 +446,26 @@ function SelectRowsPage({ accessWarningContent = null }) {
           activeSourceSTT.push(formatStt(rowIndex));
         });
 
-        if (activeA.length > existingKeepN) {
-          activeA = activeA.slice(-existingKeepN);
-          activeB = activeB.slice(-existingKeepN);
-          activeZ = activeZ.slice(-existingKeepN);
-          activeD = activeD.slice(-existingKeepN);
-          activeDel = activeDel.slice(-existingKeepN);
-          activeSourceSTT = activeSourceSTT.slice(-existingKeepN);
-        } else {
-          while (activeA.length < existingKeepN) {
-            activeA.push("");
-            activeB.push("");
-            activeZ.push("");
-            activeD.push("");
-            activeDel.push(true);
-            activeSourceSTT.push("");
+        let activeCount = activeDel.filter(val => !val).length;
+        if (activeCount > existingKeepN) {
+          const excess = activeCount - existingKeepN;
+          let marked = 0;
+          for (let k = 0; k < activeDel.length; k++) {
+            if (!activeDel[k]) {
+              activeDel[k] = true;
+              marked++;
+              if (marked === excess) break;
+            }
           }
+        }
+
+        while (activeA.length < ROWS) {
+          activeA.push("");
+          activeB.push("");
+          activeZ.push("");
+          activeD.push("");
+          activeDel.push(true);
+          activeSourceSTT.push("");
         }
 
         await savePageData(

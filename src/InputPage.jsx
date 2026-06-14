@@ -118,7 +118,7 @@ const TaskRow = memo(
 );
 
 function InputPage({ accessWarningContent = null }) {
-  const MIN_ROWS = 110; // Minimum rows
+  const MIN_ROWS = 5000; // Minimum rows
   const [keepLastNRows, setKeepLastNRows] = useState(110);
   const ROWS = MIN_ROWS;
 
@@ -819,23 +819,26 @@ function InputPage({ accessWarningContent = null }) {
           activeSourceSTT.push(String(idx).padStart(2, "0"));
         });
 
-        // Consolidate at top by padding at the bottom (push)
-        if (activeA.length > existingKeepN) {
-          activeA = activeA.slice(-existingKeepN);
-          activeB = activeB.slice(-existingKeepN);
-          activeZ = activeZ.slice(-existingKeepN);
-          activeD = activeD.slice(-existingKeepN);
-          activeDel = activeDel.slice(-existingKeepN);
-          activeSourceSTT = activeSourceSTT.slice(-existingKeepN);
-        } else {
-          while (activeA.length < existingKeepN) {
-            activeA.push("");
-            activeB.push("");
-            activeZ.push("");
-            activeD.push("");
-            activeDel.push(true);
-            activeSourceSTT.push("");
+        let activeCount = activeDel.filter(val => !val).length;
+        if (activeCount > existingKeepN) {
+          const excess = activeCount - existingKeepN;
+          let marked = 0;
+          for (let k = 0; k < activeDel.length; k++) {
+            if (!activeDel[k]) {
+              activeDel[k] = true;
+              marked++;
+              if (marked === excess) break;
+            }
           }
+        }
+
+        while (activeA.length < ROWS) {
+          activeA.push("");
+          activeB.push("");
+          activeZ.push("");
+          activeD.push("");
+          activeDel.push(true);
+          activeSourceSTT.push("");
         }
 
         await savePageData(
@@ -878,7 +881,7 @@ function InputPage({ accessWarningContent = null }) {
 
   const sortedIndices = useMemo(() => {
     return Array.from(
-      { length: MIN_ROWS },
+      { length: Math.max(Number(keepLastNRows) || 110, 110) },
       (_, i) => i,
     ).sort((a, b) => {
       const aDeleted = deletedRows[a] || false;
@@ -886,7 +889,7 @@ function InputPage({ accessWarningContent = null }) {
       if (aDeleted === bDeleted) return a - b;
       return aDeleted ? 1 : -1;
     });
-  }, [dateValues.length, deletedRows]);
+  }, [keepLastNRows, deletedRows]);
 
   if (isLoading) {
     return (

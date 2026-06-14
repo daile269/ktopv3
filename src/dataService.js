@@ -96,8 +96,8 @@ export const loadPageData = async (pageId) => {
     if (result.success && result.data) {
       const data = result.data;
 
-      // Pad data về 110 rows (match với App.jsx)
-      const ROWS = 110;
+      // Pad data về 5000 rows (match với App.jsx)
+      const ROWS = 5000;
 
       // Ensure data is always an array
       const a = Array.isArray(data.aValues) ? [...data.aValues].slice(0, ROWS) : [];

@@ -7,7 +7,7 @@ import SelectRowsPage from "./SelectRowsPage";
 
 function App() {
   const TOTAL_TABLES = 5; // số bảng T mỗi Q
-  const ROWS = 110;
+  const ROWS = 5000;
   const [allTableData, setAllTableData] = useState(
     Array(TOTAL_TABLES)
       .fill(null)
@@ -18,8 +18,8 @@ function App() {
       .fill(null)
       .map(() => Array(ROWS).fill("")),
   );
-  const [dateValues, setDateValues] = useState(Array(110).fill(""));
-  const [sourceSTTValues, setSourceSTTValues] = useState(Array(110).fill(""));
+  const [dateValues, setDateValues] = useState(Array(ROWS).fill(""));
+  const [sourceSTTValues, setSourceSTTValues] = useState(Array(ROWS).fill(""));
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -27,8 +27,8 @@ function App() {
   const [error, setError] = useState("");
   const [pageLabel, setPageLabel] = useState("");
 
-  const [aValues, setAValues] = useState(Array(110).fill(""));
-  const [bValues, setBValues] = useState(Array(110).fill(""));
+  const [aValues, setAValues] = useState(Array(ROWS).fill(""));
+  const [bValues, setBValues] = useState(Array(ROWS).fill(""));
 
   const [highlightedCells, setHighlightedCells] = useState({});
   const [highlightedTCells, setHighlightedTCells] = useState({});
@@ -57,8 +57,8 @@ function App() {
   const [keepLastNRows, setKeepLastNRows] = useState("");
   const [purpleRangeFrom, setPurpleRangeFrom] = useState(0);
   const [purpleRangeTo, setPurpleRangeTo] = useState(0);
-  const [deletedRows, setDeletedRows] = useState(Array(110).fill(false));
-  const [zValues, setZValues] = useState(Array(110).fill(""));
+  const [deletedRows, setDeletedRows] = useState(Array(ROWS).fill(false));
+  const [zValues, setZValues] = useState(Array(ROWS).fill(""));
   const [showDeleteFirstRowModal, setShowDeleteFirstRowModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showKeepLastNRowsModal, setShowKeepLastNRowsModal] = useState(false);
