@@ -130,7 +130,7 @@ export const loadPageData = async (pageId) => {
           sourceSTTValues: sourceSTTs,
           purpleRangeFrom: data.purpleRangeFrom || 0,
           purpleRangeTo: data.purpleRangeTo || 0,
-          keepLastNRows: Math.min(data.keepLastNRows || 110, 110),
+          keepLastNRows: data.keepLastNRows || 110,
           allQData: data.allQData,
           pageLabel: data.pageLabel || "",
         },

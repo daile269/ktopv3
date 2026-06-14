@@ -188,7 +188,7 @@ function InputPage({ accessWarningContent = null }) {
         setDateValues(d.dateValues || Array(ROWS).fill(""));
         setZValues(d.zValues || Array(ROWS).fill(""));
         setDeletedRows(d.deletedRows || Array(ROWS).fill(false));
-        setKeepLastNRows(Math.min(d.keepLastNRows || 110, MIN_ROWS));
+        setKeepLastNRows(d.keepLastNRows || MIN_ROWS);
         setPurpleRangeFrom(d.purpleRangeFrom || 0);
         setPurpleRangeTo(d.purpleRangeTo || 0);
       } else {
@@ -297,10 +297,8 @@ function InputPage({ accessWarningContent = null }) {
       return;
     }
 
-    if (n > MIN_ROWS) {
-      alert(`So dong ton tai toi da la ${MIN_ROWS} (STT 00-109)!`);
-      return;
-    }
+    // Use entered value as-is (no clamp)
+    const adjustedN = n;
 
     const nonDeletedRowsWithData = [];
     for (let i = 0; i < dateValues.length; i++) {
@@ -335,14 +333,14 @@ function InputPage({ accessWarningContent = null }) {
 
     if (
       !confirm(
-        `⚠️ Bạn có chắc muốn chỉ giữ lại ${n} dòng cuối cùng? Các dòng khác sẽ bị xóa.`,
+        `⚠️ Bạn có chắc muốn chỉ giữ lại ${adjustedN} dòng cuối cùng? Các dòng khác sẽ bị xóa.`,
       )
     ) {
       return;
     }
 
-    // Keep only last N rows from non-deleted rows
-    const rowsToKeep = nonDeletedRowsWithData.slice(-n);
+    // Keep only last adjustedN rows from non-deleted rows
+    const rowsToKeep = nonDeletedRowsWithData.slice(-adjustedN);
 
     // Update deletedRows
     const newDeletedRows = [...deletedRows];
@@ -368,11 +366,11 @@ function InputPage({ accessWarningContent = null }) {
       null, // sourceSTTValues
       purpleRangeFrom,
       purpleRangeTo,
-      n,
+      adjustedN,
       allQData,
     );
-    setSaveStatus("✅ Đã giữ " + n + " dòng cuối!");
-    alert(`✅ Đã thực hiện giữ lại ${n} dòng cuối cùng!`);
+    setSaveStatus("✅ Đã giữ " + adjustedN + " dòng cuối!");
+    alert(`✅ Đã thực hiện giữ lại ${adjustedN} dòng cuối cùng!`);
     setTimeout(() => setSaveStatus(""), 2000);
   };
 

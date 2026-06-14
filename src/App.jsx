@@ -287,8 +287,8 @@ function App() {
           setPurpleRangeFrom(loadedPurpleFrom);
           setPurpleRangeTo(loadedPurpleTo);
 
-          if (result.data.keepLastNRows) {
-            setKeepLastNRows(Math.min(result.data.keepLastNRows, ROWS));
+          if (result.data.keepLastNRows || result.data.keepLastNRows === 0) {
+            setKeepLastNRows(result.data.keepLastNRows);
           } else {
             let nonDeletedCount = 0;
             for (let i = 0; i < ROWS; i++) {
@@ -1879,15 +1879,10 @@ function App() {
         return;
       }
 
-      if (n > ROWS) {
-        alert(`So dong ton tai toi da la ${ROWS} (STT 00-109)!`);
-        return;
-      }
-
       // Set loading state
       setIsSavingKeepLastNRows(true);
 
-      // Update state
+      // Update state (use entered value)
       setKeepLastNRows(n);
 
       // Sync the setting to all Q1-Q10
