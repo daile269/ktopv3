@@ -11,7 +11,7 @@ const LAST_SELECTED_ROW_KEY = "ktop_select_last_row";
 
 function SelectRowsPage({ accessWarningContent = null }) {
   const [allQData, setAllQData] = useState(
-    Array(5)
+    Array(10)
       .fill(null)
       .map(() => ({
         aValues: Array(ROWS).fill(""),
@@ -63,7 +63,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
         const data = result.data;
         setAllQData(
           data.allQData ||
-            Array(6)
+            Array(10)
               .fill(null)
               .map(() => ({
                 aValues: Array(ROWS).fill(""),
@@ -230,7 +230,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
 
   const confirmDeleteAll = async () => {
     const nextDeletedRows = Array(ROWS).fill(true);
-    const emptyAllQData = Array(5)
+    const emptyAllQData = Array(10)
       .fill(null)
       .map(() => ({
         aValues: Array(ROWS).fill(""),

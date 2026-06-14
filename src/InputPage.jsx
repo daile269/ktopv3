@@ -63,7 +63,7 @@ const TaskRow = memo(
             style={{ textAlign: "center", width: "100%", padding: "8px", fontSize: "35px", fontWeight: "500", color: "#222" }}
           />
         </td>
-        {Array.from({ length: 6 }).map((_, qIndex) => {
+        {Array.from({ length: 10 }).map((_, qIndex) => {
           const qData = allQData[qIndex];
           const aV = isDeleted ? "" : qData?.aValues[rowIndex] || "";
           const bV = isDeleted ? "" : qData?.bValues[rowIndex] || "";
@@ -124,7 +124,7 @@ function InputPage({ accessWarningContent = null }) {
 
   // State cho A, B của 10Q
   const [allQData, setAllQData] = useState(
-    Array(5)
+    Array(10)
       .fill(null)
       .map(() => ({
         aValues: Array(ROWS).fill(""),
@@ -178,7 +178,7 @@ function InputPage({ accessWarningContent = null }) {
         const d = result.data;
         setAllQData(
           d.allQData ||
-            Array(5)
+            Array(10)
               .fill(null)
               .map(() => ({
                 aValues: Array(ROWS).fill(""),
@@ -194,7 +194,7 @@ function InputPage({ accessWarningContent = null }) {
       } else {
         // Khởi tạo bảng trống nếu chưa có master_draft
         setAllQData(
-          Array(6)
+          Array(10)
             .fill(null)
             .map(() => ({
               aValues: Array(ROWS).fill(""),
@@ -625,7 +625,7 @@ function InputPage({ accessWarningContent = null }) {
       purpleRangeFrom,
       purpleRangeTo,
       keepLastNRows,
-      Array(6)
+      Array(10)
         .fill(null)
         .map(() => ({
           aValues: Array(dateValues.length).fill(""),
@@ -634,7 +634,7 @@ function InputPage({ accessWarningContent = null }) {
     );
 
     setAllQData(
-      Array(6)
+      Array(10)
         .fill(null)
         .map(() => ({
           aValues: Array(dateValues.length).fill(""),
