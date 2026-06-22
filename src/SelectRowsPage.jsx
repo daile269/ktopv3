@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 import "./InputPage.css";
 import { loadPageData, savePageData } from "./dataService";
@@ -11,11 +11,15 @@ const LAST_SELECTED_ROW_KEY = "ktop_select_last_row";
 
 function SelectRowsPage({ accessWarningContent = null }) {
   const [allQData, setAllQData] = useState(
-    Array(10)
+    Array(5)
       .fill(null)
       .map(() => ({
-        aValues: Array(ROWS).fill(""),
-        bValues: Array(ROWS).fill(""),
+        tapsData: Array(10)
+          .fill(null)
+          .map(() => ({
+            aValues: Array(ROWS).fill(""),
+            bValues: Array(ROWS).fill(""),
+          })),
       })),
   );
   const [dateValues, setDateValues] = useState(Array(ROWS).fill(""));
@@ -63,11 +67,15 @@ function SelectRowsPage({ accessWarningContent = null }) {
         const data = result.data;
         setAllQData(
           data.allQData ||
-            Array(10)
+            Array(5)
               .fill(null)
               .map(() => ({
-                aValues: Array(ROWS).fill(""),
-                bValues: Array(ROWS).fill(""),
+                tapsData: Array(10)
+                  .fill(null)
+                  .map(() => ({
+                    aValues: Array(ROWS).fill(""),
+                    bValues: Array(ROWS).fill(""),
+                  })),
               })),
         );
         setDateValues(data.dateValues || Array(ROWS).fill(""));
@@ -114,20 +122,19 @@ function SelectRowsPage({ accessWarningContent = null }) {
   const hasRowData = useCallback(
     (rowIndex) => {
       if (dateValues[rowIndex] || zValues[rowIndex]) return true;
-      return allQData.some(
-        (qData) => qData?.aValues[rowIndex] || qData?.bValues[rowIndex],
-      );
+      return allQData.some((qData) => {
+        if (qData && qData.tapsData) {
+          return qData.tapsData.some(
+            (tap) => tap?.aValues[rowIndex] || tap?.bValues[rowIndex]
+          );
+        }
+        return false;
+      });
     },
     [allQData, dateValues, zValues],
   );
 
-  const visibleDataCount = useMemo(() => {
-    let count = 0;
-    for (let i = 0; i < ROWS; i++) {
-      if (!deletedRows[i] && hasRowData(i)) count++;
-    }
-    return count;
-  }, [deletedRows, hasRowData]);
+
 
   const formatStt = (value) => String(value).padStart(2, "0");
 
@@ -172,69 +179,21 @@ function SelectRowsPage({ accessWarningContent = null }) {
     setQueue([]);
   }, []);
 
-  const handleSave = async () => {
-    setSaveStatus("Đang lưu...");
-    const result = await saveDraft();
 
-    if (result.success) {
-      setSaveStatus("Đã lưu Bảng chọn dòng thông!");
-      alert("Đã lưu dữ liệu Bảng chọn dòng thông thành công!");
-    } else {
-      setSaveStatus("Lỗi!");
-      alert("Lỗi khi lưu vào Master: " + (result.error || "Không xác định"));
-    }
 
-    setTimeout(() => setSaveStatus(""), 2000);
-  };
 
-  const handleKeepLastNRows = async () => {
-    const keepRows = parseInt(keepLastNRows);
-
-    if (!keepRows || keepRows <= 0 || keepRows > ROWS) {
-      alert(`Số dòng tồn tại tối đa là ${ROWS} (STT 00-109)!`);
-      return;
-    }
-
-    const nonDeletedRowsWithData = [];
-    for (let i = 0; i < ROWS; i++) {
-      if (!deletedRows[i] && hasRowData(i)) {
-        nonDeletedRowsWithData.push(i);
-      }
-    }
-
-    if (nonDeletedRowsWithData.length === 0) {
-      alert("Không có dòng nào có dữ liệu!");
-      return;
-    }
-
-    if (!confirm(`Bạn có chắc muốn chỉ giữ lại ${keepRows} dòng cuối cùng?`)) {
-      return;
-    }
-
-    const rowsToKeep = nonDeletedRowsWithData.slice(-keepRows);
-    const nextDeletedRows = [...deletedRows];
-
-    for (let i = 0; i < ROWS; i++) {
-      if (!deletedRows[i] && !rowsToKeep.includes(i)) {
-        nextDeletedRows[i] = true;
-      }
-    }
-
-    setDeletedRows(nextDeletedRows);
-    setSaveStatus("Đang lưu...");
-    await saveDraft(nextDeletedRows, keepRows);
-    setSaveStatus(`Đã giữ ${keepRows} dòng cuối!`);
-    alert(`Đã giữ lại ${keepRows} dòng cuối cùng!`);
-    setTimeout(() => setSaveStatus(""), 2000);
-  };
 
   const confirmDeleteAll = async () => {
     const nextDeletedRows = Array(ROWS).fill(true);
-    const emptyAllQData = Array(10)
+    const emptyAllQData = Array(5)
       .fill(null)
       .map(() => ({
-        aValues: Array(ROWS).fill(""),
-        bValues: Array(ROWS).fill(""),
+        tapsData: Array(10)
+          .fill(null)
+          .map(() => ({
+            aValues: Array(ROWS).fill(""),
+            bValues: Array(ROWS).fill(""),
+          })),
       }));
 
     setDeletedRows(nextDeletedRows);
@@ -373,11 +332,22 @@ function SelectRowsPage({ accessWarningContent = null }) {
 
     try {
       for (const rowIndex of [...new Set(selectedIndices)]) {
-        const hasValueInAnyQ = allQData.some(
-          (qData) =>
-            String(qData?.aValues[rowIndex] || "").trim() !== "" ||
-            String(qData?.bValues[rowIndex] || "").trim() !== "",
-        );
+        let hasValueInAnyQ = false;
+        for (let q = 0; q < 5; q++) {
+          const qData = allQData[q];
+          if (qData && qData.tapsData) {
+            for (let tap = 0; tap < 10; tap++) {
+              if (
+                String(qData.tapsData[tap]?.aValues[rowIndex] || "").trim() !== "" ||
+                String(qData.tapsData[tap]?.bValues[rowIndex] || "").trim() !== ""
+              ) {
+                hasValueInAnyQ = true;
+                break;
+              }
+            }
+          }
+          if (hasValueInAnyQ) break;
+        }
 
         if (!hasValueInAnyQ) {
           alert(`Dòng thông ${formatStt(rowIndex)} đang trống A và B!`);
@@ -387,100 +357,144 @@ function SelectRowsPage({ accessWarningContent = null }) {
         }
       }
 
-      for (let i = 1; i <= 10; i++) {
-        const qId = `q${i}`;
-        const currentData = await loadPageData(qId);
-        const existingPurpleFrom =
-          currentData.success && currentData.data
-            ? currentData.data.purpleRangeFrom
-            : 0;
-        const existingPurpleTo =
-          currentData.success && currentData.data
-            ? currentData.data.purpleRangeTo
-            : 0;
-        const existingKeepN =
-          currentData.success && currentData.data
-            ? currentData.data.keepLastNRows || 110
-            : 110;
+      const currentData = await loadPageData("q_all");
+      const existingPurpleFrom =
+        currentData.success && currentData.data
+          ? currentData.data.purpleRangeFrom
+          : 0;
+      const existingPurpleTo =
+        currentData.success && currentData.data
+          ? currentData.data.purpleRangeTo
+          : 0;
+      const existingKeepN =
+        currentData.success && currentData.data
+          ? currentData.data.keepLastNRows || 110
+          : 110;
+      const existingPageLabel =
+        currentData.success && currentData.data
+          ? currentData.data.pageLabel || ""
+          : "";
 
-        let activeA = [];
-        let activeB = [];
-        let activeZ = [];
-        let activeD = [];
-        let activeDel = [];
-        let activeSourceSTT = [];
+      let activeAllQData = currentData.success && currentData.data?.allQData
+        ? JSON.parse(JSON.stringify(currentData.data.allQData))
+        : Array(5).fill(null).map(() => ({
+            tapsData: Array(10).fill(null).map(() => ({
+              aValues: Array(ROWS).fill(""),
+              bValues: Array(ROWS).fill(""),
+            })),
+          }));
 
-        if (currentData.success && currentData.data) {
-          const data = currentData.data;
-          const aVals = data.aValues || [];
-          const bVals = data.bValues || [];
-          const zVals = data.zValues || [];
-          const dVals = data.dateValues || [];
-          const delFlags = data.deletedRows || [];
-          const sourceVals = data.sourceSTTValues || [];
+      let activeZ = [];
+      let activeD = [];
+      let activeDel = [];
+      let activeSourceSTT = [];
 
-          for (let rowIndex = 0; rowIndex < aVals.length; rowIndex++) {
-            const hasAnyData =
-              String(aVals[rowIndex] || "").trim() !== "" ||
-              String(bVals[rowIndex] || "").trim() !== "" ||
-              String(zVals[rowIndex] || "").trim() !== "" ||
-              String(dVals[rowIndex] || "").trim() !== "";
+      let newAllQData = Array(5).fill(null).map(() => ({
+        tapsData: Array(10).fill(null).map(() => ({
+          aValues: [],
+          bValues: [],
+        })),
+      }));
 
-            if (hasAnyData) {
-              activeA.push(aVals[rowIndex] || "");
-              activeB.push(bVals[rowIndex] || "");
-              activeZ.push(zVals[rowIndex] || "");
-              activeD.push(dVals[rowIndex] || "");
-              activeDel.push(delFlags[rowIndex] === undefined ? false : delFlags[rowIndex]);
-              activeSourceSTT.push(sourceVals[rowIndex] || "");
+      if (currentData.success && currentData.data) {
+        const data = currentData.data;
+        const zVals = data.zValues || [];
+        const dVals = data.dateValues || [];
+        const delFlags = data.deletedRows || [];
+        const sourceVals = data.sourceSTTValues || [];
+
+        for (let rowIndex = 0; rowIndex < zVals.length; rowIndex++) {
+          let hasAnyData =
+            String(zVals[rowIndex] || "").trim() !== "" ||
+            String(dVals[rowIndex] || "").trim() !== "";
+
+          if (!hasAnyData) {
+            for (let q = 0; q < 5; q++) {
+              const taps = activeAllQData[q]?.tapsData || [];
+              for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+                if (
+                  String(taps[tapIdx]?.aValues[rowIndex] || "").trim() !== "" ||
+                  String(taps[tapIdx]?.bValues[rowIndex] || "").trim() !== ""
+                ) {
+                  hasAnyData = true;
+                  break;
+                }
+              }
+              if (hasAnyData) break;
+            }
+          }
+
+          if (hasAnyData) {
+            activeZ.push(zVals[rowIndex] || "");
+            activeD.push(dVals[rowIndex] || "");
+            activeDel.push(delFlags[rowIndex] === undefined ? false : delFlags[rowIndex]);
+            activeSourceSTT.push(sourceVals[rowIndex] || "");
+            for (let q = 0; q < 5; q++) {
+              for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+                newAllQData[q].tapsData[tapIdx].aValues.push(activeAllQData[q]?.tapsData?.[tapIdx]?.aValues[rowIndex] || "");
+                newAllQData[q].tapsData[tapIdx].bValues.push(activeAllQData[q]?.tapsData?.[tapIdx]?.bValues[rowIndex] || "");
+              }
             }
           }
         }
-
-        selectedIndices.forEach((rowIndex) => {
-          activeA.push(allQData[i - 1].aValues[rowIndex] || "");
-          activeB.push(allQData[i - 1].bValues[rowIndex] || "");
-          activeZ.push("");
-          activeD.push(transferDate);
-          activeDel.push(false);
-          activeSourceSTT.push(formatStt(rowIndex));
-        });
-
-        let activeCount = activeDel.filter(val => !val).length;
-        if (activeCount > existingKeepN) {
-          const excess = activeCount - existingKeepN;
-          let marked = 0;
-          for (let k = 0; k < activeDel.length; k++) {
-            if (!activeDel[k]) {
-              activeDel[k] = true;
-              marked++;
-              if (marked === excess) break;
-            }
-          }
-        }
-
-        while (activeA.length < ROWS) {
-          activeA.push("");
-          activeB.push("");
-          activeZ.push("");
-          activeD.push("");
-          activeDel.push(true);
-          activeSourceSTT.push("");
-        }
-
-        await savePageData(
-          qId,
-          activeA,
-          activeB,
-          activeZ,
-          activeD,
-          activeDel,
-          activeSourceSTT,
-          existingPurpleFrom,
-          existingPurpleTo,
-          existingKeepN,
-        );
       }
+
+      selectedIndices.forEach((rowIndex) => {
+        activeZ.push("");
+        activeD.push(transferDate);
+        activeDel.push(false);
+        activeSourceSTT.push(formatStt(rowIndex));
+
+        for (let q = 0; q < 5; q++) {
+          for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+            const draftTap = allQData[q]?.tapsData?.[tapIdx];
+            newAllQData[q].tapsData[tapIdx].aValues.push(draftTap?.aValues[rowIndex] || "");
+            newAllQData[q].tapsData[tapIdx].bValues.push(draftTap?.bValues[rowIndex] || "");
+          }
+        }
+      });
+
+      let activeCount = activeDel.filter(val => !val).length;
+      if (activeCount > existingKeepN) {
+        const excess = activeCount - existingKeepN;
+        let marked = 0;
+        for (let k = 0; k < activeDel.length; k++) {
+          if (!activeDel[k]) {
+            activeDel[k] = true;
+            marked++;
+            if (marked === excess) break;
+          }
+        }
+      }
+
+      while (activeZ.length < ROWS) {
+        activeZ.push("");
+        activeD.push("");
+        activeDel.push(true);
+        activeSourceSTT.push("");
+        for (let q = 0; q < 5; q++) {
+          for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+            newAllQData[q].tapsData[tapIdx].aValues.push("");
+            newAllQData[q].tapsData[tapIdx].bValues.push("");
+          }
+        }
+      }
+
+      await savePageData(
+        "q_all",
+        null,
+        null,
+        activeZ,
+        activeD,
+        activeDel,
+        activeSourceSTT,
+        existingPurpleFrom,
+        existingPurpleTo,
+        existingKeepN,
+        newAllQData,
+        existingPageLabel,
+        undefined,
+      );
 
       const batchInfo = {
         stts: selectedIndices.map(formatStt),
@@ -689,7 +703,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
               </button>
               <button
                 className="toolbar-btn"
-                onClick={() => (window.location.href = "/q1")}
+                onClick={() => (window.location.href = "/")}
                 style={{ fontSize: "30px", background: "#28a745", color: "white", border: "none" }}
               >
                 🔍 Về bảng tính
@@ -700,6 +714,13 @@ function SelectRowsPage({ accessWarningContent = null }) {
                 style={{ fontSize: "30px", background: "#17a2b8", color: "white", border: "none" }}
               >
                 🔍 Về bảng thông
+              </button>
+              <button
+                className="toolbar-btn"
+                onClick={() => (window.location.href = "/bao-mau")}
+                style={{ fontSize: "30px", background: "#ffc107", color: "#212529", border: "none", fontWeight: "bold" }}
+              >
+                🎨 Báo màu
               </button>
               {accessWarningContent}
               {saveStatus && (
@@ -800,7 +821,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
                           fontWeight: "bold",
                         }}
                       >
-                        {formatStt(item.displaySTT)}
+                        {formatStt(item.rowIndex)}
                       </span>
                     </span>
                   ))

@@ -80,11 +80,54 @@ app.get("/api/pages/:pageId", async (req, res) => {
     while (deletedRows.length < ROWS) deletedRows.push(false);
     while (sourceSTTValues.length < ROWS) sourceSTTValues.push("");
 
+    // Pad và xử lý tapsData (nếu có)
+    let tapsData = page.tapsData;
+    if (!tapsData || !Array.isArray(tapsData) || tapsData.length === 0) {
+      tapsData = [];
+    }
+    while (tapsData.length < 10) {
+      tapsData.push({ aValues: [], bValues: [] });
+    }
+    const processedTapsData = tapsData.slice(0, 10).map((tap) => {
+      const tapA = Array.isArray(tap.aValues) ? [...tap.aValues].slice(0, ROWS) : [];
+      const tapB = Array.isArray(tap.bValues) ? [...tap.bValues].slice(0, ROWS) : [];
+      while (tapA.length < ROWS) tapA.push("");
+      while (tapB.length < ROWS) tapB.push("");
+      return { aValues: tapA, bValues: tapB };
+    });
+
+    // Pad và xử lý allQData cho master_draft (nếu có)
+    let allQData = page.allQData;
+    if (allQData && Array.isArray(allQData)) {
+      allQData = allQData.slice(0, 5).map((qItem) => {
+        let qTaps = qItem.tapsData;
+        if (!qTaps || !Array.isArray(qTaps) || qTaps.length === 0) {
+          qTaps = [];
+        }
+        while (qTaps.length < 10) {
+          qTaps.push({ aValues: [], bValues: [] });
+        }
+        const processedQTaps = qTaps.slice(0, 10).map((tap) => {
+          const tapA = Array.isArray(tap.aValues) ? [...tap.aValues].slice(0, ROWS) : [];
+          const tapB = Array.isArray(tap.bValues) ? [...tap.bValues].slice(0, ROWS) : [];
+          while (tapA.length < ROWS) tapA.push("");
+          while (tapB.length < ROWS) tapB.push("");
+          return { aValues: tapA, bValues: tapB };
+        });
+        return {
+          aValues: Array.isArray(qItem.aValues) ? [...qItem.aValues].slice(0, ROWS) : [],
+          bValues: Array.isArray(qItem.bValues) ? [...qItem.bValues].slice(0, ROWS) : [],
+          tapsData: processedQTaps,
+        };
+      });
+    }
+
     res.json({
       success: true,
       data: {
         aValues,
         bValues,
+        tapsData: processedTapsData,
         zValues,
         dateValues,
         deletedRows,
@@ -92,7 +135,7 @@ app.get("/api/pages/:pageId", async (req, res) => {
         purpleRangeFrom: page.purpleRangeFrom || 0,
         purpleRangeTo: page.purpleRangeTo || 0,
         keepLastNRows: typeof page.keepLastNRows === "number" ? page.keepLastNRows : 110,
-        allQData: page.allQData,
+        allQData,
         pageLabel: page.pageLabel || "",
       },
     });
@@ -117,6 +160,7 @@ app.post("/api/pages/:pageId", async (req, res) => {
     const {
       aValues,
       bValues,
+      tapsData,
       zValues,
       dateValues,
       deletedRows,
@@ -139,15 +183,65 @@ app.post("/api/pages/:pageId", async (req, res) => {
     const zLen = zValues ? zValues.length : 0;
     const dLen = dateValues ? dateValues.length : 0;
     const sLen = sourceSTTValues ? sourceSTTValues.length : 0;
-    const maxLen = Math.max(aLen, bLen, zLen, dLen, sLen);
+    let maxLen = Math.max(aLen, bLen, zLen, dLen, sLen);
+
+    // Tích hợp độ dài của tapsData vào maxLen
+    if (tapsData && Array.isArray(tapsData)) {
+      tapsData.forEach((tap) => {
+        if (tap.aValues) maxLen = Math.max(maxLen, tap.aValues.length);
+        if (tap.bValues) maxLen = Math.max(maxLen, tap.bValues.length);
+      });
+    }
+
+    // Tích hợp độ dài của allQData vào maxLen
+    if (allQData && Array.isArray(allQData)) {
+      allQData.forEach((qItem) => {
+        if (qItem.tapsData && Array.isArray(qItem.tapsData)) {
+          qItem.tapsData.forEach((tap) => {
+            if (tap.aValues) maxLen = Math.max(maxLen, tap.aValues.length);
+            if (tap.bValues) maxLen = Math.max(maxLen, tap.bValues.length);
+          });
+        }
+      });
+    }
 
     for (let i = maxLen - 1; i >= 0; i--) {
+      let hasData = false;
       if (
         (aValues && aValues[i]) ||
         (bValues && bValues[i]) ||
         (zValues && zValues[i]) ||
         (dateValues && dateValues[i])
       ) {
+        hasData = true;
+      }
+      
+      // Kiểm tra trong tapsData
+      if (!hasData && tapsData && Array.isArray(tapsData)) {
+        for (const tap of tapsData) {
+          if ((tap.aValues && tap.aValues[i]) || (tap.bValues && tap.bValues[i])) {
+            hasData = true;
+            break;
+          }
+        }
+      }
+
+      // Kiểm tra trong allQData
+      if (!hasData && allQData && Array.isArray(allQData)) {
+        for (const qItem of allQData) {
+          if (qItem.tapsData && Array.isArray(qItem.tapsData)) {
+            for (const tap of qItem.tapsData) {
+              if ((tap.aValues && tap.aValues[i]) || (tap.bValues && tap.bValues[i])) {
+                hasData = true;
+                break;
+              }
+            }
+          }
+          if (hasData) break;
+        }
+      }
+
+      if (hasData) {
         lastIndex = i;
         break;
       }
@@ -167,6 +261,35 @@ app.post("/api/pages/:pageId", async (req, res) => {
     const trimmedSourceSTT =
       lastIndex >= 0 && sourceSTTValues ? sourceSTTValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [];
 
+    // Trim tapsData
+    const trimmedTaps =
+      lastIndex >= 0 && tapsData && Array.isArray(tapsData)
+        ? tapsData.slice(0, 10).map((tap) => ({
+            aValues: tap.aValues ? tap.aValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
+            bValues: tap.bValues ? tap.bValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
+          }))
+        : undefined;
+
+    // Trim allQData
+    const trimmedAllQData =
+      lastIndex >= 0 && allQData && Array.isArray(allQData)
+        ? allQData.slice(0, 5).map((qItem) => {
+            let qTaps = qItem.tapsData;
+            let trimmedQTaps = undefined;
+            if (qTaps && Array.isArray(qTaps)) {
+              trimmedQTaps = qTaps.slice(0, 10).map((tap) => ({
+                aValues: tap.aValues ? tap.aValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
+                bValues: tap.bValues ? tap.bValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
+              }));
+            }
+            return {
+              aValues: qItem.aValues ? qItem.aValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
+              bValues: qItem.bValues ? qItem.bValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
+              tapsData: trimmedQTaps,
+            };
+          })
+        : undefined;
+
     // Update or create page
     const page = await Page.findOneAndUpdate(
       { pageId },
@@ -174,6 +297,7 @@ app.post("/api/pages/:pageId", async (req, res) => {
         pageId,
         aValues: trimmedA,
         bValues: trimmedB,
+        tapsData: trimmedTaps,
         zValues: trimmedZ,
         dateValues: trimmedDates,
         deletedRows: trimmedDeleted,
@@ -181,7 +305,7 @@ app.post("/api/pages/:pageId", async (req, res) => {
         purpleRangeFrom: purpleRangeFrom || 0,
         purpleRangeTo: purpleRangeTo || 0,
         keepLastNRows: typeof keepLastNRows === "number" ? keepLastNRows : 110,
-        allQData,
+        allQData: trimmedAllQData,
         pageLabel: pageLabel || "",
         updatedAt: new Date(),
       },
@@ -276,7 +400,7 @@ app.use((req, res) => {
 });
 
 // Error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error("❌ Server error:", err);
   res.status(500).json({
     success: false,

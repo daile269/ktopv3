@@ -18,7 +18,6 @@ const TaskRow = memo(
     highlightedQCols,
     highlightedRows,
     highlightedCells,
-    onColClick,
     onRowClick,
     onCellClick,
   }) => {
@@ -63,36 +62,84 @@ const TaskRow = memo(
             style={{ textAlign: "center", width: "100%", padding: "8px", fontSize: "35px", fontWeight: "500", color: "#222" }}
           />
         </td>
-        {Array.from({ length: 10 }).map((_, qIndex) => {
+
+        {/* Render 5 Qs, each has 10 Taps, each Tap has A and B */}
+        {Array.from({ length: 5 }).map((_, qIndex) => {
           const qData = allQData[qIndex];
-          const aV = isDeleted ? "" : qData?.aValues[rowIndex] || "";
-          const bV = isDeleted ? "" : qData?.bValues[rowIndex] || "";
           const baseColor = qIndex % 2 === 0 ? "#fff" : "#f1f1f1";
-          const isColAHL = !!highlightedQCols[qIndex + "-a"];
-          const isColBHL = !!highlightedQCols[qIndex + "-b"];
-          const isCellAHL = !!highlightedCells[rowIndex]?.[qIndex]?.a;
-          const isCellBHL = !!highlightedCells[rowIndex]?.[qIndex]?.b;
-          const tdAClass = isCellAHL ? "draft-cell-highlighted" : isColAHL ? "draft-col-highlighted" : isRowHL ? "draft-row-highlighted" : "";
-          const tdBClass = isCellBHL ? "draft-cell-highlighted" : isColBHL ? "draft-col-highlighted" : isRowHL ? "draft-row-highlighted" : "";
-          return (
-            <span key={qIndex} style={{ display: "contents" }}>
-              <td
-                onClick={() => onCellClick(rowIndex, qIndex, "a")}
-                className={tdAClass}
-                style={{ backgroundColor: tdAClass ? undefined : baseColor, borderRight: "2px solid #999", cursor: "pointer" }}
-              >
-                <input type="text" className="cell-input small" value={aV} onChange={(e) => onAChange(qIndex, rowIndex, e.target.value)} disabled={isDeleted} />
-              </td>
-              <td
-                onClick={() => onCellClick(rowIndex, qIndex, "b")}
-                className={tdBClass}
-                style={{ backgroundColor: tdBClass ? undefined : baseColor, borderRight: "2px solid red", cursor: "pointer" }}
-              >
-                <input type="text" className="cell-input small" value={bV} onChange={(e) => onBChange(qIndex, rowIndex, e.target.value)} disabled={isDeleted} />
-              </td>
-            </span>
-          );
+
+          return Array.from({ length: 10 }).map((__, tapIndex) => {
+            const tap = qData?.tapsData?.[tapIndex];
+            const aV = isDeleted ? "" : tap?.aValues?.[rowIndex] || "";
+            const bV = isDeleted ? "" : tap?.bValues?.[rowIndex] || "";
+
+            const colKeyA = `${qIndex}-${tapIndex}-a`;
+            const colKeyB = `${qIndex}-${tapIndex}-b`;
+
+            const isColAHL = !!highlightedQCols[colKeyA];
+            const isColBHL = !!highlightedQCols[colKeyB];
+
+            const isCellAHL = !!highlightedCells[rowIndex]?.[qIndex]?.[tapIndex]?.a;
+            const isCellBHL = !!highlightedCells[rowIndex]?.[qIndex]?.[tapIndex]?.b;
+
+            const tdAClass = isCellAHL
+              ? "draft-cell-highlighted"
+              : isColAHL
+              ? "draft-col-highlighted"
+              : isRowHL
+              ? "draft-row-highlighted"
+              : "";
+            const tdBClass = isCellBHL
+              ? "draft-cell-highlighted"
+              : isColBHL
+              ? "draft-col-highlighted"
+              : isRowHL
+              ? "draft-row-highlighted"
+              : "";
+
+            return (
+              <Fragment key={`${qIndex}-${tapIndex}`}>
+                <td
+                  onClick={() => onCellClick(rowIndex, qIndex, tapIndex, "a")}
+                  className={tdAClass}
+                  style={{
+                    backgroundColor: tdAClass ? undefined : baseColor,
+                    borderRight: "2px solid #999",
+                    cursor: "pointer",
+                    minWidth: "60px",
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="cell-input small"
+                    value={aV}
+                    onChange={(e) => onAChange(qIndex, tapIndex, rowIndex, e.target.value)}
+                    disabled={isDeleted}
+                  />
+                </td>
+                <td
+                  onClick={() => onCellClick(rowIndex, qIndex, tapIndex, "b")}
+                  className={tdBClass}
+                  style={{
+                    backgroundColor: tdBClass ? undefined : baseColor,
+                    borderRight: tapIndex === 9 ? "3px double red" : "2px solid red",
+                    cursor: "pointer",
+                    minWidth: "60px",
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="cell-input small"
+                    value={bV}
+                    onChange={(e) => onBChange(qIndex, tapIndex, rowIndex, e.target.value)}
+                    disabled={isDeleted}
+                  />
+                </td>
+              </Fragment>
+            );
+          });
         })}
+
         <td
           onClick={() => onRowClick(rowIndex)}
           className={isRowHL ? "draft-row-highlighted" : ""}
@@ -102,7 +149,12 @@ const TaskRow = memo(
         </td>
         <td
           className={isRowHL ? "draft-row-highlighted" : ""}
-          style={{ textAlign: "center", width: "80px !important", minWidth: "80px !important", padding: 0 }}
+          style={{
+            textAlign: "center",
+            width: "80px !important",
+            minWidth: "80px !important",
+            padding: 0,
+          }}
         >
           <input
             type="checkbox"
@@ -117,18 +169,23 @@ const TaskRow = memo(
   },
 );
 
-function InputPage({ accessWarningContent = null }) {
-  const MIN_ROWS = 5000; // Minimum rows
-  const [keepLastNRows, setKeepLastNRows] = useState(110);
-  const ROWS = MIN_ROWS;
+const MIN_ROWS = 5000;
+const ROWS = MIN_ROWS;
 
-  // State cho A, B của 10Q
+function InputPage({ accessWarningContent = null }) {
+  const [keepLastNRows, setKeepLastNRows] = useState(110);
+
+  // State cho 5 Q, mỗi Q có 10 Tập (A, B)
   const [allQData, setAllQData] = useState(
-    Array(10)
+    Array(5)
       .fill(null)
       .map(() => ({
-        aValues: Array(ROWS).fill(""),
-        bValues: Array(ROWS).fill(""),
+        tapsData: Array(10)
+          .fill(null)
+          .map(() => ({
+            aValues: Array(ROWS).fill(""),
+            bValues: Array(ROWS).fill(""),
+          })),
       })),
   );
 
@@ -139,13 +196,12 @@ function InputPage({ accessWarningContent = null }) {
   const [purpleRangeTo, setPurpleRangeTo] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState("");
-  const [selectedRows, setSelectedRows] = useState([]); // [rowIndex, ...] — giữ thứ tự click
-  const [queue, setQueue] = useState([]); // [{ rowIndex, displaySTT }, ...]
+  const [queue, setQueue] = useState([]);
   const MAX_PER_ROW = 4;
-  // === Highlight states (giống bảng tính) ===
-  const [highlightedQCols, setHighlightedQCols] = useState({}); // { qIndex: true } — multi-col
-  const [highlightedRows, setHighlightedRows] = useState({});   // { rowIndex: true }
-  const [highlightedCells, setHighlightedCells] = useState({}); // { rowIndex: { qIndex: { a, b } } }
+
+  const [highlightedQCols, setHighlightedQCols] = useState({});
+  const [highlightedRows, setHighlightedRows] = useState({});
+  const [highlightedCells, setHighlightedCells] = useState({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [isAddingToCalc, setIsAddingToCalc] = useState(false);
   const [transferDate, setTransferDate] = useState(() => {
@@ -155,7 +211,6 @@ function InputPage({ accessWarningContent = null }) {
     );
   });
 
-  // States for Deletion
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteOption, setDeleteOption] = useState("all");
   const [deleteRowFrom, setDeleteRowFrom] = useState("");
@@ -181,8 +236,12 @@ function InputPage({ accessWarningContent = null }) {
             Array(10)
               .fill(null)
               .map(() => ({
-                aValues: Array(ROWS).fill(""),
-                bValues: Array(ROWS).fill(""),
+                tapsData: Array(10)
+                  .fill(null)
+                  .map(() => ({
+                    aValues: Array(ROWS).fill(""),
+                    bValues: Array(ROWS).fill(""),
+                  })),
               })),
         );
         setDateValues(d.dateValues || Array(ROWS).fill(""));
@@ -192,13 +251,16 @@ function InputPage({ accessWarningContent = null }) {
         setPurpleRangeFrom(d.purpleRangeFrom || 0);
         setPurpleRangeTo(d.purpleRangeTo || 0);
       } else {
-        // Khởi tạo bảng trống nếu chưa có master_draft
         setAllQData(
           Array(10)
             .fill(null)
             .map(() => ({
-              aValues: Array(ROWS).fill(""),
-              bValues: Array(ROWS).fill(""),
+              tapsData: Array(10)
+                .fill(null)
+                .map(() => ({
+                  aValues: Array(ROWS).fill(""),
+                  bValues: Array(ROWS).fill(""),
+                })),
             })),
         );
         setDateValues(Array(ROWS).fill(""));
@@ -211,7 +273,6 @@ function InputPage({ accessWarningContent = null }) {
     loadData();
   }, []);
 
-  // Helper để format STT thành dãy (VD: 049-051, 055)
   const formatSttRanges = (sttArray) => {
     if (!sttArray || sttArray.length === 0) return "";
     const sorted = sttArray.map(Number).sort((a, b) => a - b);
@@ -240,7 +301,6 @@ function InputPage({ accessWarningContent = null }) {
     return "STT: " + ranges.join(", ");
   };
 
-  // Auto scroll to target row on load
   useEffect(() => {
     if (!isLoading && dateValues.length > 0) {
       const timer = setTimeout(() => {
@@ -275,7 +335,6 @@ function InputPage({ accessWarningContent = null }) {
     }
   }, [isLoading, dateValues.length, deletedRows]);
 
-  // Lấy thông tin lần chuyển cuối từ localStorage
   const [lastBatch, setLastBatch] = useState(() => {
     const saved = localStorage.getItem("lastBatchInfo");
     return saved ? JSON.parse(saved) : null;
@@ -288,7 +347,6 @@ function InputPage({ accessWarningContent = null }) {
     }
   }, [showAddModal]);
 
-  // Keep last N rows - hide all rows except last N rows with data
   const handleKeepLastNRows = async () => {
     const n = parseInt(keepLastNRows);
 
@@ -297,7 +355,6 @@ function InputPage({ accessWarningContent = null }) {
       return;
     }
 
-    // Use entered value as-is (no clamp)
     const adjustedN = n;
 
     const nonDeletedRowsWithData = [];
@@ -310,13 +367,19 @@ function InputPage({ accessWarningContent = null }) {
 
         if (!hasData) {
           for (let qIndex = 0; qIndex < 10; qIndex++) {
-            const a = allQData[qIndex]?.aValues[i];
-            const b = allQData[qIndex]?.bValues[i];
-            const z = zValues[i];
-            if ((a && a !== "") || (b && b !== "") || (z && z !== "")) {
-              hasData = true;
-              break;
+            const q = allQData[qIndex];
+            if (q && q.tapsData) {
+              for (let tap = 0; tap < 10; tap++) {
+                const a = q.tapsData[tap]?.aValues[i];
+                const b = q.tapsData[tap]?.bValues[i];
+                const z = zValues[i];
+                if ((a && a !== "") || (b && b !== "") || (z && z !== "")) {
+                  hasData = true;
+                  break;
+                }
+              }
             }
+            if (hasData) break;
           }
         }
 
@@ -339,10 +402,8 @@ function InputPage({ accessWarningContent = null }) {
       return;
     }
 
-    // Keep only last adjustedN rows from non-deleted rows
     const rowsToKeep = nonDeletedRowsWithData.slice(-adjustedN);
 
-    // Update deletedRows
     const newDeletedRows = [...deletedRows];
     for (let i = 0; i < dateValues.length; i++) {
       if (!deletedRows[i]) {
@@ -354,7 +415,6 @@ function InputPage({ accessWarningContent = null }) {
 
     setDeletedRows(newDeletedRows);
 
-    // Save automatically
     setSaveStatus("💾 Đang lưu...");
     await savePageData(
       "master_draft",
@@ -363,7 +423,7 @@ function InputPage({ accessWarningContent = null }) {
       zValues,
       dateValues,
       newDeletedRows,
-      null, // sourceSTTValues
+      null,
       purpleRangeFrom,
       purpleRangeTo,
       adjustedN,
@@ -378,16 +438,16 @@ function InputPage({ accessWarningContent = null }) {
     setSaveStatus("💾 Đang lưu...");
     const result = await savePageData(
       "master_draft",
-      null, // Not used directly in draft
+      null,
       null,
       zValues,
       dateValues,
       deletedRows,
-      null, // sourceSTTValues
+      null,
       purpleRangeFrom,
       purpleRangeTo,
       keepLastNRows,
-      allQData, // Truyền allQData
+      allQData,
     );
 
     if (result.success) {
@@ -400,43 +460,17 @@ function InputPage({ accessWarningContent = null }) {
     setTimeout(() => setSaveStatus(""), 2000);
   };
 
-  // Helper function to format date to DD/MM/YYYY
-  // formatDateSimple removed
-
-  const handleToggleSelect = useCallback((rowIndex, currentQueue) => {
-    setQueue((prev) => [...prev, { rowIndex, displaySTT: rowIndex }]);
+  const handleToggleSelect = useCallback((rowIndex) => {
+    setQueue((prev) => {
+      const count = prev.filter((item) => item.rowIndex === rowIndex).length;
+      if (count >= 4) {
+        alert(`⚠️ Dòng ${String(rowIndex).padStart(2, "0")} đã đạt tối đa 4 lần trong dòng đợi!`);
+        return prev;
+      }
+      return [...prev, { rowIndex, displaySTT: rowIndex }];
+    });
     setHighlightedRows({ [rowIndex]: true });
   }, []);
-
-  const handleAddToQueue = useCallback((currentQueue) => {
-    if (selectedRows.length === 0) {
-      alert("⚠️ Vui lòng chọn ít nhất một dòng!");
-      return;
-    }
-    // Đếm số lần mỗi rowIndex đã có trong queue hiện tại
-    const existingCounts = {};
-    for (const item of currentQueue) {
-      existingCounts[item.rowIndex] = (existingCounts[item.rowIndex] || 0) + 1;
-    }
-    const toAdd = [];
-    const skipped = [];
-    for (const rowIndex of selectedRows) {
-      const count = existingCounts[rowIndex] || 0;
-      if (count >= MAX_PER_ROW) {
-        skipped.push(String(rowIndex).padStart(2, "0"));
-      } else {
-        toAdd.push({ rowIndex, displaySTT: rowIndex });
-        existingCounts[rowIndex] = count + 1;
-      }
-    }
-    if (toAdd.length > 0) {
-      setQueue([...currentQueue, ...toAdd]);
-    }
-    if (skipped.length > 0) {
-      alert(`⚠️ Dòng ${skipped.join(", ")} đã đạt tối đa ${MAX_PER_ROW} lần trong dòng đợi!`);
-    }
-    setSelectedRows([]);
-  }, [selectedRows]);
 
   const handleRemoveFromQueue = useCallback((queueIndex) => {
     setQueue((prev) => prev.filter((_, i) => i !== queueIndex));
@@ -446,7 +480,6 @@ function InputPage({ accessWarningContent = null }) {
     setQueue([]);
   }, []);
 
-  // === Highlight handlers (giống bảng tính) ===
   const handleRowClick = useCallback((rowIndex) => {
     setHighlightedRows((prev) => ({
       ...prev,
@@ -454,16 +487,26 @@ function InputPage({ accessWarningContent = null }) {
     }));
   }, []);
 
-  const handleColClick = useCallback((qIndex) => {
-    setHighlightedQCols((prev) => ({ ...prev, [qIndex]: !prev[qIndex] }));
+  const handleColClick = useCallback((colKey) => {
+    setHighlightedQCols((prev) => ({ ...prev, [colKey]: !prev[colKey] }));
   }, []);
 
-  const handleCellClick = useCallback((rowIndex, qIndex, ab) => {
+  const handleCellClick = useCallback((rowIndex, qIndex, tapIndex, ab) => {
     setHighlightedCells((prev) => {
       const rowData = prev[rowIndex] || {};
       const qData = rowData[qIndex] || {};
-      const newQ = { ...qData, [ab]: !qData[ab] };
-      return { ...prev, [rowIndex]: { ...rowData, [qIndex]: newQ } };
+      const tapData = qData[tapIndex] || {};
+      const newTap = { ...tapData, [ab]: !tapData[ab] };
+      return {
+        ...prev,
+        [rowIndex]: {
+          ...rowData,
+          [qIndex]: {
+            ...qData,
+            [tapIndex]: newTap,
+          },
+        },
+      };
     });
   }, []);
 
@@ -483,37 +526,42 @@ function InputPage({ accessWarningContent = null }) {
     }
   }, []);
 
-  // Date change has been removed
-
-  const handleAChange = useCallback((qIdx, rIdx, val) => {
+  const handleAChange = useCallback((qIdx, tapIdx, rIdx, val) => {
     setAllQData((prev) => {
       const next = [...prev];
-      // Deep clone only the affected Q
       const updatedQ = {
         ...next[qIdx],
-        aValues: [...next[qIdx].aValues],
+        tapsData: [...next[qIdx].tapsData],
       };
-      updatedQ.aValues[rIdx] = val;
+      const updatedTap = {
+        ...updatedQ.tapsData[tapIdx],
+        aValues: [...updatedQ.tapsData[tapIdx].aValues],
+      };
+      updatedTap.aValues[rIdx] = val;
+      updatedQ.tapsData[tapIdx] = updatedTap;
       next[qIdx] = updatedQ;
       return next;
     });
   }, []);
 
-  const handleBChange = useCallback((qIdx, rIdx, val) => {
+  const handleBChange = useCallback((qIdx, tapIdx, rIdx, val) => {
     setAllQData((prev) => {
       const next = [...prev];
-      // Deep clone only the affected Q
       const updatedQ = {
         ...next[qIdx],
-        bValues: [...next[qIdx].bValues],
+        tapsData: [...next[qIdx].tapsData],
       };
-      updatedQ.bValues[rIdx] = val;
+      const updatedTap = {
+        ...updatedQ.tapsData[tapIdx],
+        bValues: [...updatedQ.tapsData[tapIdx].bValues],
+      };
+      updatedTap.bValues[rIdx] = val;
+      updatedQ.tapsData[tapIdx] = updatedTap;
       next[qIdx] = updatedQ;
       return next;
     });
   }, []);
 
-  // Deletion Handlers
   const handleDeleteFirstRow = async () => {
     let firstRowIndex = -1;
     for (let i = 0; i < dateValues.length; i++) {
@@ -521,10 +569,16 @@ function InputPage({ accessWarningContent = null }) {
         let hasData = dateValues[i] !== "" || zValues[i] !== "";
         if (!hasData) {
           for (let q = 0; q < 10; q++) {
-            if (allQData[q]?.aValues[i] || allQData[q]?.bValues[i]) {
-              hasData = true;
-              break;
+            const qData = allQData[q];
+            if (qData && qData.tapsData) {
+              for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+                if (qData.tapsData[tapIdx]?.aValues[i] || qData.tapsData[tapIdx]?.bValues[i]) {
+                  hasData = true;
+                  break;
+                }
+              }
             }
+            if (hasData) break;
           }
         }
         if (hasData) {
@@ -551,7 +605,7 @@ function InputPage({ accessWarningContent = null }) {
       zValues,
       dateValues,
       newDeletedRows,
-      null, // sourceSTTValues
+      null,
       purpleRangeFrom,
       purpleRangeTo,
       keepLastNRows,
@@ -569,10 +623,16 @@ function InputPage({ accessWarningContent = null }) {
         let hasData = dateValues[i] !== "" || zValues[i] !== "";
         if (!hasData) {
           for (let q = 0; q < 10; q++) {
-            if (allQData[q]?.aValues[i] || allQData[q]?.bValues[i]) {
-              hasData = true;
-              break;
+            const qData = allQData[q];
+            if (qData && qData.tapsData) {
+              for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+                if (qData.tapsData[tapIdx]?.aValues[i] || qData.tapsData[tapIdx]?.bValues[i]) {
+                  hasData = true;
+                  break;
+                }
+              }
             }
+            if (hasData) break;
           }
         }
         if (hasData) {
@@ -599,7 +659,7 @@ function InputPage({ accessWarningContent = null }) {
       zValues,
       dateValues,
       newDeletedRows,
-      null, // sourceSTTValues
+      null,
       purpleRangeFrom,
       purpleRangeTo,
       keepLastNRows,
@@ -614,6 +674,17 @@ function InputPage({ accessWarningContent = null }) {
     const newDeletedRows = Array(dateValues.length).fill(true);
     setDeletedRows(newDeletedRows);
 
+    const emptyAllQData = Array(5)
+      .fill(null)
+      .map(() => ({
+        tapsData: Array(10)
+          .fill(null)
+          .map(() => ({
+            aValues: Array(dateValues.length).fill(""),
+            bValues: Array(dateValues.length).fill(""),
+          })),
+      }));
+
     await savePageData(
       "master_draft",
       null,
@@ -621,26 +692,14 @@ function InputPage({ accessWarningContent = null }) {
       Array(dateValues.length).fill(""),
       Array(dateValues.length).fill(""),
       newDeletedRows,
-      null, // sourceSTTValues
+      null,
       purpleRangeFrom,
       purpleRangeTo,
       keepLastNRows,
-      Array(10)
-        .fill(null)
-        .map(() => ({
-          aValues: Array(dateValues.length).fill(""),
-          bValues: Array(dateValues.length).fill(""),
-        })),
+      emptyAllQData,
     );
 
-    setAllQData(
-      Array(10)
-        .fill(null)
-        .map(() => ({
-          aValues: Array(dateValues.length).fill(""),
-          bValues: Array(dateValues.length).fill(""),
-        })),
-    );
+    setAllQData(emptyAllQData);
     setZValues(Array(dateValues.length).fill(""));
     setDateValues(Array(dateValues.length).fill(""));
 
@@ -680,7 +739,7 @@ function InputPage({ accessWarningContent = null }) {
       zValues,
       dateValues,
       newDeletedRows,
-      null, // sourceSTTValues
+      null,
       purpleRangeFrom,
       purpleRangeTo,
       keepLastNRows,
@@ -722,23 +781,29 @@ function InputPage({ accessWarningContent = null }) {
     setSaveStatus("🚀 Đang thêm dòng vào bảng tính...");
 
     try {
-      // VALIDATE: Kiểm tra xem các dòng được chọn có giá trị A hoặc B không (chỉ check unique)
+      // VALIDATE: Kiểm tra xem các dòng được chọn có giá trị A hoặc B không
       for (const idx of [...new Set(selectedIndices)]) {
         let hasValueInAnyQ = false;
-        for (let q = 0; q < 10; q++) {
-          if (
-            (allQData[q]?.aValues[idx] &&
-              String(allQData[q].aValues[idx]).trim() !== "") ||
-            (allQData[q]?.bValues[idx] &&
-              String(allQData[q].bValues[idx]).trim() !== "")
-          ) {
-            hasValueInAnyQ = true;
-            break;
+        for (let q = 0; q < 5; q++) {
+          const qData = allQData[q];
+          if (qData && qData.tapsData) {
+            for (let tap = 0; tap < 10; tap++) {
+              const a = qData.tapsData[tap]?.aValues[idx];
+              const b = qData.tapsData[tap]?.bValues[idx];
+              if (
+                (a && String(a).trim() !== "") ||
+                (b && String(b).trim() !== "")
+              ) {
+                hasValueInAnyQ = true;
+                break;
+              }
+            }
           }
+          if (hasValueInAnyQ) break;
         }
         if (!hasValueInAnyQ) {
           alert(
-            `⚠️ Dòng thông ${idx} (Z: ${zValues[idx]}) đang trống A và B! Hãy nhập A và B để tiếp tục`,
+            `⚠️ Dòng thông ${idx} (Z: ${zValues[idx]}) đang trống A và B! Hãy nhập ít nhất một cặp A và B để tiếp tục`,
           );
           setIsAddingToCalc(false);
           setSaveStatus("");
@@ -746,118 +811,147 @@ function InputPage({ accessWarningContent = null }) {
         }
       }
 
-      for (let i = 1; i <= 10; i++) {
-        const qId = `q${i}`;
-        const currentData = await loadPageData(qId);
+      const currentData = await loadPageData("q_all");
 
-        // Lấy lại thông tin hiện tại của bảng tính để KHÔNG ghi đè sai lệch
-        const existingPurpleFrom =
-          currentData.success && currentData.data
-            ? currentData.data.purpleRangeFrom
-            : 0;
-        const existingPurpleTo =
-          currentData.success && currentData.data
-            ? currentData.data.purpleRangeTo
-            : 0;
-        const existingKeepN =
-          currentData.success && currentData.data
-            ? currentData.data.keepLastNRows || 110
-            : 110;
+      const existingPurpleFrom =
+        currentData.success && currentData.data
+          ? currentData.data.purpleRangeFrom
+          : 0;
+      const existingPurpleTo =
+        currentData.success && currentData.data
+          ? currentData.data.purpleRangeTo
+          : 0;
+      const existingKeepN =
+        currentData.success && currentData.data
+          ? currentData.data.keepLastNRows || 110
+          : 110;
+      const existingPageLabel =
+        currentData.success && currentData.data
+          ? currentData.data.pageLabel || ""
+          : "";
 
-        let activeA = [],
-          activeB = [],
-          activeZ = [],
-          activeD = [],
-          activeDel = [],
-          activeSourceSTT = [];
+      let activeAllQData = currentData.success && currentData.data?.allQData
+        ? JSON.parse(JSON.stringify(currentData.data.allQData))
+        : Array(5).fill(null).map(() => ({
+            tapsData: Array(10).fill(null).map(() => ({
+              aValues: Array(ROWS).fill(""),
+              bValues: Array(ROWS).fill(""),
+            })),
+          }));
 
-        if (currentData.success && currentData.data) {
-          const d = currentData.data;
-          const aVals = d.aValues || [];
-          const bVals = d.bValues || [];
-          const zVals = d.zValues || [];
-          const dVals = d.dateValues || [];
-          const delFlags = d.deletedRows || [];
-          const sourceVals = d.sourceSTTValues || [];
+      let activeZ = [];
+      let activeD = [];
+      let activeDel = [];
+      let activeSourceSTT = [];
 
-          // COMPACTION: Loại bỏ TOÀN BỘ các dòng trống (không có bất kỳ dữ liệu nào)
-          for (let j = 0; j < aVals.length; j++) {
-            const hasAnyData =
-              (aVals[j] !== undefined &&
-                aVals[j] !== null &&
-                String(aVals[j]).trim() !== "") ||
-              (bVals[j] !== undefined &&
-                bVals[j] !== null &&
-                String(bVals[j]).trim() !== "") ||
-              (zVals[j] !== undefined &&
-                zVals[j] !== null &&
-                String(zVals[j]).trim() !== "") ||
-              (dVals[j] !== undefined &&
-                dVals[j] !== null &&
-                String(dVals[j]).trim() !== "");
+      let newAllQData = Array(5).fill(null).map(() => ({
+        tapsData: Array(10).fill(null).map(() => ({
+          aValues: [],
+          bValues: [],
+        })),
+      }));
 
-            // Nếu dòng thực sự có nội dung thì giữ lại, bất chấp cờ xóa
-            if (hasAnyData) {
-              activeA.push(aVals[j] || "");
-              activeB.push(bVals[j] || "");
-              activeZ.push(zVals[j] || "");
-              activeD.push(dVals[j] || "");
-              // Giữ nguyên cờ xóa nếu dòng có dữ liệu (có thể là dòng đã bị xóa ẩn đi)
-              activeDel.push(delFlags[j] === undefined ? false : delFlags[j]);
-              activeSourceSTT.push(sourceVals[j] || "");
+      if (currentData.success && currentData.data) {
+        const d = currentData.data;
+        const zVals = d.zValues || [];
+        const dVals = d.dateValues || [];
+        const delFlags = d.deletedRows || [];
+        const sourceVals = d.sourceSTTValues || [];
+
+        for (let j = 0; j < zVals.length; j++) {
+          let hasAnyData =
+            (zVals[j] && String(zVals[j]).trim() !== "") ||
+            (dVals[j] && String(dVals[j]).trim() !== "");
+
+          if (!hasAnyData) {
+            for (let q = 0; q < 5; q++) {
+              const taps = activeAllQData[q]?.tapsData || [];
+              for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+                const a = taps[tapIdx]?.aValues[j];
+                const b = taps[tapIdx]?.bValues[j];
+                if ((a && String(a).trim() !== "") || (b && String(b).trim() !== "")) {
+                  hasAnyData = true;
+                  break;
+                }
+              }
+              if (hasAnyData) break;
+            }
+          }
+
+          if (hasAnyData) {
+            activeZ.push(zVals[j] || "");
+            activeD.push(dVals[j] || "");
+            activeDel.push(delFlags[j] === undefined ? false : delFlags[j]);
+            activeSourceSTT.push(sourceVals[j] || "");
+            for (let q = 0; q < 5; q++) {
+              for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+                newAllQData[q].tapsData[tapIdx].aValues.push(activeAllQData[q]?.tapsData?.[tapIdx]?.aValues[j] || "");
+                newAllQData[q].tapsData[tapIdx].bValues.push(activeAllQData[q]?.tapsData?.[tapIdx]?.bValues[j] || "");
+              }
             }
           }
         }
-
-        // Append selected rows (to the end of existing data block)
-        selectedIndices.forEach((idx) => {
-          activeA.push(allQData[i - 1].aValues[idx] || "");
-          activeB.push(allQData[i - 1].bValues[idx] || "");
-          activeZ.push(""); // Không chép cột Z sang bảng tính
-          activeD.push(transferDate);
-          activeDel.push(false);
-          activeSourceSTT.push(String(idx).padStart(2, "0"));
-        });
-
-        let activeCount = activeDel.filter(val => !val).length;
-        if (activeCount > existingKeepN) {
-          const excess = activeCount - existingKeepN;
-          let marked = 0;
-          for (let k = 0; k < activeDel.length; k++) {
-            if (!activeDel[k]) {
-              activeDel[k] = true;
-              marked++;
-              if (marked === excess) break;
-            }
-          }
-        }
-
-        while (activeA.length < ROWS) {
-          activeA.push("");
-          activeB.push("");
-          activeZ.push("");
-          activeD.push("");
-          activeDel.push(true);
-          activeSourceSTT.push("");
-        }
-
-        await savePageData(
-          qId,
-          activeA,
-          activeB,
-          activeZ,
-          activeD,
-          activeDel,
-          activeSourceSTT,
-          existingPurpleFrom,
-          existingPurpleTo,
-          existingKeepN,
-        );
       }
+
+      selectedIndices.forEach((idx) => {
+        activeZ.push("");
+        activeD.push(transferDate);
+        activeDel.push(false);
+        activeSourceSTT.push(String(idx).padStart(2, "0"));
+
+        for (let q = 0; q < 5; q++) {
+          for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+            const draftTap = allQData[q]?.tapsData?.[tapIdx];
+            newAllQData[q].tapsData[tapIdx].aValues.push(draftTap?.aValues[idx] || "");
+            newAllQData[q].tapsData[tapIdx].bValues.push(draftTap?.bValues[idx] || "");
+          }
+        }
+      });
+
+      let activeCount = activeDel.filter(val => !val).length;
+      if (activeCount > existingKeepN) {
+        const excess = activeCount - existingKeepN;
+        let marked = 0;
+        for (let k = 0; k < activeDel.length; k++) {
+          if (!activeDel[k]) {
+            activeDel[k] = true;
+            marked++;
+            if (marked === excess) break;
+          }
+        }
+      }
+
+      while (activeZ.length < ROWS) {
+        activeZ.push("");
+        activeD.push("");
+        activeDel.push(true);
+        activeSourceSTT.push("");
+        for (let q = 0; q < 5; q++) {
+          for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+            newAllQData[q].tapsData[tapIdx].aValues.push("");
+            newAllQData[q].tapsData[tapIdx].bValues.push("");
+          }
+        }
+      }
+
+      await savePageData(
+        "q_all",
+        null,
+        null,
+        activeZ,
+        activeD,
+        activeDel,
+        activeSourceSTT,
+        existingPurpleFrom,
+        existingPurpleTo,
+        existingKeepN,
+        newAllQData,
+        existingPageLabel,
+        undefined,
+      );
 
       setSaveStatus("✅ Đã thêm mới vào bảng tính!");
 
-      // LƯU LẠI LỊCH SỬ LẦN VỪA CHUYỂN
       const batchInfo = {
         stts: selectedIndices.map((idx) => String(idx).padStart(2, "0")),
         zValues: selectedIndices.map((idx) => zValues[idx] || ""),
@@ -866,7 +960,6 @@ function InputPage({ accessWarningContent = null }) {
       localStorage.setItem("lastBatchInfo", JSON.stringify(batchInfo));
       setLastBatch(batchInfo);
 
-      setSelectedRows([]);
       setQueue([]);
       setShowAddModal(false);
       setShowSuccessModal(true);
@@ -902,7 +995,6 @@ function InputPage({ accessWarningContent = null }) {
 
   return (
     <>
-      {/* PMA Title */}
       <div
         style={{
           position: "sticky",
@@ -927,7 +1019,6 @@ function InputPage({ accessWarningContent = null }) {
             gap: "15px",
           }}
         >
-          {/* Nhãn phân biệt Web đã chuyển xuống Toolbar */}
           Dự án cải tạo môi trường thềm lục địa biển Việt Nam -
           <span
             style={{
@@ -953,70 +1044,6 @@ function InputPage({ accessWarningContent = null }) {
               marginTop: "65px",
             }}
           >
-            {/* <div
-              style={{
-                padding: "12px 20px",
-                background: "#f9f9f9",
-                borderBottom: "1px solid #e0e0e0",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                marginBottom: "20px",
-              }}
-            >
-              <label
-                style={{ fontSize: "30px", fontWeight: "600", color: "#555" }}
-              >
-                Nhập khoảng số muốn báo màu:
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="1000"
-                value={purpleRangeFrom}
-                onChange={(e) =>
-                  setPurpleRangeFrom(parseInt(e.target.value) || 0)
-                }
-                style={{
-                  width: "100px",
-                  padding: "4px 8px",
-                  fontSize: "30px",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  textAlign: "center",
-                }}
-              />
-              <span style={{ fontSize: "30px", color: "#666" }}>đến</span>
-              <input
-                type="number"
-                min="0"
-                max="1000"
-                value={purpleRangeTo}
-                onChange={(e) =>
-                  setPurpleRangeTo(parseInt(e.target.value) || 0)
-                }
-                style={{
-                  width: "100px",
-                  padding: "4px 8px",
-                  fontSize: "30px",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  textAlign: "center",
-                }}
-              />
-            </div> */}
-            {/* <h2 style={{ fontSize: "30px" }}>Nhập A, B cho Q1-Q10</h2> */}
-            {/* <h2
-              style={{
-                fontSize: "30px",
-                fontWeight: "bold",
-                color: "#007bff",
-                textDecoration: "underline",
-                marginRight: "30px",
-              }}
-            >
-              BẢNG THÔNG
-            </h2> */}
             <div
               style={{
                 display: "flex",
@@ -1153,7 +1180,7 @@ function InputPage({ accessWarningContent = null }) {
               </button>
               <button
                 className="toolbar-btn"
-                onClick={() => (window.location.href = "/q1")}
+                onClick={() => (window.location.href = "/")}
                 style={{
                   fontSize: "30px",
                   background: "#28a745",
@@ -1173,7 +1200,20 @@ function InputPage({ accessWarningContent = null }) {
                   border: "none",
                 }}
               >
-                📋Về Bảng chọn dòng thông
+                📋 Về Bảng chọn dòng thông
+              </button>
+              <button
+                className="toolbar-btn"
+                onClick={() => (window.location.href = "/bao-mau")}
+                style={{
+                  fontSize: "30px",
+                  background: "#ffc107",
+                  color: "#212529",
+                  border: "none",
+                  fontWeight: "bold",
+                }}
+              >
+                🎨 Báo màu
               </button>
               {accessWarningContent}
               {saveStatus && (
@@ -1208,62 +1248,60 @@ function InputPage({ accessWarningContent = null }) {
               <span style={{ fontSize: "30px", fontWeight: "bold", marginRight: "6px", whiteSpace: "nowrap" }}>
                 📋 Dòng đợi:
               </span>
-              {(() => {
-                return queue.map((item, idx) => {
-                  const luot = idx + 1;
-                  return (
-                    <span key={idx} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
-                      {idx > 0 && (
-                        <span style={{ fontSize: "22px", color: "#888", margin: "0 2px" }}>→</span>
-                      )}
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          background: "#a8d5a2",
-                          color: "black",
-                          borderRadius: "6px",
-                          padding: "4px 12px",
-                          fontSize: "30px",
-                          fontWeight: "normal",
-                          gap: "1px",
-                          position: "relative",
-                        }}
-                      >
-                        <span>{String(item.displaySTT).padStart(2, "0")}</span>
-                        <span style={{ fontSize: "30px", fontWeight: "normal", opacity: 0.9 }}>
-                          L{luot}
-                        </span>
-                        <button
-                          onClick={() => handleRemoveFromQueue(idx)}
-                          style={{
-                            position: "absolute",
-                            top: "-6px",
-                            right: "-6px",
-                            background: "#dc3545",
-                            border: "none",
-                            color: "white",
-                            cursor: "pointer",
-                            fontSize: "11px",
-                            width: "16px",
-                            height: "16px",
-                            borderRadius: "50%",
-                            lineHeight: 1,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            padding: 0,
-                          }}
-                          title="Xóa khỏi dòng đợi"
-                        >
-                          ×
-                        </button>
+              {queue.map((item, idx) => {
+                const luot = idx + 1;
+                return (
+                  <span key={idx} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
+                    {idx > 0 && (
+                      <span style={{ fontSize: "22px", color: "#888", margin: "0 2px" }}>→</span>
+                    )}
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        background: "#a8d5a2",
+                        color: "black",
+                        borderRadius: "6px",
+                        padding: "4px 12px",
+                        fontSize: "30px",
+                        fontWeight: "normal",
+                        gap: "1px",
+                        position: "relative",
+                      }}
+                    >
+                      <span>{String(item.displaySTT).padStart(2, "0")}</span>
+                      <span style={{ fontSize: "30px", fontWeight: "normal", opacity: 0.9 }}>
+                        L{luot}
                       </span>
+                      <button
+                        onClick={() => handleRemoveFromQueue(idx)}
+                        style={{
+                          position: "absolute",
+                          top: "-6px",
+                          right: "-6px",
+                          background: "#dc3545",
+                          border: "none",
+                          color: "white",
+                          cursor: "pointer",
+                          fontSize: "11px",
+                          width: "16px",
+                          height: "16px",
+                          borderRadius: "50%",
+                          lineHeight: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: 0,
+                        }}
+                        title="Xóa khỏi dòng đợi"
+                      >
+                        ×
+                      </button>
                     </span>
-                  );
-                });
-              })()}
+                  </span>
+                );
+              })}
               <button
                 onClick={handleClearQueue}
                 style={{
@@ -1283,6 +1321,7 @@ function InputPage({ accessWarningContent = null }) {
             </div>
           )}
 
+          {/* Giao diện lưới nhập liệu với cuộn ngang */}
           <div
             style={{
               overflowX: "auto",
@@ -1295,7 +1334,7 @@ function InputPage({ accessWarningContent = null }) {
               <thead>
                 <tr>
                   <th
-                    rowSpan="2"
+                    rowSpan="3"
                     style={{
                       padding: 0,
                       width: "60px !important",
@@ -1305,49 +1344,37 @@ function InputPage({ accessWarningContent = null }) {
                   >
                     Chọn
                   </th>
-                  <th rowSpan="2" style={{ padding: "8px 4px" }}>
+                  <th rowSpan="3" style={{ padding: "8px 4px" }}>
                     STT
                   </th>
-                  <th rowSpan="2" style={{ minWidth: "200px", width: "200px" }}>
+                  <th rowSpan="3" style={{ minWidth: "200px", width: "200px" }}>
                     Z
                   </th>
-                  {/* Ngày đã bị loại bỏ */}
-                  {Array.from({ length: 10 }, (_, qIndex) => {
+                  {Array.from({ length: 5 }, (_, qIndex) => {
                     const baseColor = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd";
-                    const isBothActive = !!highlightedQCols[qIndex + "-a"] && !!highlightedQCols[qIndex + "-b"];
                     return (
                       <th
                         key={qIndex}
-                        colSpan="2"
-                        onClick={() => {
-                          setHighlightedQCols((prev) => {
-                            const both = prev[qIndex + "-a"] && prev[qIndex + "-b"];
-                            return {
-                              ...prev,
-                              [qIndex + "-a"]: !both,
-                              [qIndex + "-b"]: !both,
-                            };
-                          });
-                        }}
-                        className={isBothActive ? "draft-col-header-highlighted" : ""}
+                        colSpan="20"
                         style={{
-                          backgroundColor: isBothActive ? undefined : baseColor,
-                          borderLeft: "2px solid red",
-                          borderRight: "2px solid red",
+                          backgroundColor: baseColor,
+                          borderLeft: "3px solid red",
+                          borderRight: "3px solid red",
                           borderBottom: "2px solid black",
-                          cursor: "pointer",
                           userSelect: "none",
+                          fontSize: "20px",
+                          fontWeight: "bold",
                         }}
                       >
                         Q{qIndex + 1}
                       </th>
                     );
                   })}
-                  <th rowSpan="2" style={{ padding: "8px 4px" }}>
+                  <th rowSpan="3" style={{ padding: "8px 4px" }}>
                     STT
                   </th>
                   <th
-                    rowSpan="2"
+                    rowSpan="3"
                     style={{
                       padding: 0,
                       width: "60px !important",
@@ -1359,43 +1386,68 @@ function InputPage({ accessWarningContent = null }) {
                   </th>
                 </tr>
                 <tr>
-                  {Array.from({ length: 10 }, (_, qIndex) => {
+                  {Array.from({ length: 5 }).map((_, qIndex) => {
                     const baseColor = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd";
-                    const isActiveA = !!highlightedQCols[qIndex + "-a"];
-                    const isActiveB = !!highlightedQCols[qIndex + "-b"];
-                    return (
-                      <Fragment key={qIndex}>
-                        <th
-                          key={`a-${qIndex}`}
-                          onClick={() => handleColClick(qIndex + "-a")}
-                          className={isActiveA ? "draft-col-header-highlighted" : ""}
-                          style={{
-                            backgroundColor: isActiveA ? undefined : baseColor,
-                            borderLeft: "2px solid red",
-                            borderRight: "2px solid #999",
-                            minWidth: "60px",
-                            cursor: "pointer",
-                            userSelect: "none",
-                          }}
-                        >
-                          A
-                        </th>
-                        <th
-                          key={`b-${qIndex}`}
-                          onClick={() => handleColClick(qIndex + "-b")}
-                          className={isActiveB ? "draft-col-header-highlighted" : ""}
-                          style={{
-                            backgroundColor: isActiveB ? undefined : baseColor,
-                            borderRight: "2px solid red",
-                            minWidth: "60px",
-                            cursor: "pointer",
-                            userSelect: "none",
-                          }}
-                        >
-                          B
-                        </th>
-                      </Fragment>
-                    );
+                    return Array.from({ length: 10 }).map((__, tapIndex) => (
+                      <th
+                        key={`${qIndex}-${tapIndex}`}
+                        colSpan="2"
+                        style={{
+                          backgroundColor: baseColor,
+                          borderLeft: "1px solid #999",
+                          borderRight: "1px solid #999",
+                          borderBottom: "1px solid black",
+                          fontSize: "14px",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Tập {tapIndex + 1}
+                      </th>
+                    ));
+                  })}
+                </tr>
+                <tr>
+                  {Array.from({ length: 5 }).map((_, qIndex) => {
+                    const baseColor = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd";
+                    return Array.from({ length: 10 }).map((__, tapIndex) => {
+                      const colKeyA = `${qIndex}-${tapIndex}-a`;
+                      const colKeyB = `${qIndex}-${tapIndex}-b`;
+                      const isActiveA = !!highlightedQCols[colKeyA];
+                      const isActiveB = !!highlightedQCols[colKeyB];
+                      return (
+                        <Fragment key={`${qIndex}-${tapIndex}`}>
+                          <th
+                            onClick={() => handleColClick(colKeyA)}
+                            className={isActiveA ? "draft-col-header-highlighted" : ""}
+                            style={{
+                              backgroundColor: isActiveA ? undefined : baseColor,
+                              borderLeft: "1px solid #999",
+                              borderRight: "1px solid #ccc",
+                              minWidth: "60px",
+                              cursor: "pointer",
+                              userSelect: "none",
+                              fontSize: "12px",
+                            }}
+                          >
+                            A
+                          </th>
+                          <th
+                            onClick={() => handleColClick(colKeyB)}
+                            className={isActiveB ? "draft-col-header-highlighted" : ""}
+                            style={{
+                              backgroundColor: isActiveB ? undefined : baseColor,
+                              borderRight: tapIndex === 9 ? "3px double red" : "1px solid #999",
+                              minWidth: "60px",
+                              cursor: "pointer",
+                              userSelect: "none",
+                              fontSize: "12px",
+                            }}
+                          >
+                            B
+                          </th>
+                        </Fragment>
+                      );
+                    });
                   })}
                 </tr>
               </thead>
@@ -1406,10 +1458,10 @@ function InputPage({ accessWarningContent = null }) {
                     rowIndex={rowIndex}
                     displayRowNumber={idx}
                     isDeleted={deletedRows[rowIndex]}
-                    isSelected={selectedRows.includes(rowIndex)}
+                    isSelected={queue.some((item) => item.rowIndex === rowIndex)}
                     zValue={zValues[rowIndex]}
                     allQData={allQData}
-                    onToggleSelect={(rowIndex) => handleToggleSelect(rowIndex, queue)}
+                    onToggleSelect={(rowIndex) => handleToggleSelect(rowIndex)}
                     onZChange={handleZChange}
                     highlightedQCols={highlightedQCols}
                     highlightedRows={highlightedRows}
@@ -1426,24 +1478,15 @@ function InputPage({ accessWarningContent = null }) {
           </div>
         </div>
       </div>
+
       {/* Modal xác nhận thêm vào bảng tính */}
       {showAddModal && (
         <div className="modal-overlay">
-          <div
-            className="modal-content"
-            style={{ maxWidth: "1100px", width: "95%" }}
-          >
-            <h2
-              style={{
-                fontSize: "56px",
-                marginBottom: "28px",
-                fontWeight: "bold",
-              }}
-            >
+          <div className="modal-content" style={{ maxWidth: "1100px", width: "95%" }}>
+            <h2 style={{ fontSize: "56px", marginBottom: "28px", fontWeight: "bold" }}>
               🚀 Thông báo
             </h2>
 
-            {/* Thông tin 5 dòng đã chuyển gần nhất */}
             <div
               style={{
                 marginBottom: "20px",
@@ -1474,14 +1517,7 @@ function InputPage({ accessWarningContent = null }) {
                         })()}
                       </span>
                     </div>
-                    <div
-                      style={{
-                        marginTop: "10px",
-                        color: "#1976d2",
-                        fontWeight: "bold",
-                        fontSize: "42px",
-                      }}
-                    >
+                    <div style={{ marginTop: "10px", color: "#1976d2", fontWeight: "bold", fontSize: "42px" }}>
                       {formatSttRanges(lastBatch.stts)}
                     </div>
                   </div>
@@ -1501,25 +1537,25 @@ function InputPage({ accessWarningContent = null }) {
             >
               <p>Lần chọn mới:</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
-                {queue.length > 0 ? queue.map((item, idx) => (
-                  <span key={idx} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
-                    {idx > 0 && (
-                      <span style={{ fontSize: "32px", color: "#888", margin: "0 2px" }}>→</span>
-                    )}
-                    <span
-                      style={{
-                        background: "#fd7e14",
-                        color: "white",
-                        borderRadius: "6px",
-                        padding: "3px 10px",
-                        fontSize: "36px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {String(item.displaySTT).padStart(2, "0")}
+                {queue.length > 0 ? (
+                  queue.map((item, idx) => (
+                    <span key={idx} style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
+                      {idx > 0 && <span style={{ fontSize: "32px", color: "#888", margin: "0 2px" }}>→</span>}
+                      <span
+                        style={{
+                          background: "#fd7e14",
+                          color: "white",
+                          borderRadius: "6px",
+                          padding: "3px 10px",
+                          fontSize: "36px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {String(item.displaySTT).padStart(2, "0")}
+                      </span>
                     </span>
-                  </span>
-                )) : (
+                  ))
+                ) : (
                   <span style={{ color: "#999" }}>Chưa chọn dòng nào!</span>
                 )}
               </div>
@@ -1533,14 +1569,7 @@ function InputPage({ accessWarningContent = null }) {
                 borderRadius: "8px",
               }}
             >
-              <label
-                style={{
-                  fontSize: "40px",
-                  fontWeight: "bold",
-                  display: "block",
-                  marginBottom: "10px",
-                }}
-              >
+              <label style={{ fontSize: "40px", fontWeight: "bold", display: "block", marginBottom: "10px" }}>
                 📅 Chọn ngày để lưu vào bảng tính:
               </label>
               <input
@@ -1561,13 +1590,7 @@ function InputPage({ accessWarningContent = null }) {
               />
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                justifyContent: "space-between",
-              }}
-            >
+            <div style={{ display: "flex", gap: "10px", justifyContent: "space-between" }}>
               <button
                 onClick={() => setShowAddModal(false)}
                 style={{
@@ -1582,9 +1605,7 @@ function InputPage({ accessWarningContent = null }) {
               </button>
               <button
                 onClick={handleConfirmAddToApp}
-                disabled={
-                  isAddingToCalc || queue.length === 0
-                }
+                disabled={isAddingToCalc || queue.length === 0}
                 style={{
                   padding: "14px 28px",
                   borderRadius: "8px",
@@ -1602,6 +1623,7 @@ function InputPage({ accessWarningContent = null }) {
           </div>
         </div>
       )}
+
       {showSuccessModal && (
         <div className="modal-overlay">
           <div
@@ -1613,42 +1635,14 @@ function InputPage({ accessWarningContent = null }) {
               padding: "40px 20px",
             }}
           >
-            <div
-              style={{
-                fontSize: "80px",
-                marginBottom: "20px",
-              }}
-            >
-              ✅
-            </div>
-            <h2
-              style={{
-                fontSize: "40px",
-                fontWeight: "bold",
-                marginBottom: "20px",
-                color: "#000",
-              }}
-            >
+            <div style={{ fontSize: "80px", marginBottom: "20px" }}>✅</div>
+            <h2 style={{ fontSize: "40px", fontWeight: "bold", marginBottom: "20px", color: "#000" }}>
               THÀNH CÔNG!
             </h2>
-            <p
-              style={{
-                fontSize: "28px",
-                fontWeight: "bold",
-                marginBottom: "40px",
-                color: "#000",
-              }}
-            >
+            <p style={{ fontSize: "28px", fontWeight: "bold", marginBottom: "40px", color: "#000" }}>
               Đã thêm dữ liệu vào bảng tính thành công.
             </p>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "20px",
-                alignItems: "center",
-              }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px", alignItems: "center" }}>
               <button
                 onClick={() => (window.location.href = "/q1")}
                 style={{
@@ -1723,36 +1717,12 @@ function InputPage({ accessWarningContent = null }) {
 
       {/* Delete Main Modal */}
       {showDeleteModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowDeleteModal(false)}
-        >
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "600px", width: "95%" }}
-          >
-            <h3 style={{ fontSize: "24px", marginBottom: "20px" }}>
-              Xóa dữ liệu Bảng thông
-            </h3>
-
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px", width: "95%" }}>
+            <h3 style={{ fontSize: "24px", marginBottom: "20px" }}>Xóa dữ liệu Bảng thông</h3>
             <div className="modal-body">
-              <div
-                className="radio-group"
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "15px",
-                }}
-              >
-                <label
-                  style={{
-                    fontSize: "22px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                  }}
-                >
+              <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+                <label style={{ fontSize: "22px", display: "flex", alignItems: "center", gap: "12px" }}>
                   <input
                     type="radio"
                     value="all"
@@ -1762,15 +1732,7 @@ function InputPage({ accessWarningContent = null }) {
                   />
                   Xóa tất cả dữ liệu
                 </label>
-
-                <label
-                  style={{
-                    fontSize: "22px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                  }}
-                >
+                <label style={{ fontSize: "22px", display: "flex", alignItems: "center", gap: "12px" }}>
                   <input
                     type="radio"
                     value="firstRow"
@@ -1780,15 +1742,7 @@ function InputPage({ accessWarningContent = null }) {
                   />
                   Xóa dòng cũ nhất
                 </label>
-
-                <label
-                  style={{
-                    fontSize: "22px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                  }}
-                >
+                <label style={{ fontSize: "22px", display: "flex", alignItems: "center", gap: "12px" }}>
                   <input
                     type="radio"
                     value="lastRow"
@@ -1798,15 +1752,7 @@ function InputPage({ accessWarningContent = null }) {
                   />
                   Xóa dòng mới nhất
                 </label>
-
-                <label
-                  style={{
-                    fontSize: "22px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                  }}
-                >
+                <label style={{ fontSize: "22px", display: "flex", alignItems: "center", gap: "12px" }}>
                   <input
                     type="radio"
                     value="rows"
@@ -1818,24 +1764,13 @@ function InputPage({ accessWarningContent = null }) {
                 </label>
 
                 {deleteOption === "rows" && (
-                  <div
-                    style={{
-                      paddingLeft: "35px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                    }}
-                  >
+                  <div style={{ paddingLeft: "35px", display: "flex", alignItems: "center", gap: "10px" }}>
                     <input
                       type="number"
                       placeholder="Từ STT"
                       value={deleteRowFrom}
                       onChange={(e) => setDeleteRowFrom(e.target.value)}
-                      style={{
-                        width: "100px",
-                        fontSize: "18px",
-                        padding: "5px",
-                      }}
+                      style={{ width: "100px", fontSize: "18px", padding: "5px" }}
                     />
                     <span>đến</span>
                     <input
@@ -1843,29 +1778,14 @@ function InputPage({ accessWarningContent = null }) {
                       placeholder="Đến STT"
                       value={deleteRowTo}
                       onChange={(e) => setDeleteRowTo(e.target.value)}
-                      style={{
-                        width: "100px",
-                        fontSize: "18px",
-                        padding: "5px",
-                      }}
+                      style={{ width: "100px", fontSize: "18px", padding: "5px" }}
                     />
                   </div>
                 )}
               </div>
             </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "10px",
-                marginTop: "20px",
-              }}
-            >
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                style={{ padding: "8px 16px", fontSize: "18px" }}
-              >
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
+              <button onClick={() => setShowDeleteModal(false)} style={{ padding: "8px 16px", fontSize: "18px" }}>
                 Hủy
               </button>
               <button
@@ -1886,28 +1806,13 @@ function InputPage({ accessWarningContent = null }) {
         </div>
       )}
 
-      {/* Confirmation Modals */}
       {showDeleteAllModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ textAlign: "center" }}>
-            <h3 style={{ fontSize: "22px" }}>
-              ⚠️ Xác nhận xóa tất cả dữ liệu Bảng thông?
-            </h3>
-            <p style={{ color: "red", fontSize: "18px" }}>
-              Hành động này không thể hoàn tác.
-            </p>
-            <div
-              style={{
-                marginTop: "20px",
-                display: "flex",
-                justifyContent: "center",
-                gap: "10px",
-              }}
-            >
-              <button
-                onClick={() => setShowDeleteAllModal(false)}
-                style={{ padding: "8px 16px", fontSize: "18px" }}
-              >
+            <h3 style={{ fontSize: "22px" }}>⚠️ Xác nhận xóa tất cả dữ liệu Bảng thông?</h3>
+            <p style={{ color: "red", fontSize: "18px" }}>Hành động này không thể hoàn tác.</p>
+            <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", gap: "10px" }}>
+              <button onClick={() => setShowDeleteAllModal(false)} style={{ padding: "8px 16px", fontSize: "18px" }}>
                 Hủy
               </button>
               <button
@@ -1930,21 +1835,9 @@ function InputPage({ accessWarningContent = null }) {
       {showDeleteFirstRowModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ textAlign: "center" }}>
-            <h3 style={{ fontSize: "22px" }}>
-              Xác nhận xóa dòng cũ nhất (đầu tiên)?
-            </h3>
-            <div
-              style={{
-                marginTop: "20px",
-                display: "flex",
-                justifyContent: "center",
-                gap: "10px",
-              }}
-            >
-              <button
-                onClick={() => setShowDeleteFirstRowModal(false)}
-                style={{ padding: "8px 16px", fontSize: "18px" }}
-              >
+            <h3 style={{ fontSize: "22px" }}>Xác nhận xóa dòng cũ nhất (đầu tiên)?</h3>
+            <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", gap: "10px" }}>
+              <button onClick={() => setShowDeleteFirstRowModal(false)} style={{ padding: "8px 16px", fontSize: "18px" }}>
                 Hủy
               </button>
               <button
@@ -1967,21 +1860,9 @@ function InputPage({ accessWarningContent = null }) {
       {showDeleteLastRowModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ textAlign: "center" }}>
-            <h3 style={{ fontSize: "22px" }}>
-              Xác nhận xóa dòng mới nhất (cuối cùng)?
-            </h3>
-            <div
-              style={{
-                marginTop: "20px",
-                display: "flex",
-                justifyContent: "center",
-                gap: "10px",
-              }}
-            >
-              <button
-                onClick={() => setShowDeleteLastRowModal(false)}
-                style={{ padding: "8px 16px", fontSize: "18px" }}
-              >
+            <h3 style={{ fontSize: "22px" }}>Xác nhận xóa dòng mới nhất (cuối cùng)?</h3>
+            <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", gap: "10px" }}>
+              <button onClick={() => setShowDeleteLastRowModal(false)} style={{ padding: "8px 16px", fontSize: "18px" }}>
                 Hủy
               </button>
               <button
@@ -2007,18 +1888,8 @@ function InputPage({ accessWarningContent = null }) {
             <h3 style={{ fontSize: "22px" }}>
               Xác nhận xóa dữ liệu từ STT {deleteRowFrom} đến {deleteRowTo}?
             </h3>
-            <div
-              style={{
-                marginTop: "20px",
-                display: "flex",
-                justifyContent: "center",
-                gap: "10px",
-              }}
-            >
-              <button
-                onClick={() => setShowDeleteByRowsModal(false)}
-                style={{ padding: "8px 16px", fontSize: "18px" }}
-              >
+            <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", gap: "10px" }}>
+              <button onClick={() => setShowDeleteByRowsModal(false)} style={{ padding: "8px 16px", fontSize: "18px" }}>
                 Hủy
               </button>
               <button

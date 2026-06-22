@@ -41,6 +41,7 @@ export const savePageData = async (
   keepLastNRows = 110,
   allQData = undefined,
   pageLabel = "",
+  tapsData = undefined,
 ) => {
   try {
     const realId = getRealPageId(pageId);
@@ -53,6 +54,7 @@ export const savePageData = async (
       body: JSON.stringify({
         aValues,
         bValues,
+        tapsData,
         zValues,
         dateValues,
         deletedRows,
@@ -119,11 +121,54 @@ export const loadPageData = async (pageId) => {
       while (deleted.length < ROWS) deleted.push(false);
       while (sourceSTTs.length < ROWS) sourceSTTs.push("");
 
+      // Pad và xử lý tapsData ở client
+      let tapsData = data.tapsData;
+      if (!tapsData || !Array.isArray(tapsData) || tapsData.length === 0) {
+        tapsData = [];
+      }
+      while (tapsData.length < 10) {
+        tapsData.push({ aValues: [], bValues: [] });
+      }
+      const processedTapsData = tapsData.slice(0, 10).map((tap) => {
+        const tapA = Array.isArray(tap.aValues) ? [...tap.aValues].slice(0, ROWS) : [];
+        const tapB = Array.isArray(tap.bValues) ? [...tap.bValues].slice(0, ROWS) : [];
+        while (tapA.length < ROWS) tapA.push("");
+        while (tapB.length < ROWS) tapB.push("");
+        return { aValues: tapA, bValues: tapB };
+      });
+
+      // Pad và xử lý allQData lồng tapsData (nếu có)
+      let allQData = data.allQData;
+      if (allQData && Array.isArray(allQData)) {
+        allQData = allQData.slice(0, 5).map((qItem) => {
+          let qTaps = qItem.tapsData;
+          if (!qTaps || !Array.isArray(qTaps) || qTaps.length === 0) {
+            qTaps = [];
+          }
+          while (qTaps.length < 10) {
+            qTaps.push({ aValues: [], bValues: [] });
+          }
+          const processedQTaps = qTaps.slice(0, 10).map((tap) => {
+            const tapA = Array.isArray(tap.aValues) ? [...tap.aValues].slice(0, ROWS) : [];
+            const tapB = Array.isArray(tap.bValues) ? [...tap.bValues].slice(0, ROWS) : [];
+            while (tapA.length < ROWS) tapA.push("");
+            while (tapB.length < ROWS) tapB.push("");
+            return { aValues: tapA, bValues: tapB };
+          });
+          return {
+            aValues: Array.isArray(qItem.aValues) ? [...qItem.aValues].slice(0, ROWS) : [],
+            bValues: Array.isArray(qItem.bValues) ? [...qItem.bValues].slice(0, ROWS) : [],
+            tapsData: processedQTaps,
+          };
+        });
+      }
+
       return {
         success: true,
         data: {
           aValues: a,
           bValues: b,
+          tapsData: processedTapsData,
           zValues: z,
           dateValues: dates,
           deletedRows: deleted,
@@ -131,7 +176,7 @@ export const loadPageData = async (pageId) => {
           purpleRangeFrom: data.purpleRangeFrom || 0,
           purpleRangeTo: data.purpleRangeTo || 0,
           keepLastNRows: data.keepLastNRows || 110,
-          allQData: data.allQData,
+          allQData: allQData,
           pageLabel: data.pageLabel || "",
         },
       };
