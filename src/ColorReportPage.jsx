@@ -85,6 +85,73 @@ function ColorReportPage({ accessWarningContent = null }) {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    if (!isLoading) {
+      const params = new URLSearchParams(window.location.search);
+      const scrollToCount = params.get("scrollToCount");
+      const qVal = params.get("q");
+      const xVal = params.get("x");
+      const yVal = params.get("y");
+      const gVal = params.get("g");
+
+      setTimeout(() => {
+        const container = document.getElementById("report-table-container");
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+
+        if (scrollToCount) {
+          const num = parseInt(scrollToCount, 10);
+          if (!isNaN(num) && num >= 22 && num <= 85) {
+            let scrolled = false;
+
+            if (qVal && xVal && yVal && gVal) {
+              const cellElement = document.querySelector(`[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-"]`);
+              if (cellElement) {
+                cellElement.scrollIntoView({
+                  behavior: "smooth",
+                  block: "nearest",
+                  inline: "center",
+                });
+
+                const origBg = cellElement.style.backgroundColor;
+                const origColor = cellElement.style.color;
+                cellElement.style.transition = "background-color 0.3s ease, color 0.3s ease";
+                cellElement.style.backgroundColor = "#fd7e14";
+                cellElement.style.color = "white";
+                setTimeout(() => {
+                  cellElement.style.backgroundColor = origBg;
+                  cellElement.style.color = origColor;
+                }, 1200);
+
+                scrolled = true;
+              }
+            }
+
+            if (!scrolled) {
+              const element = document.getElementById(`col-count-${num}`);
+              if (element) {
+                element.scrollIntoView({
+                  behavior: "smooth",
+                  block: "nearest",
+                  inline: "center",
+                });
+                element.style.transition = "background-color 0.3s ease";
+                element.style.backgroundColor = "#fd7e14";
+                setTimeout(() => {
+                  element.style.backgroundColor = "#6f42c1";
+                }, 1000);
+              }
+            }
+
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, "", newUrl);
+          }
+        }
+      }, 600);
+    }
+  }, [isLoading]);
+
   // Mảng các cột số đếm set cứng từ 22 đến 85
   const cols = useMemo(() => {
     const arr = [];
@@ -217,25 +284,9 @@ function ColorReportPage({ accessWarningContent = null }) {
           .map(() => Array(10).fill(1)),
       );
 
-    // 4. Quét qua từng dòng R từ 0 đến actualRows - 1 để tìm kết quả mới
-    for (let R = 0; R < actualRows; R++) {
-      // a. Cập nhật số đếm tương lai của tất cả bảng T tại dòng R
-      for (let tapGlobalIdx = 0; tapGlobalIdx < 50; tapGlobalIdx++) {
-        for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
-          const valStr = tapsTValues[tapGlobalIdx][tableIdx][R];
-          if (valStr !== "") {
-            const val = parseInt(valStr, 10);
-            for (let col = 0; col < 10; col++) {
-              const isRed = col === val;
-              historyCounts[tapGlobalIdx][tableIdx][col] = isRed
-                ? 1
-                : historyCounts[tapGlobalIdx][tableIdx][col] + 1;
-            }
-          }
-        }
-      }
-
-      // b. Kiểm tra xem ở dòng R, có bảng T nào đạt số đếm báo màu c
+    // 4. Quét qua từng dòng R từ 0 đến actualRows để tìm kết quả mới (R = actualRows đại diện cho dòng tương lai)
+    for (let R = 0; R <= actualRows; R++) {
+      // a. Kiểm tra xem ở dòng R, có bảng T nào đạt số đếm báo màu c
       for (let c = 22; c <= 85; c++) {
         const limit = getLimitForCount(c);
 
@@ -259,6 +310,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                       row: R,
                       value: `${q}-${x}-${y}-${g}-${z}`,
                       globalTIndex,
+                      g,
                     });
                   }
                 }
@@ -267,14 +319,34 @@ function ColorReportPage({ accessWarningContent = null }) {
           }
         }
       }
+
+      // b. Cập nhật số đếm tương lai của tất cả bảng T tại dòng R (cho dòng R + 1)
+      if (R < actualRows) {
+        for (let tapGlobalIdx = 0; tapGlobalIdx < 50; tapGlobalIdx++) {
+          for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
+            const valStr = tapsTValues[tapGlobalIdx][tableIdx][R];
+            if (valStr !== "") {
+              const val = parseInt(valStr, 10);
+              for (let col = 0; col < 10; col++) {
+                const isRed = col === val;
+                historyCounts[tapGlobalIdx][tableIdx][col] = isRed
+                  ? 1
+                  : historyCounts[tapGlobalIdx][tableIdx][col] + 1;
+              }
+            }
+          }
+        }
+      }
     }
 
-    // 5. Build cấu trúc dữ liệu hiển thị cho các hàng
+    // 5. Build cấu trúc dữ liệu hiển thị cho các hàng (bao gồm cả dòng tương lai ở cuối)
     const rows = [];
-    for (let R = 0; R < actualRows; R++) {
+    for (let R = 0; R <= actualRows; R++) {
+      const isFutureRow = R === actualRows;
       const rowData = {
         rowIdx: R,
-        date: formatDate(dateValues[R]) || `Dòng ${R + 1}`,
+        date: isFutureRow ? "" : (formatDate(dateValues[R]) || `Dòng ${R + 1}`),
+        isFuture: isFutureRow,
         cells: {},
       };
 
@@ -291,6 +363,8 @@ function ColorReportPage({ accessWarningContent = null }) {
               rowData.cells[`${c}-${k}`] = {
                 value: match.value,
                 globalTIndex: match.globalTIndex,
+                row: match.row,
+                col: match.g,
                 isNew: true,
               };
             } else {
@@ -502,6 +576,7 @@ function ColorReportPage({ accessWarningContent = null }) {
             </div>
           ) : (
             <div
+              id="report-table-container"
               style={{
                 flex: 1,
                 border: "2px solid #6f42c1",
@@ -630,15 +705,17 @@ function ColorReportPage({ accessWarningContent = null }) {
                             cellsArr.push(
                               <td
                                 key={`${c}-${k}`}
+                                id={isNew ? `cell-report-${cell.value}` : undefined}
                                 className={isNew ? "cell-new" : ""}
                                 style={{
                                   padding: "8px",
                                   border: "1px solid #ddd",
                                   fontWeight: isNew ? "bold" : "normal",
-                                  backgroundColor: isNew
-                                    ? "#fd7e14"
-                                    : "transparent",
-                                  color: isNew ? "white" : "#777",
+                                  fontStyle: row.isFuture ? "italic" : "normal",
+                                  backgroundColor: "transparent",
+                                  color: row.isFuture
+                                    ? (isNew ? "#333" : "#777")
+                                    : (isNew ? "#cf3535" : "#777"),
                                   cursor: isNew ? "pointer" : "default",
                                   fontSize: "30px",
                                   minWidth: "180px",
@@ -646,7 +723,12 @@ function ColorReportPage({ accessWarningContent = null }) {
                                 }}
                                 onClick={() => {
                                   if (isNew && cell.globalTIndex) {
-                                    window.location.href = `/?scrollToT=${cell.globalTIndex}`;
+                                    window.location.href = `/?scrollToT=${cell.globalTIndex}&row=${cell.row}&col=${cell.col}`;
+                                  }
+                                }}
+                                onDoubleClick={() => {
+                                  if (isNew && cell.globalTIndex) {
+                                    window.location.href = `/?scrollToT=${cell.globalTIndex}&row=${cell.row}&col=${cell.col}`;
                                   }
                                 }}
                                 title={
@@ -682,7 +764,8 @@ function ColorReportPage({ accessWarningContent = null }) {
           transform: scale(0.95);
         }
         .cell-new:hover {
-          background-color: #e0690b !important;
+          background-color: #f2edf8 !important;
+          color: #6f42c1 !important;
           transform: scale(1.05);
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           z-index: 1;

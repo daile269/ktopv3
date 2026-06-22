@@ -9,7 +9,7 @@ import ColorReportPage from "./ColorReportPage";
 function App() {
   const TOTAL_TABLES = 2; // số bảng T mỗi Tập (chỉ còn T1, T2)
   const ROWS = 5000;
-  
+
   // State lưu trữ dữ liệu 5 Q, mỗi Q có 10 Tập (mỗi Tập có A và B)
   const [allQData, setAllQData] = useState(
     Array(5)
@@ -32,8 +32,6 @@ function App() {
   const isGenerating = false;
   const [error, setError] = useState("");
   const [pageLabel, setPageLabel] = useState("");
-
-
 
   const [highlightedCells, setHighlightedCells] = useState({});
   const [highlightedTCells, setHighlightedTCells] = useState({});
@@ -176,7 +174,10 @@ function App() {
                   Truy cập {accessWarningDate}.
                 </p>
               </div>
-              <div className="modal-footer" style={{ justifyContent: "center" }}>
+              <div
+                className="modal-footer"
+                style={{ justifyContent: "center" }}
+              >
                 <button
                   className="btn-delete access-warning-ok-button"
                   onClick={() => setShowAccessWarningModal(false)}
@@ -246,12 +247,18 @@ function App() {
         const result = await loadPageData(pageId);
         if (result.success && result.data) {
           // Lưu trữ mảng 5 Q
-          const loadedAllQData = result.data.allQData || Array(5).fill(null).map(() => ({
-            tapsData: Array(10).fill(null).map(() => ({
-              aValues: Array(ROWS).fill(""),
-              bValues: Array(ROWS).fill(""),
-            })),
-          }));
+          const loadedAllQData =
+            result.data.allQData ||
+            Array(5)
+              .fill(null)
+              .map(() => ({
+                tapsData: Array(10)
+                  .fill(null)
+                  .map(() => ({
+                    aValues: Array(ROWS).fill(""),
+                    bValues: Array(ROWS).fill(""),
+                  })),
+              }));
           setAllQData(loadedAllQData);
 
           setZValues(result.data.zValues || Array(ROWS).fill(""));
@@ -284,139 +291,154 @@ function App() {
     loadData();
   }, [pageId]);
 
-  const generateTableDataArr = useCallback((tValues, skipColor = false) => {
-    let actualRows = 0;
-    for (let i = dateValues.length - 1; i >= 0; i--) {
-      if (dateValues[i] || tValues[i]) {
-        actualRows = i + 1;
-        break;
-      }
-    }
-    if (actualRows === 0) return [];
-    const table = Array(actualRows)
-      .fill(null)
-      .map(() => Array(10).fill(null));
-    for (let col = 0; col < 10; col++) {
-      let y = 1;
-      for (let row = 0; row < actualRows; row++) {
-        if (tValues[row] === "" || tValues[row] === null || tValues[row] === undefined) {
-          table[row][col] = { value: "", color: "white" };
-          continue;
+  const generateTableDataArr = useCallback(
+    (tValues, skipColor = false) => {
+      let actualRows = 0;
+      for (let i = dateValues.length - 1; i >= 0; i--) {
+        if (dateValues[i] || tValues[i]) {
+          actualRows = i + 1;
+          break;
         }
-
-        const tVal = tValues[row] !== "" ? parseInt(tValues[row]) : -1;
-        const isRed = col === tVal && tVal !== -1;
-        const isPurple =
-          Number(y) >= Number(purpleRangeFrom) &&
-          Number(y) <= Number(purpleRangeTo);
-        let color = "white";
-
-        if (isRed && isPurple && !skipColor) color = "purple-red";
-        else if (isRed) color = "red";
-        else if (isPurple && !skipColor) color = "purple";
-
-        table[row][col] = { value: `${col}-${y}`, color: color };
-        y++;
-        if (isRed) y = 1;
       }
-    }
-    return table;
-  }, [dateValues, purpleRangeFrom, purpleRangeTo]);
-
-  const getPurpleTablesForData = useCallback((
-    qAValues,
-    qBValues,
-    qDateValues,
-    qDeletedRows,
-    rangeFrom = purpleRangeFrom,
-    rangeTo = purpleRangeTo,
-  ) => {
-    const purpleTables = {};
-    const from = Number(rangeFrom) || 0;
-    const to = Number(rangeTo) || 0;
-
-    if (from > to) return purpleTables;
-
-    let actualRows = 0;
-    for (let i = ROWS - 1; i >= 0; i--) {
-      if (qAValues?.[i] || qBValues?.[i] || qDateValues?.[i]) {
-        actualRows = i + 1;
-        break;
-      }
-    }
-
-    if (actualRows === 0) return purpleTables;
-
-    let lastRowIndex = -1;
-    for (let i = actualRows - 1; i >= 0; i--) {
-      if (
-        !qDeletedRows?.[i] &&
-        (qAValues?.[i] || qBValues?.[i] || qDateValues?.[i])
-      ) {
-        lastRowIndex = i;
-        break;
-      }
-    }
-
-    if (lastRowIndex === -1) return purpleTables;
-
-    const tValuesArr = Array(TOTAL_TABLES)
-      .fill(null)
-      .map(() => Array(ROWS).fill(""));
-
-    for (let tableIndex = 0; tableIndex < TOTAL_TABLES; tableIndex++) {
-      let v1, v2;
-      if (tableIndex === 0) {
-        v1 = qAValues || [];
-        v2 = qBValues || [];
-      } else if (tableIndex === 1) {
-        v1 = qBValues || [];
-        v2 = tValuesArr[0];
-      } else {
-        v1 = tValuesArr[tableIndex - 2];
-        v2 = tValuesArr[tableIndex - 1];
-      }
-
-      for (let row = 0; row < actualRows; row++) {
-        if (v1[row] === "" && v2[row] === "") {
-          tValuesArr[tableIndex][row] = "";
-          continue;
-        }
-
-        const n1 = parseInt(v1[row]) || 0;
-        const n2 = parseInt(v2[row]) || 0;
-        tValuesArr[tableIndex][row] = String((n1 + n2) % 10);
-      }
-    }
-
-    tValuesArr.forEach((tValues, tableIndex) => {
-      const tablePurpleCells = [];
-
+      if (actualRows === 0) return [];
+      const table = Array(actualRows)
+        .fill(null)
+        .map(() => Array(10).fill(null));
       for (let col = 0; col < 10; col++) {
         let y = 1;
         for (let row = 0; row < actualRows; row++) {
-          if (qDeletedRows?.[row]) continue;
-          if (tValues[row] === "" || tValues[row] === null || tValues[row] === undefined) continue;
-
-          const tVal = tValues[row] !== "" ? parseInt(tValues[row]) : -1;
-          const isPurple = y >= from && y <= to;
-
-          if (row === lastRowIndex && isPurple) {
-            tablePurpleCells.push(`${col}-${y}`);
+          if (
+            tValues[row] === "" ||
+            tValues[row] === null ||
+            tValues[row] === undefined
+          ) {
+            table[row][col] = { value: "", color: "white" };
+            continue;
           }
 
+          const tVal = tValues[row] !== "" ? parseInt(tValues[row]) : -1;
+          const isRed = col === tVal && tVal !== -1;
+          const isPurple =
+            Number(y) >= Number(purpleRangeFrom) &&
+            Number(y) <= Number(purpleRangeTo);
+          let color = "white";
+
+          if (isRed && isPurple && !skipColor) color = "purple-red";
+          else if (isRed) color = "red";
+          else if (isPurple && !skipColor) color = "purple";
+
+          table[row][col] = { value: `${col}-${y}`, color: color };
           y++;
-          if (col === tVal && tVal !== -1) y = 1;
+          if (isRed) y = 1;
+        }
+      }
+      return table;
+    },
+    [dateValues, purpleRangeFrom, purpleRangeTo],
+  );
+
+  const getPurpleTablesForData = useCallback(
+    (
+      qAValues,
+      qBValues,
+      qDateValues,
+      qDeletedRows,
+      rangeFrom = purpleRangeFrom,
+      rangeTo = purpleRangeTo,
+    ) => {
+      const purpleTables = {};
+      const from = Number(rangeFrom) || 0;
+      const to = Number(rangeTo) || 0;
+
+      if (from > to) return purpleTables;
+
+      let actualRows = 0;
+      for (let i = ROWS - 1; i >= 0; i--) {
+        if (qAValues?.[i] || qBValues?.[i] || qDateValues?.[i]) {
+          actualRows = i + 1;
+          break;
         }
       }
 
-      if (tablePurpleCells.length > 0) {
-        purpleTables[`T${tableIndex + 1}`] = tablePurpleCells;
-      }
-    });
+      if (actualRows === 0) return purpleTables;
 
-    return purpleTables;
-  }, [purpleRangeFrom, purpleRangeTo]);
+      let lastRowIndex = -1;
+      for (let i = actualRows - 1; i >= 0; i--) {
+        if (
+          !qDeletedRows?.[i] &&
+          (qAValues?.[i] || qBValues?.[i] || qDateValues?.[i])
+        ) {
+          lastRowIndex = i;
+          break;
+        }
+      }
+
+      if (lastRowIndex === -1) return purpleTables;
+
+      const tValuesArr = Array(TOTAL_TABLES)
+        .fill(null)
+        .map(() => Array(ROWS).fill(""));
+
+      for (let tableIndex = 0; tableIndex < TOTAL_TABLES; tableIndex++) {
+        let v1, v2;
+        if (tableIndex === 0) {
+          v1 = qAValues || [];
+          v2 = qBValues || [];
+        } else if (tableIndex === 1) {
+          v1 = qBValues || [];
+          v2 = tValuesArr[0];
+        } else {
+          v1 = tValuesArr[tableIndex - 2];
+          v2 = tValuesArr[tableIndex - 1];
+        }
+
+        for (let row = 0; row < actualRows; row++) {
+          if (v1[row] === "" && v2[row] === "") {
+            tValuesArr[tableIndex][row] = "";
+            continue;
+          }
+
+          const n1 = parseInt(v1[row]) || 0;
+          const n2 = parseInt(v2[row]) || 0;
+          tValuesArr[tableIndex][row] = String((n1 + n2) % 10);
+        }
+      }
+
+      tValuesArr.forEach((tValues, tableIndex) => {
+        const tablePurpleCells = [];
+
+        for (let col = 0; col < 10; col++) {
+          let y = 1;
+          for (let row = 0; row < actualRows; row++) {
+            if (qDeletedRows?.[row]) continue;
+            if (
+              tValues[row] === "" ||
+              tValues[row] === null ||
+              tValues[row] === undefined
+            )
+              continue;
+
+            const tVal = tValues[row] !== "" ? parseInt(tValues[row]) : -1;
+            const isPurple = y >= from && y <= to;
+
+            if (row === lastRowIndex && isPurple) {
+              tablePurpleCells.push(`${col}-${y}`);
+            }
+
+            y++;
+            if (col === tVal && tVal !== -1) y = 1;
+          }
+        }
+
+        if (tablePurpleCells.length > 0) {
+          purpleTables[`T${tableIndex + 1}`] = tablePurpleCells;
+        }
+      });
+
+      return purpleTables;
+    },
+    [purpleRangeFrom, purpleRangeTo],
+  );
   useEffect(() => {
     if (qPurpleInfo[pageId]?.hasPurple && !viewedQs[pageId]) {
       const v = { ...viewedQs, [pageId]: true };
@@ -429,21 +451,53 @@ function App() {
     if (isDataLoaded && !isLoading) {
       const params = new URLSearchParams(window.location.search);
       const scrollToT = params.get("scrollToT");
+      const rowParam = params.get("row");
+      const colParam = params.get("col");
+
       if (scrollToT) {
         const tableNum = parseInt(scrollToT);
         if (!isNaN(tableNum) && tableNum >= 1 && tableNum <= 100) {
           setTimeout(() => {
-            const elements = document.querySelectorAll(".table-section");
-            const tableElement = elements[tableNum - 1];
-            if (tableElement) {
-              tableElement.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-                inline: "start",
-              });
-              const newUrl = window.location.pathname;
-              window.history.replaceState({}, "", newUrl);
+            const tableIndex = tableNum - 1;
+            const rowIndex = rowParam !== null ? parseInt(rowParam, 10) : null;
+            const colIndex = colParam !== null ? parseInt(colParam, 10) : null;
+
+            let scrolled = false;
+            if (
+              rowIndex !== null &&
+              !isNaN(rowIndex) &&
+              colIndex !== null &&
+              !isNaN(colIndex)
+            ) {
+              const cellId = `cell-${tableIndex}-${rowIndex}-${colIndex}`;
+              const cellElement = document.getElementById(cellId);
+              if (cellElement) {
+                cellElement.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                  inline: "center",
+                });
+
+                // Highlight/Select cell to draw attention
+                handleCellClick(tableIndex, rowIndex, colIndex);
+                scrolled = true;
+              }
             }
+
+            if (!scrolled) {
+              const elements = document.querySelectorAll(".table-section");
+              const tableElement = elements[tableIndex];
+              if (tableElement) {
+                tableElement.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                  inline: "start",
+                });
+              }
+            }
+
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, "", newUrl);
           }, 600);
         }
       }
@@ -479,11 +533,22 @@ function App() {
       }
     }
     setQPurpleInfo(info);
-  }, [allQData, purpleRangeFrom, purpleRangeTo, isDataLoaded, getPurpleTablesForData, dateValues, deletedRows]);
+  }, [
+    allQData,
+    purpleRangeFrom,
+    purpleRangeTo,
+    isDataLoaded,
+    getPurpleTablesForData,
+    dateValues,
+    deletedRows,
+  ]);
   const { tapsTValues, tapsTableData } = useMemo(() => {
     let actualRows = 0;
     for (let i = ROWS - 1; i >= 0; i--) {
-      let hasData = dateValues[i] !== "" && dateValues[i] !== null && dateValues[i] !== undefined;
+      let hasData =
+        dateValues[i] !== "" &&
+        dateValues[i] !== null &&
+        dateValues[i] !== undefined;
       if (!hasData) {
         for (let qIdx = 0; qIdx < 5; qIdx++) {
           const qData = allQData[qIdx];
@@ -511,7 +576,10 @@ function App() {
     for (let qIdx = 0; qIdx < 5; qIdx++) {
       const qData = allQData[qIdx] || { tapsData: [] };
       for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
-        const tap = qData.tapsData?.[tapIdx] || { aValues: Array(ROWS).fill(""), bValues: Array(ROWS).fill("") };
+        const tap = qData.tapsData?.[tapIdx] || {
+          aValues: Array(ROWS).fill(""),
+          bValues: Array(ROWS).fill(""),
+        };
         const tapA = tap.aValues;
         const tapB = tap.bValues;
 
@@ -553,7 +621,11 @@ function App() {
   }, [allQData, dateValues, generateTableDataArr]);
 
   const allTableData = tapsTableData[0] || [];
-  const allTValues = tapsTValues[0] || Array(TOTAL_TABLES).fill(null).map(() => Array(ROWS).fill(""));
+  const allTValues =
+    tapsTValues[0] ||
+    Array(TOTAL_TABLES)
+      .fill(null)
+      .map(() => Array(ROWS).fill(""));
   const aValues = allQData[0]?.tapsData?.[0]?.aValues || Array(ROWS).fill("");
   const bValues = allQData[0]?.tapsData?.[0]?.bValues || Array(ROWS).fill("");
 
@@ -568,7 +640,11 @@ function App() {
   if (pathname === "chon-dong-thong") {
     return (
       <>
-        <SelectRowsPage accessWarningContent={renderAccessWarning(false, { fontSize: "30px" })} />
+        <SelectRowsPage
+          accessWarningContent={renderAccessWarning(false, {
+            fontSize: "30px",
+          })}
+        />
       </>
     );
   }
@@ -576,11 +652,14 @@ function App() {
   if (pathname === "bao-mau") {
     return (
       <>
-        <ColorReportPage accessWarningContent={renderAccessWarning(false, { fontSize: "30px" })} />
+        <ColorReportPage
+          accessWarningContent={renderAccessWarning(false, {
+            fontSize: "30px",
+          })}
+        />
       </>
     );
   }
-
 
   const getPurpleCellsInfoOfTap = (tableDataOfTap, tapIdx) => {
     const purpleCells = {};
@@ -612,7 +691,8 @@ function App() {
       }
 
       if (tablePurpleCells.length > 0) {
-        const globalTIndex = (qNum - 1) * 20 + relativeTapIdx * 2 + tableIndex + 1;
+        const globalTIndex =
+          (qNum - 1) * 20 + relativeTapIdx * 2 + tableIndex + 1;
         purpleCells[`T${globalTIndex}`] = tablePurpleCells;
       }
     });
@@ -637,7 +717,8 @@ function App() {
       });
 
       if (tablePurpleCells.length > 0) {
-        const globalTIndex = (qNum - 1) * 20 + relativeTapIdx * 2 + tableIndex + 1;
+        const globalTIndex =
+          (qNum - 1) * 20 + relativeTapIdx * 2 + tableIndex + 1;
         purpleCells[`T${globalTIndex}`] = tablePurpleCells;
       }
     });
@@ -655,7 +736,9 @@ function App() {
         if (tableNames.length > 0) {
           const qNum = Math.floor(tapIdx / 10) + 1;
           const relativeTapNum = (tapIdx % 10) + 1;
-          reports.push(`Q${qNum} Tập ${relativeTapNum}: ${tableNames.join(",")}`);
+          reports.push(
+            `Q${qNum} Tập ${relativeTapNum}: ${tableNames.join(",")}`,
+          );
         }
       }
     }
@@ -670,7 +753,6 @@ function App() {
     return {};
   };
 
-
   const handleGoToTable = () => {
     const tableNum = parseInt(goToTableNumber);
 
@@ -679,7 +761,8 @@ function App() {
       return;
     }
 
-    const tableElement = document.querySelectorAll(".table-section")[tableNum - 1];
+    const tableElement =
+      document.querySelectorAll(".table-section")[tableNum - 1];
 
     if (tableElement) {
       tableElement.scrollIntoView({
@@ -725,10 +808,6 @@ function App() {
     }
     return futureRow;
   };
-
-
-
-
 
   const handleSaveData = async () => {
     setSaveStatus("💾 Đang lưu...");
@@ -815,7 +894,10 @@ function App() {
   const handleAColHeader = () => setHighlightedAColumn((prev) => !prev);
   const handleBColHeader = () => setHighlightedBColumn((prev) => !prev);
   const handleTColHeader = (tableIndex) =>
-    setHighlightedTColumns((prev) => ({ ...prev, [tableIndex]: !prev[tableIndex] }));
+    setHighlightedTColumns((prev) => ({
+      ...prev,
+      [tableIndex]: !prev[tableIndex],
+    }));
 
   const handleDataColHeader = (tableIndex, colIndex) => {
     setHighlightedDataColumns((prev) => {
@@ -852,10 +934,6 @@ function App() {
   const handleInputAllQ = () => {
     window.location.href = "/input";
   };
-
-
-
-
 
   const confirmAddRow = async () => {
     if (!newRowDate) {
@@ -1127,8 +1205,6 @@ function App() {
     setShowDeleteFirstRowModal(false);
     alert(`✅ Đã xóa dòng đầu tiên!`);
   };
-
-
 
   const handleDelete = () => {
     if (deleteOption === "all") {
@@ -1465,7 +1541,7 @@ function App() {
           </span>
         </h1>
       </div>
-      
+
       <div className="top-toolbar">
         <div className="toolbar-section">
           <div
@@ -1503,15 +1579,21 @@ function App() {
             >
               🗑️ Xóa dl
             </button>
-            <button onClick={clearColumnHighlights} className="toolbar-button" style={{ fontSize: "25px", fontWeight: "bold" }}>
+            <button
+              onClick={clearColumnHighlights}
+              className="toolbar-button"
+              style={{ fontSize: "25px", fontWeight: "bold" }}
+            >
               🔄 X màu d.c
             </button>
-            <button onClick={handleSaveData} className="toolbar-button success" style={{ fontSize: "25px", fontWeight: "bold" }}>
+            <button
+              onClick={handleSaveData}
+              className="toolbar-button success"
+              style={{ fontSize: "25px", fontWeight: "bold" }}
+            >
               💾 Lưu dl
             </button>
           </div>
-
-
 
           <div
             className="toolbar-group"
@@ -1680,10 +1762,10 @@ function App() {
               fontSize: "24px",
               fontWeight: "bold",
               whiteSpace: "normal",
-              maxWidth: "70%",
+              width: "100%",
             }}
           >
-            📍 Báo màu các Q: {getGlobalPurpleCellsInfo()}
+            📍 BM Q: {getGlobalPurpleCellsInfo()}
           </div>
 
           <div className="toolbar-group">
@@ -1729,7 +1811,11 @@ function App() {
             <button
               onClick={handleGoToTable}
               className="toolbar-button primary"
-              style={{ fontSize: "25px", fontWeight: "bold", padding: "8px 16px" }}
+              style={{
+                fontSize: "25px",
+                fontWeight: "bold",
+                padding: "8px 16px",
+              }}
             >
               Xem
             </button>
@@ -1766,13 +1852,38 @@ function App() {
           </div>
         )}
 
-        <div className="taps-container" style={{ display: "flex", flexDirection: "row", gap: "40px", width: "max-content" }}>
+        <div
+          className="taps-container"
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: "40px",
+            width: "max-content",
+          }}
+        >
           {tapsTableData.map((tapTableData, tapIndex) => {
             const qIdx = Math.floor(tapIndex / 10);
             const relativeTapIdx = tapIndex % 10;
             return (
-              <div key={tapIndex} className="tap-section" style={{ border: "2px solid #ccc", borderRadius: "10px", padding: "20px", backgroundColor: "#fff" }}>
-                <div className="tables-container" style={{ display: "flex", gap: "24px", width: "max-content", overflow: "visible" }}>
+              <div
+                key={tapIndex}
+                className="tap-section"
+                style={{
+                  border: "2px solid #ccc",
+                  borderRadius: "10px",
+                  padding: "20px",
+                  backgroundColor: "#fff",
+                }}
+              >
+                <div
+                  className="tables-container"
+                  style={{
+                    display: "flex",
+                    gap: "24px",
+                    width: "max-content",
+                    overflow: "visible",
+                  }}
+                >
                   {tapTableData.map((tableData, tableIndex) => (
                     <div
                       key={tableIndex}
@@ -1807,17 +1918,20 @@ function App() {
                                     <input
                                       type="text"
                                       value={pageLabel}
-                                      onChange={(e) => setPageLabel(e.target.value)}
+                                      onChange={(e) =>
+                                        setPageLabel(e.target.value)
+                                      }
                                       placeholder="Ghi chú..."
                                       className="header-label-input"
                                       style={{
                                         marginLeft: "15px",
                                         fontSize: "22px",
                                         width: "300px",
-                                        backgroundColor: "rgba(255, 255, 255, 0.5)",
+                                        backgroundColor:
+                                          "rgba(255, 255, 255, 0.5)",
                                         border: "1px solid #ddd",
                                         padding: "4px 10px",
-                                        borderRadius: "6px"
+                                        borderRadius: "6px",
                                       }}
                                     />
                                   )}
@@ -1836,7 +1950,8 @@ function App() {
                                   Thông
                                 </th>
                                 <th colSpan="10" className="group-header">
-                                  Q{qIdx + 1} - Tham số (Tập {relativeTapIdx + 1})
+                                  Q{qIdx + 1} - Tham số (Tập{" "}
+                                  {relativeTapIdx + 1})
                                 </th>
                               </tr>
                               <tr>
@@ -1855,7 +1970,9 @@ function App() {
                                   <>
                                     <th
                                       className={`col-header fixed col-header-clickable ${
-                                        highlightedAColumn ? "col-header-highlighted" : ""
+                                        highlightedAColumn
+                                          ? "col-header-highlighted"
+                                          : ""
                                       }`}
                                       onClick={handleAColHeader}
                                     >
@@ -1863,7 +1980,9 @@ function App() {
                                     </th>
                                     <th
                                       className={`col-header fixed col-header-clickable ${
-                                        highlightedBColumn ? "col-header-highlighted" : ""
+                                        highlightedBColumn
+                                          ? "col-header-highlighted"
+                                          : ""
                                       }`}
                                       onClick={handleBColHeader}
                                     >
@@ -1873,7 +1992,9 @@ function App() {
                                 )}
                                 <th
                                   className={`col-header fixed col-header-clickable ${
-                                    highlightedTColumns[tableIndex] ? "col-header-highlighted" : ""
+                                    highlightedTColumns[tableIndex]
+                                      ? "col-header-highlighted"
+                                      : ""
                                   }`}
                                   onClick={() => handleTColHeader(tableIndex)}
                                 >
@@ -1887,7 +2008,9 @@ function App() {
                                         ? "col-header-highlighted"
                                         : ""
                                     }`}
-                                    onClick={() => handleDataColHeader(tableIndex, num)}
+                                    onClick={() =>
+                                      handleDataColHeader(tableIndex, num)
+                                    }
                                   >
                                     {num}
                                   </th>
@@ -1905,16 +2028,23 @@ function App() {
                                     <tr key={rowIndex}>
                                       <td
                                         className={`data-cell fixed ${
-                                          highlightedRows[rowIndex] ? "highlighted-row" : ""
+                                          highlightedRows[rowIndex]
+                                            ? "highlighted-row"
+                                            : ""
                                         }`}
                                         onClick={() => handleRowClick(rowIndex)}
                                         style={{ cursor: "pointer" }}
                                       >
-                                        {String(displayRowNumber).padStart(2, "0")}
+                                        {String(displayRowNumber).padStart(
+                                          2,
+                                          "0",
+                                        )}
                                       </td>
                                       <td
                                         className={`data-cell fixed date-col ${
-                                          highlightedRows[rowIndex] ? "highlighted-row" : ""
+                                          highlightedRows[rowIndex]
+                                            ? "highlighted-row"
+                                            : ""
                                         }`}
                                         onClick={() => handleRowClick(rowIndex)}
                                         style={{ cursor: "pointer" }}
@@ -1929,14 +2059,21 @@ function App() {
                                       </td>
                                       <td
                                         className={`data-cell fixed ${
-                                          highlightedRows[rowIndex] ? "highlighted-row" : ""
+                                          highlightedRows[rowIndex]
+                                            ? "highlighted-row"
+                                            : ""
                                         }`}
-                                        style={{ minWidth: "150px", width: "150px" }}
+                                        style={{
+                                          minWidth: "150px",
+                                          width: "150px",
+                                        }}
                                       >
                                         <input
                                           type="text"
                                           className="grid-input"
-                                          value={sourceSTTValues[rowIndex] || ""}
+                                          value={
+                                            sourceSTTValues[rowIndex] || ""
+                                          }
                                           readOnly={true}
                                           style={{
                                             width: "100%",
@@ -1956,17 +2093,23 @@ function App() {
                                               highlightedACells[rowIndex]
                                                 ? "highlighted-t-cell"
                                                 : highlightedAColumn
-                                                ? "col-highlighted"
-                                                : highlightedRows[rowIndex]
-                                                ? "highlighted-row"
-                                                : ""
+                                                  ? "col-highlighted"
+                                                  : highlightedRows[rowIndex]
+                                                    ? "highlighted-row"
+                                                    : ""
                                             }`}
-                                            onClick={() => handleACellClick(rowIndex)}
+                                            onClick={() =>
+                                              handleACellClick(rowIndex)
+                                            }
                                           >
                                             <input
                                               type="text"
                                               className="grid-input"
-                                              value={allQData[qIdx]?.tapsData?.[relativeTapIdx]?.aValues[rowIndex] || ""}
+                                              value={
+                                                allQData[qIdx]?.tapsData?.[
+                                                  relativeTapIdx
+                                                ]?.aValues[rowIndex] || ""
+                                              }
                                               readOnly={true}
                                               style={{
                                                 width: "100%",
@@ -1974,7 +2117,9 @@ function App() {
                                                 background: "transparent",
                                                 fontSize: "35px",
                                                 textAlign: "center",
-                                                color: highlightedACells[rowIndex]
+                                                color: highlightedACells[
+                                                  rowIndex
+                                                ]
                                                   ? "white"
                                                   : "#ef4444",
                                                 fontWeight: "600",
@@ -1987,17 +2132,23 @@ function App() {
                                               highlightedBCells[rowIndex]
                                                 ? "highlighted-t-cell"
                                                 : highlightedBColumn
-                                                ? "col-highlighted"
-                                                : highlightedRows[rowIndex]
-                                                ? "highlighted-row"
-                                                : ""
+                                                  ? "col-highlighted"
+                                                  : highlightedRows[rowIndex]
+                                                    ? "highlighted-row"
+                                                    : ""
                                             }`}
-                                            onClick={() => handleBCellClick(rowIndex)}
+                                            onClick={() =>
+                                              handleBCellClick(rowIndex)
+                                            }
                                           >
                                             <input
                                               type="text"
                                               className="grid-input"
-                                              value={allQData[qIdx]?.tapsData?.[relativeTapIdx]?.bValues[rowIndex] || ""}
+                                              value={
+                                                allQData[qIdx]?.tapsData?.[
+                                                  relativeTapIdx
+                                                ]?.bValues[rowIndex] || ""
+                                              }
                                               readOnly={true}
                                               style={{
                                                 width: "100%",
@@ -2005,7 +2156,9 @@ function App() {
                                                 background: "transparent",
                                                 fontSize: "35px",
                                                 textAlign: "center",
-                                                color: highlightedBCells[rowIndex]
+                                                color: highlightedBCells[
+                                                  rowIndex
+                                                ]
                                                   ? "white"
                                                   : "#ef4444",
                                                 fontWeight: "600",
@@ -2017,13 +2170,15 @@ function App() {
                                       )}
                                       <td
                                         className={`data-cell fixed value-col ${
-                                          highlightedTCells[tableIndex]?.[rowIndex]
+                                          highlightedTCells[tableIndex]?.[
+                                            rowIndex
+                                          ]
                                             ? "highlighted-t-cell"
                                             : highlightedTColumns[tableIndex]
-                                            ? "col-highlighted"
-                                            : highlightedRows[rowIndex]
-                                            ? "highlighted-row"
-                                            : ""
+                                              ? "col-highlighted"
+                                              : highlightedRows[rowIndex]
+                                                ? "highlighted-row"
+                                                : ""
                                         }`}
                                         onClick={() =>
                                           handleTCellClick(tableIndex, rowIndex)
@@ -2032,7 +2187,11 @@ function App() {
                                         <input
                                           type="text"
                                           className="grid-input"
-                                          value={tapsTValues[tapIndex]?.[tableIndex]?.[rowIndex] || ""}
+                                          value={
+                                            tapsTValues[tapIndex]?.[
+                                              tableIndex
+                                            ]?.[rowIndex] || ""
+                                          }
                                           onChange={() => {}}
                                           readOnly={true}
                                           style={{
@@ -2043,14 +2202,19 @@ function App() {
                                       {row.map((cell, colIndex) => (
                                         <td
                                           key={colIndex}
+                                          id={`cell-${tableIndex}-${rowIndex}-${colIndex}`}
                                           className={`data-cell ${cell.color} ${
-                                            highlightedCells[tableIndex]?.[rowIndex]?.[colIndex]
+                                            highlightedCells[tableIndex]?.[
+                                              rowIndex
+                                            ]?.[colIndex]
                                               ? "highlighted-cell"
-                                              : highlightedDataColumns[tableIndex]?.[colIndex]
-                                              ? "col-highlighted"
-                                              : highlightedRows[rowIndex]
-                                              ? "highlighted-row"
-                                              : ""
+                                              : highlightedDataColumns[
+                                                    tableIndex
+                                                  ]?.[colIndex]
+                                                ? "col-highlighted"
+                                                : highlightedRows[rowIndex]
+                                                  ? "highlighted-row"
+                                                  : ""
                                           }`}
                                           onClick={() =>
                                             handleCellClick(
@@ -2131,20 +2295,46 @@ function App() {
                                   >
                                     &nbsp;
                                   </td>
-                                  {getFutureRow(tableData).map((cell, colIdx) => (
-                                    <td
-                                      key={colIdx}
-                                      className={`data-cell ${cell.color} future-cell`}
-                                      style={{
-                                        pointerEvents: "none",
-                                        height: "50px",
-                                        fontStyle: "italic",
-                                        fontWeight: 600,
-                                      }}
-                                    >
-                                      {cell.value}
-                                    </td>
-                                  ))}
+                                  {getFutureRow(tableData).map(
+                                    (cell, colIdx) => {
+                                      const parts = cell.value.split("-");
+                                      const yVal = parts.length === 2 ? parseInt(parts[1], 10) : 0;
+                                      const canScroll = yVal >= 22 && yVal <= 85;
+                                      return (
+                                        <td
+                                          key={colIdx}
+                                          id={`cell-${tableIndex}-${tableData.length}-${colIdx}`}
+                                          className={`data-cell ${cell.color} future-cell ${
+                                            highlightedCells[tableIndex]?.[
+                                              tableData.length
+                                            ]?.[colIdx]
+                                              ? "highlighted-cell"
+                                              : ""
+                                          }`}
+                                          style={{
+                                            height: "50px",
+                                            fontStyle: "italic",
+                                            fontWeight: 600,
+                                            cursor: "pointer",
+                                          }}
+                                          onClick={() => {
+                                            if (canScroll) {
+                                              window.location.href = `/bao-mau?scrollToCount=${yVal}&q=${qIdx + 1}&x=${relativeTapIdx + 1}&y=${tableIndex + 1}&g=${colIdx}`;
+                                            } else {
+                                              window.location.href = `/bao-mau`;
+                                            }
+                                          }}
+                                          title={
+                                            canScroll
+                                              ? `Nhấp để xem báo màu của số đếm ${yVal}`
+                                              : "Nhấp để về bảng báo màu"
+                                          }
+                                        >
+                                          {cell.value}
+                                        </td>
+                                      );
+                                    },
+                                  )}
                                 </tr>
                               )}
                             </tbody>
@@ -2544,7 +2734,8 @@ function App() {
                   margin: "20px 0",
                 }}
               >
-                Bạn có chắc chắn muốn xóa dòng cuối cùng (dòng mới nhất) hiện tại không?
+                Bạn có chắc chắn muốn xóa dòng cuối cùng (dòng mới nhất) hiện
+                tại không?
               </p>
             </div>
 
@@ -2835,7 +3026,8 @@ function App() {
                   color: "#856404",
                 }}
               >
-                💡 <strong>Lưu ý:</strong> Các ô có giá trị trong khoảng này sẽ được tô màu vàng để báo hiệu.
+                💡 <strong>Lưu ý:</strong> Các ô có giá trị trong khoảng này sẽ
+                được tô màu vàng để báo hiệu.
               </div>
             </div>
 
@@ -2930,7 +3122,8 @@ function App() {
                   color: "#0c5460",
                 }}
               >
-                💡 <strong>Lưu ý:</strong> Đây là số dòng tối đa được lưu trữ trong hệ thống.
+                💡 <strong>Lưu ý:</strong> Đây là số dòng tối đa được lưu trữ
+                trong hệ thống.
               </div>
             </div>
 
