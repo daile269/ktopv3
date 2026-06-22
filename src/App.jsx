@@ -431,30 +431,24 @@ function App() {
       const scrollToT = params.get("scrollToT");
       if (scrollToT) {
         const tableNum = parseInt(scrollToT);
-        if (!isNaN(tableNum)) {
-          const qNum = parseInt(pageId.replace("q", "")) || 1;
-          const startNum = (qNum - 1) * 20 + 1;
-          const endNum = qNum * 20;
-          if (tableNum >= startNum && tableNum <= endNum) {
-            const pageTableIndex = tableNum - startNum;
-            setTimeout(() => {
-              const elements = document.querySelectorAll(".table-section");
-              const tableElement = elements[pageTableIndex];
-              if (tableElement) {
-                tableElement.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start",
-                  inline: "start",
-                });
-                const newUrl = window.location.pathname;
-                window.history.replaceState({}, "", newUrl);
-              }
-            }, 600);
-          }
+        if (!isNaN(tableNum) && tableNum >= 1 && tableNum <= 100) {
+          setTimeout(() => {
+            const elements = document.querySelectorAll(".table-section");
+            const tableElement = elements[tableNum - 1];
+            if (tableElement) {
+              tableElement.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+                inline: "start",
+              });
+              const newUrl = window.location.pathname;
+              window.history.replaceState({}, "", newUrl);
+            }
+          }, 600);
         }
       }
     }
-  }, [isDataLoaded, isLoading, pageId]);
+  }, [isDataLoaded, isLoading]);
 
   useEffect(() => {
     if (!isDataLoaded) return;

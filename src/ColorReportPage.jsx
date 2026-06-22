@@ -1,20 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import "./App.css";
 import "./InputPage.css";
-import { loadPageData, savePageData } from "./dataService";
+import { loadPageData } from "./dataService";
 
 const ROWS = 5000;
 const TOTAL_TABLES = 2;
 
 function ColorReportPage({ accessWarningContent = null }) {
-  const [selectedQ, setSelectedQ] = useState(1);
-  const [purpleRangeFrom, setPurpleRangeFrom] = useState(30);
-  const [purpleRangeTo, setPurpleRangeTo] = useState(40);
-  const [requiredCount, setRequiredCount] = useState(() => {
-    const saved = localStorage.getItem("ktop_bao_mau_required_count");
-    return saved ? parseInt(saved, 10) : 5;
-  });
-
   const [dateValues, setDateValues] = useState(Array(ROWS).fill(""));
   const [deletedRows, setDeletedRows] = useState(Array(ROWS).fill(false));
   const [allQData, setAllQData] = useState(
@@ -29,20 +21,36 @@ function ColorReportPage({ accessWarningContent = null }) {
           })),
       })),
   );
-  
+
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState("");
   const [error, setError] = useState("");
+  const [searchCount, setSearchCount] = useState("");
 
-  const tapsData = useMemo(() => {
-    return allQData[selectedQ - 1]?.tapsData || Array(10).fill(null).map(() => ({
-      aValues: Array(ROWS).fill(""),
-      bValues: Array(ROWS).fill(""),
-    }));
-  }, [allQData, selectedQ]);
+  const handleScrollToCount = useCallback(() => {
+    const num = parseInt(searchCount, 10);
+    if (isNaN(num) || num < 22 || num > 85) {
+      alert("Vui lòng nhập số đếm từ 22 đến 85!");
+      return;
+    }
+    const element = document.getElementById(`col-count-${num}`);
+    if (element) {
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+      // Highlight transiently
+      element.style.transition = "background-color 0.3s ease";
+      element.style.backgroundColor = "#fd7e14";
+      setTimeout(() => {
+        element.style.backgroundColor = "#6f42c1";
+      }, 1000);
+    } else {
+      alert(`Không tìm thấy cột số đếm ${num}`);
+    }
+  }, [searchCount]);
 
-  // Load data for the selected Q
+  // Load data from q_all
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError("");
@@ -51,17 +59,19 @@ function ColorReportPage({ accessWarningContent = null }) {
       if (result.success && result.data) {
         setDateValues(result.data.dateValues || Array(ROWS).fill(""));
         setDeletedRows(result.data.deletedRows || Array(ROWS).fill(false));
-        const loadedAllQData = result.data.allQData || Array(5).fill(null).map(() => ({
-          tapsData: Array(10).fill(null).map(() => ({
-            aValues: Array(ROWS).fill(""),
-            bValues: Array(ROWS).fill(""),
-          })),
-        }));
+        const loadedAllQData =
+          result.data.allQData ||
+          Array(5)
+            .fill(null)
+            .map(() => ({
+              tapsData: Array(10)
+                .fill(null)
+                .map(() => ({
+                  aValues: Array(ROWS).fill(""),
+                  bValues: Array(ROWS).fill(""),
+                })),
+            }));
         setAllQData(loadedAllQData);
-        
-        // Load purple range settings
-        setPurpleRangeFrom(result.data.purpleRangeFrom || 0);
-        setPurpleRangeTo(result.data.purpleRangeTo || 0);
       }
     } catch (err) {
       console.error("Error loading data:", err);
@@ -75,64 +85,68 @@ function ColorReportPage({ accessWarningContent = null }) {
     loadData();
   }, [loadData]);
 
-  // Save configurations
-  const handleSaveSettings = async () => {
-    setIsSaving(true);
-    setSaveStatus("⏳ Đang lưu cài đặt...");
-    
-    // Save required count to localStorage
-    localStorage.setItem("ktop_bao_mau_required_count", String(requiredCount));
-
-    try {
-      const currentData = await loadPageData("q_all");
-      
-      if (currentData.success && currentData.data) {
-        const result = await savePageData(
-          "q_all",
-          null,
-          null,
-          currentData.data.zValues || Array(ROWS).fill(""),
-          dateValues,
-          deletedRows,
-          currentData.data.sourceSTTValues || Array(ROWS).fill(""),
-          purpleRangeFrom,
-          purpleRangeTo,
-          currentData.data.keepLastNRows || 110,
-          allQData,
-          currentData.data.pageLabel || "",
-          undefined,
-        );
-
-        if (result.success) {
-          setSaveStatus("✅ Đã lưu cài đặt!");
-        } else {
-          setSaveStatus("⚠️ Lỗi: " + result.error);
-        }
-      }
-    } catch (err) {
-      console.error("Error saving settings:", err);
-      setSaveStatus("⚠️ Lỗi lưu cấu hình");
-    } finally {
-      setIsSaving(false);
-      setTimeout(() => setSaveStatus(""), 2000);
+  // Mảng các cột số đếm set cứng từ 22 đến 85
+  const cols = useMemo(() => {
+    const arr = [];
+    for (let c = 22; c <= 85; c++) {
+      arr.push(c);
     }
-  };
+    return arr;
+  }, []);
 
-  // Perform report generation calculation
-  const reportRows = (() => {
+  // Lấy giới hạn số lượng kết quả cho từng số đếm
+  const getLimitForCount = useCallback((c) => {
+    if (c >= 22 && c <= 29) return 5;
+    if (c >= 30 && c <= 41) return 4;
+    if (c >= 42 && c <= 58) return 3;
+    if (c >= 59 && c <= 70) return 2;
+    if (c >= 71 && c <= 85) return 2;
+    return 0;
+  }, []);
+
+  // Định dạng ngày tháng về dạng chuẩn DD/MM/YYYY
+  const formatDate = useCallback((dateStr) => {
+    if (!dateStr) return "";
+    const trimmed = String(dateStr).trim();
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return `${match[3]}/${match[2]}/${match[1]}`;
+    }
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) {
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+    return dateStr;
+  }, []);
+
+  // Tính toán dữ liệu báo màu tổng hợp chung cho toàn bộ 5 Q
+  const reportRows = useMemo(() => {
     if (isLoading) return [];
 
-    // Find actual active rows
+    // 1. Tìm chỉ số dòng thực tế cuối cùng có dữ liệu (actualRows) trên cả 50 Tập
     let actualRows = 0;
     for (let i = ROWS - 1; i >= 0; i--) {
-      let hasData = dateValues[i] !== "" && dateValues[i] !== null && dateValues[i] !== undefined;
+      let hasData =
+        dateValues[i] !== "" &&
+        dateValues[i] !== null &&
+        dateValues[i] !== undefined;
       if (!hasData) {
-        for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
-          const tap = tapsData[tapIdx];
-          if (tap && (tap.aValues[i] || tap.bValues[i])) {
-            hasData = true;
-            break;
+        for (let qIdx = 0; qIdx < 5; qIdx++) {
+          const qData = allQData[qIdx];
+          if (qData && qData.tapsData) {
+            for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+              const tap = qData.tapsData[tapIdx];
+              if (tap && (tap.aValues[i] || tap.bValues[i])) {
+                hasData = true;
+                break;
+              }
+            }
           }
+          if (hasData) break;
         }
       }
       if (hasData) {
@@ -141,113 +155,177 @@ function ColorReportPage({ accessWarningContent = null }) {
       }
     }
 
-    const rows = [];
-    const qIndex = selectedQ - 1;
+    if (actualRows === 0) return [];
 
-    for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
-      const tap = tapsData[tapIdx] || { aValues: Array(ROWS).fill(""), bValues: Array(ROWS).fill("") };
-      const tapA = tap.aValues;
-      const tapB = tap.bValues;
+    // 2. Tính toán sẵn toàn bộ giá trị bảng T1 và T2 cho 50 Tập (100 bảng T)
+    // tapsTValues[tapGlobalIdx][tableIdx][row]
+    const tapsTValues = [];
+    for (let qIdx = 0; qIdx < 5; qIdx++) {
+      const qData = allQData[qIdx] || { tapsData: [] };
+      for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+        const tap = qData.tapsData?.[tapIdx] || {
+          aValues: Array(ROWS).fill(""),
+          bValues: Array(ROWS).fill(""),
+        };
+        const tapA = tap.aValues;
+        const tapB = tap.bValues;
 
-      // Calculate the 3 tables (T1, T2, T3) for this Tap
-      const newTValuesArr = Array(TOTAL_TABLES)
-        .fill(null)
-        .map(() => Array(ROWS).fill(""));
+        const newTValuesArr = Array(TOTAL_TABLES)
+          .fill(null)
+          .map(() => Array(ROWS).fill(""));
 
-      for (let i = 0; i < TOTAL_TABLES; i++) {
-        let v1, v2;
-        if (i === 0) {
-          v1 = tapA;
-          v2 = tapB;
-        } else if (i === 1) {
-          v1 = tapB;
-          v2 = newTValuesArr[0];
-        } else {
-          v1 = newTValuesArr[i - 2];
-          v2 = newTValuesArr[i - 1];
-        }
-
-        for (let r = 0; r < actualRows; r++) {
-          if (v1[r] === "" && v2[r] === "") {
-            newTValuesArr[i][r] = "";
-            continue;
+        for (let i = 0; i < TOTAL_TABLES; i++) {
+          let v1, v2;
+          if (i === 0) {
+            v1 = tapA;
+            v2 = tapB;
+          } else if (i === 1) {
+            v1 = tapB;
+            v2 = newTValuesArr[0];
           }
-          const n1 = parseInt(v1[r]) || 0;
-          const n2 = parseInt(v2[r]) || 0;
-          newTValuesArr[i][r] = String((n1 + n2) % 10);
-        }
-      }
 
-      // For each table, compute future row counts and find warnings
-      for (let tableIndex = 0; tableIndex < TOTAL_TABLES; tableIndex++) {
-        const tValues = newTValuesArr[tableIndex];
-        
-        // 1. Calculate future row counts for columns 0-9
-        const futureCounts = Array(10).fill(1);
-        for (let col = 0; col < 10; col++) {
-          let y = 1;
-          for (let row = 0; row < actualRows; row++) {
-            if (tValues[row] === "" || tValues[row] === null || tValues[row] === undefined) {
+          for (let r = 0; r < actualRows; r++) {
+            if (v1[r] === "" && v2[r] === "") {
+              newTValuesArr[i][r] = "";
               continue;
             }
-            const tVal = parseInt(tValues[row], 10);
-            const isRed = col === tVal;
-            
-            y++;
-            if (isRed) y = 1;
-          }
-          futureCounts[col] = y;
-        }
-
-        // 2. Scan left-to-right to find matches in the purple range
-        const matches = [];
-        for (let col = 0; col < 10; col++) {
-          const val = futureCounts[col];
-          if (val >= purpleRangeFrom && val <= purpleRangeTo) {
-            matches.push(col);
+            const n1 = parseInt(v1[r]) || 0;
+            const n2 = parseInt(v2[r]) || 0;
+            newTValuesArr[i][r] = String((n1 + n2) % 10);
           }
         }
-
-        // 3. Put into slots sequentially up to requiredCount
-        const slots = [];
-        for (let k = 0; k < requiredCount; k++) {
-          if (k < matches.length) {
-            slots.push(matches[k]);
-          } else {
-            slots.push(""); // empty slot
-          }
-        }
-
-        // 4. Determine status
-        let status = "Không số";
-        let statusClass = "status-grey";
-        if (matches.length >= requiredCount) {
-          status = "Đủ số";
-          statusClass = "status-green";
-        } else if (matches.length > 0) {
-          status = `Thiếu số (${matches.length}/${requiredCount})`;
-          statusClass = "status-orange";
-        }
-
-        const globalTIndex = qIndex * 20 + tapIdx * 2 + tableIndex + 1;
-
-        rows.push({
-          globalTIndex,
-          tapLabel: `Tập ${tapIdx + 1}`,
-          tableLabel: `T${globalTIndex}`,
-          futureCounts,
-          slots,
-          status,
-          statusClass,
-        });
+        tapsTValues.push(newTValuesArr);
       }
     }
 
+    // 3. Khởi tạo mảng lưu trữ kết quả quét lũy kế cho các Số đếm từ 22 đến 85
+    // matchesData[c] là danh sách kết quả tìm được cho số đếm c (tối đa N kết quả)
+    // thamCountsData[c][col] là số lần xuất hiện của tham số col cho số đếm c
+    const matchesData = {};
+    const thamCountsData = {};
+    for (let c = 22; c <= 85; c++) {
+      matchesData[c] = [];
+      thamCountsData[c] = {};
+    }
+
+    // historyCounts[tapGlobalIdx][tableIdx][col] = số đếm tương lai tích lũy hiện tại
+    const historyCounts = Array(50)
+      .fill(null)
+      .map(() =>
+        Array(TOTAL_TABLES)
+          .fill(null)
+          .map(() => Array(10).fill(1)),
+      );
+
+    // 4. Quét qua từng dòng R từ 0 đến actualRows - 1 để tìm kết quả mới
+    for (let R = 0; R < actualRows; R++) {
+      // a. Cập nhật số đếm tương lai của tất cả bảng T tại dòng R
+      for (let tapGlobalIdx = 0; tapGlobalIdx < 50; tapGlobalIdx++) {
+        for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
+          const valStr = tapsTValues[tapGlobalIdx][tableIdx][R];
+          if (valStr !== "") {
+            const val = parseInt(valStr, 10);
+            for (let col = 0; col < 10; col++) {
+              const isRed = col === val;
+              historyCounts[tapGlobalIdx][tableIdx][col] = isRed
+                ? 1
+                : historyCounts[tapGlobalIdx][tableIdx][col] + 1;
+            }
+          }
+        }
+      }
+
+      // b. Kiểm tra xem ở dòng R, có bảng T nào đạt số đếm báo màu c
+      for (let c = 22; c <= 85; c++) {
+        const limit = getLimitForCount(c);
+
+        if (matchesData[c].length < limit) {
+          // Quét từ trái qua phải trên toàn bộ 50 Tập (100 bảng T)
+          for (let tapGlobalIdx = 0; tapGlobalIdx < 50; tapGlobalIdx++) {
+            for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
+              const counts = historyCounts[tapGlobalIdx][tableIdx];
+              for (let col = 0; col < 10; col++) {
+                if (counts[col] === c) {
+                  if (matchesData[c].length < limit) {
+                    thamCountsData[c][col] = (thamCountsData[c][col] || 0) + 1;
+                    const z = thamCountsData[c][col];
+                    const q = Math.floor(tapGlobalIdx / 10) + 1; // Q (1-5)
+                    const x = (tapGlobalIdx % 10) + 1; // Tập trong Q (1-10)
+                    const y = tableIdx + 1; // Thông (1-2)
+                    const g = col; // Tham số (0-9)
+                    const globalTIndex = tapGlobalIdx * 2 + tableIdx + 1;
+
+                    matchesData[c].push({
+                      row: R,
+                      value: `${q}-${x}-${y}-${g}-${z}`,
+                      globalTIndex,
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 5. Build cấu trúc dữ liệu hiển thị cho các hàng
+    const rows = [];
+    for (let R = 0; R < actualRows; R++) {
+      const rowData = {
+        rowIdx: R,
+        date: formatDate(dateValues[R]) || `Dòng ${R + 1}`,
+        cells: {},
+      };
+
+      for (let c = 22; c <= 85; c++) {
+        const limit = getLimitForCount(c);
+
+        for (let k = 0; k < limit; k++) {
+          const match = matchesData[c][k];
+          if (!match) {
+            // Chưa tìm thấy kết quả thứ k -> Luôn hiển thị "||" (kế thừa hoặc chờ kết quả)
+            rowData.cells[`${c}-${k}`] = { value: "||", isPlaceholder: true };
+          } else {
+            if (match.row === R) {
+              rowData.cells[`${c}-${k}`] = {
+                value: match.value,
+                globalTIndex: match.globalTIndex,
+                isNew: true,
+              };
+            } else {
+              // Kết quả cũ ở dòng trước
+              // Kiểm tra xem toàn bộ các kết quả (tối đa limit số) đã được tìm thấy ở ngày trước R chưa.
+              const lastMatch = matchesData[c][limit - 1];
+              const allFoundInPast = lastMatch && lastMatch.row < R;
+              if (allFoundInPast) {
+                rowData.cells[`${c}-${k}`] = { value: "" };
+              } else {
+                rowData.cells[`${c}-${k}`] = {
+                  value: "||",
+                  isPlaceholder: true,
+                };
+              }
+            }
+          }
+        }
+      }
+      rows.push(rowData);
+    }
+
     return rows;
-  })();
+  }, [isLoading, dateValues, allQData, getLimitForCount, formatDate]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", background: "#fdfdfd" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        overflow: "hidden",
+        background: "#fdfdfd",
+      }}
+    >
       {/* Top Banner Header */}
       <div
         style={{
@@ -276,14 +354,26 @@ function ColorReportPage({ accessWarningContent = null }) {
       </div>
 
       {/* Main Container */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        
-        {/* Navigation Toolbar & Configuration Area */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        {/* Navigation Toolbar */}
         <div style={{ flexShrink: 0, padding: "20px" }}>
-          
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>
-            
-            {/* Quick Links */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "12px",
+            }}
+          >
+            {/* Quick Links & Search Count */}
             <div
               style={{
                 display: "flex",
@@ -298,255 +388,277 @@ function ColorReportPage({ accessWarningContent = null }) {
               <button
                 className="toolbar-btn"
                 onClick={() => (window.location.href = "/")}
-                style={{ fontSize: "30px", background: "#28a745", color: "white", border: "none" }}
+                style={{
+                  fontSize: "30px",
+                  background: "#28a745",
+                  color: "white",
+                  border: "none",
+                }}
               >
                 🔍 Về bảng tính
               </button>
               <button
                 className="toolbar-btn"
                 onClick={() => (window.location.href = "/input")}
-                style={{ fontSize: "30px", background: "#17a2b8", color: "white", border: "none" }}
+                style={{
+                  fontSize: "30px",
+                  background: "#17a2b8",
+                  color: "white",
+                  border: "none",
+                }}
               >
                 🔍 Về bảng thông
               </button>
               <button
                 className="toolbar-btn"
                 onClick={() => (window.location.href = "/chon-dong-thong")}
-                style={{ fontSize: "30px", background: "#6f42c1", color: "white", border: "none" }}
+                style={{
+                  fontSize: "30px",
+                  background: "#6f42c1",
+                  color: "white",
+                  border: "none",
+                }}
               >
                 🔍 Về chọn dòng thông
               </button>
+
+              {/* Ô Nhập Số & Nút Xem */}
+              <input
+                type="number"
+                value={searchCount}
+                onChange={(e) => setSearchCount(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleScrollToCount();
+                  }
+                }}
+                placeholder="22-85"
+                style={{
+                  width: "140px",
+                  fontSize: "30px",
+                  padding: "6px 10px",
+                  borderRadius: "6px",
+                  border: "2px solid #007bff",
+                  textAlign: "center",
+                  outline: "none",
+                  marginLeft: "15px",
+                }}
+              />
+              <button
+                className="toolbar-btn"
+                onClick={handleScrollToCount}
+                style={{
+                  fontSize: "30px",
+                  background: "#007bff",
+                  color: "white",
+                  border: "none",
+                }}
+              >
+                Xem 🔍
+              </button>
+
               {accessWarningContent}
-              {saveStatus && (
-                <span style={{ color: "#28a745", fontSize: "20px", fontWeight: "bold", marginLeft: "10px" }}>
-                  {saveStatus}
-                </span>
-              )}
             </div>
-
-            {/* Q selector */}
-            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-              {Array.from({ length: 5 }, (_, i) => {
-                const num = i + 1;
-                const isSelected = selectedQ === num;
-                return (
-                  <button
-                    key={num}
-                    onClick={() => setSelectedQ(num)}
-                    style={{
-                      padding: "8px 16px",
-                      fontSize: "24px",
-                      fontWeight: "bold",
-                      borderRadius: "6px",
-                      border: "2px solid #007bff",
-                      cursor: "pointer",
-                      background: isSelected ? "#007bff" : "white",
-                      color: isSelected ? "white" : "#007bff",
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    Q{num}
-                  </button>
-                );
-              })}
-            </div>
-
           </div>
-
-          {/* Config form */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "24px",
-              padding: "16px 24px",
-              border: "2px dashed #ffc107",
-              borderRadius: "8px",
-              backgroundColor: "#fffdf5",
-              maxWidth: "1000px",
-              margin: "0 auto",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "24px", fontWeight: "bold" }}>Khoảng báo màu:</span>
-              <input
-                type="number"
-                value={purpleRangeFrom}
-                onChange={(e) => setPurpleRangeFrom(parseInt(e.target.value) || 0)}
-                style={{ width: "80px", padding: "6px", fontSize: "22px", textAlign: "center" }}
-              />
-              <span style={{ fontSize: "24px" }}>đến</span>
-              <input
-                type="number"
-                value={purpleRangeTo}
-                onChange={(e) => setPurpleRangeTo(parseInt(e.target.value) || 0)}
-                style={{ width: "80px", padding: "6px", fontSize: "22px", textAlign: "center" }}
-              />
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "24px", fontWeight: "bold" }}>Số lượng ô số toán:</span>
-              <input
-                type="number"
-                min="1"
-                max="10"
-                value={requiredCount}
-                onChange={(e) => setRequiredCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                style={{ width: "60px", padding: "6px", fontSize: "22px", textAlign: "center" }}
-              />
-            </div>
-
-            <button
-              onClick={handleSaveSettings}
-              disabled={isSaving}
-              style={{
-                padding: "8px 24px",
-                fontSize: "24px",
-                fontWeight: "bold",
-                backgroundColor: "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              }}
-            >
-              💾 Lưu Cài Đặt
-            </button>
-          </div>
-
         </div>
 
         {/* Report Table Grid Area */}
-        <div style={{ flex: 1, padding: "0 20px 20px 20px", overflowY: "auto", minHeight: 0 }}>
+        <div
+          style={{
+            flex: 1,
+            padding: "0 20px 20px 20px",
+            overflow: "hidden",
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           {isLoading ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "100px" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                flex: 1,
+              }}
+            >
               <div className="spinner"></div>
-              <p style={{ fontSize: "28px", marginTop: "20px" }}>Đang tải và tính toán...</p>
+              <p style={{ fontSize: "28px", marginTop: "20px" }}>
+                Đang tải và tính toán...
+              </p>
             </div>
           ) : error ? (
-            <div style={{ color: "red", fontSize: "28px", textAlign: "center", padding: "50px" }}>
+            <div
+              style={{
+                color: "red",
+                fontSize: "28px",
+                textAlign: "center",
+                padding: "50px",
+                flex: 1,
+              }}
+            >
               {error}
             </div>
           ) : (
             <div
               style={{
+                flex: 1,
                 border: "2px solid #6f42c1",
                 borderRadius: "8px",
-                overflow: "hidden",
+                overflowX: "auto",
+                overflowY: "auto",
                 boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
                 backgroundColor: "white",
               }}
             >
-              <table style={{ borderCollapse: "collapse", width: "100%", fontSize: "24px" }}>
+              <table
+                style={{
+                  borderCollapse: "collapse",
+                  width: "max-content",
+                  minWidth: "100%",
+                  fontSize: "30px",
+                }}
+              >
                 <thead>
-                  <tr style={{ backgroundColor: "#6f42c1", color: "white" }}>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", width: "80px" }}>STT</th>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", width: "120px" }}>Tập</th>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", width: "120px" }}>Bảng T</th>
-                    
-                    {/* Spanned Header for warning results */}
-                    <th colSpan={requiredCount} style={{ padding: "12px", border: "1px solid #ddd" }}>
-                      Các ô số toán (quét trái ➔ phải trong khoảng {purpleRangeFrom}-{purpleRangeTo})
+                  <tr
+                    style={{
+                      backgroundColor: "#6f42c1",
+                      color: "white",
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 3,
+                      fontSize: "30px",
+                    }}
+                  >
+                    <th
+                      style={{
+                        padding: "12px",
+                        border: "1px solid #ddd",
+                        width: "240px",
+                        backgroundColor: "#6f42c1",
+                      }}
+                      rowSpan="2"
+                    >
+                      N.T
                     </th>
 
-                    {/* Spanned Header for future counts */}
-                    <th colSpan="10" style={{ padding: "12px", border: "1px solid #ddd" }}>
-                      Số đếm gốc tại 10 cột (0 - 9)
-                    </th>
-                    
-                    <th style={{ padding: "12px", border: "1px solid #ddd", width: "180px" }}>Trạng thái</th>
+                    {/* Headers cho các cột số đếm */}
+                    {cols.map((c) => {
+                      const limit = getLimitForCount(c);
+                      return (
+                        <th
+                          id={`col-count-${c}`}
+                          key={c}
+                          colSpan={limit}
+                          style={{
+                            padding: "12px",
+                            border: "1px solid #ddd",
+                            minWidth: `${limit * 180}px`,
+                            backgroundColor: "#6f42c1",
+                          }}
+                        >
+                          {c}
+                        </th>
+                      );
+                    })}
                   </tr>
-                  <tr style={{ backgroundColor: "#f2edf8", fontSize: "18px" }}>
-                    <th style={{ padding: "6px", border: "1px solid #ddd" }}></th>
-                    <th style={{ padding: "6px", border: "1px solid #ddd" }}></th>
-                    <th style={{ padding: "6px", border: "1px solid #ddd" }}></th>
-                    
-                    {/* Dynamic subheaders for slots */}
-                    {Array.from({ length: requiredCount }).map((_, idx) => (
-                      <th key={idx} style={{ padding: "6px", border: "1px solid #ddd", width: "80px" }}>
-                        Ô {idx + 1}
-                      </th>
-                    ))}
-
-                    {/* Subheaders for digits 0-9 */}
-                    {Array.from({ length: 10 }).map((_, idx) => (
-                      <th key={idx} style={{ padding: "6px", border: "1px solid #ddd", width: "70px" }}>
-                        {idx}
-                      </th>
-                    ))}
-                    
-                    <th style={{ padding: "6px", border: "1px solid #ddd" }}></th>
+                  <tr
+                    style={{
+                      backgroundColor: "#f2edf8",
+                      fontSize: "22px",
+                      position: "sticky",
+                      top: "54px",
+                      zIndex: 3,
+                    }}
+                  >
+                    {/* Subheaders chạy từ (1) đến (N) tương ứng với giới hạn kết quả */}
+                    {cols.flatMap((c) => {
+                      const limit = getLimitForCount(c);
+                      const subHeaders = [];
+                      for (let k = 1; k <= limit; k++) {
+                        subHeaders.push(
+                          <th
+                            key={`${c}-${k}`}
+                            style={{
+                              padding: "6px",
+                              border: "1px solid #ddd",
+                              width: "180px",
+                              backgroundColor: "#f2edf8",
+                            }}
+                          >
+                            ({k})
+                          </th>,
+                        );
+                      }
+                      return subHeaders;
+                    })}
                   </tr>
                 </thead>
                 <tbody>
                   {reportRows.map((row, index) => {
                     return (
                       <tr
-                        key={row.globalTIndex}
+                        key={row.rowIdx}
                         style={{
-                          backgroundColor: index % 2 === 0 ? "#ffffff" : "#fcfcff",
+                          backgroundColor:
+                            index % 2 === 0 ? "#ffffff" : "#fcfcff",
                           borderBottom: "1px solid #eee",
                           textAlign: "center",
                         }}
                       >
-                        <td style={{ padding: "12px", border: "1px solid #ddd", fontWeight: "bold" }}>
-                          {String(index + 1).padStart(2, "0")}
+                        <td
+                          style={{
+                            padding: "10px",
+                            border: "1px solid #ddd",
+                            fontWeight: "bold",
+                            color: "#6f42c1",
+                            fontSize: "30px",
+                          }}
+                        >
+                          {row.date}
                         </td>
-                        <td style={{ padding: "12px", border: "1px solid #ddd", fontWeight: "600" }}>
-                          {row.tapLabel}
-                        </td>
-                        <td style={{ padding: "12px", border: "1px solid #ddd", fontWeight: "bold", color: "#6f42c1" }}>
-                          {row.tableLabel}
-                        </td>
-                        
-                        {/* Dynamic slots output */}
-                        {row.slots.map((val, idx) => {
-                          const hasVal = val !== "";
-                          return (
-                            <td
-                              key={idx}
-                              style={{
-                                padding: "12px",
-                                border: "1px solid #ddd",
-                                fontWeight: "bold",
-                                backgroundColor: hasVal ? "#fd7e14" : "transparent",
-                                color: hasVal ? "white" : "#777",
-                                fontSize: "28px",
-                              }}
-                            >
-                              {val}
-                            </td>
-                          );
-                        })}
 
-                        {/* Counts 0-9 output */}
-                        {row.futureCounts.map((val, idx) => {
-                          const isWarning = val >= purpleRangeFrom && val <= purpleRangeTo;
-                          return (
-                            <td
-                              key={idx}
-                              style={{
-                                padding: "12px",
-                                border: "1px solid #ddd",
-                                fontSize: "20px",
-                                color: isWarning ? "#d91e18" : "#333",
-                                backgroundColor: isWarning ? "#fff3cd" : "transparent",
-                                fontWeight: isWarning ? "bold" : "normal",
-                              }}
-                            >
-                              {val}
-                            </td>
-                          );
+                        {cols.flatMap((c) => {
+                          const limit = getLimitForCount(c);
+                          const cellsArr = [];
+                          for (let k = 0; k < limit; k++) {
+                            const cell = row.cells[`${c}-${k}`] || {
+                              value: "",
+                            };
+                            const isNew = cell.isNew;
+                            cellsArr.push(
+                              <td
+                                key={`${c}-${k}`}
+                                className={isNew ? "cell-new" : ""}
+                                style={{
+                                  padding: "8px",
+                                  border: "1px solid #ddd",
+                                  fontWeight: isNew ? "bold" : "normal",
+                                  backgroundColor: isNew
+                                    ? "#fd7e14"
+                                    : "transparent",
+                                  color: isNew ? "white" : "#777",
+                                  cursor: isNew ? "pointer" : "default",
+                                  fontSize: "30px",
+                                  minWidth: "180px",
+                                  transition: "all 0.15s ease",
+                                }}
+                                onClick={() => {
+                                  if (isNew && cell.globalTIndex) {
+                                    window.location.href = `/?scrollToT=${cell.globalTIndex}`;
+                                  }
+                                }}
+                                title={
+                                  isNew ? "Click để cuộn xem bảng tính" : ""
+                                }
+                              >
+                                {cell.value}
+                              </td>,
+                            );
+                          }
+                          return cellsArr;
                         })}
-
-                        {/* Status Label */}
-                        <td style={{ padding: "12px", border: "1px solid #ddd", fontWeight: "bold" }}>
-                          <span className={`status-badge ${row.statusClass}`}>
-                            {row.status}
-                          </span>
-                        </td>
                       </tr>
                     );
                   })}
@@ -556,28 +668,9 @@ function ColorReportPage({ accessWarningContent = null }) {
           )}
         </div>
       </div>
-      
+
       {/* Styles inline fallback / local definition */}
       <style>{`
-        .status-badge {
-          display: inline-block;
-          padding: 6px 12px;
-          border-radius: 20px;
-          color: white;
-          font-size: 18px;
-          font-weight: bold;
-          text-align: center;
-          min-width: 100px;
-        }
-        .status-green {
-          background-color: #28a745;
-        }
-        .status-orange {
-          background-color: #fd7e14;
-        }
-        .status-grey {
-          background-color: #6c757d;
-        }
         .toolbar-btn {
           padding: 6px 16px;
           border-radius: 6px;
@@ -587,6 +680,13 @@ function ColorReportPage({ accessWarningContent = null }) {
         }
         .toolbar-btn:active {
           transform: scale(0.95);
+        }
+        .cell-new:hover {
+          background-color: #e0690b !important;
+          transform: scale(1.05);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          z-index: 1;
+          position: relative;
         }
       `}</style>
     </div>
