@@ -462,7 +462,7 @@ body {
 
 .data-cell.red {
   background: #fff;
-  color: #333;
+  color: #cf3535;
   font-weight: 600;
 }
 
@@ -481,16 +481,16 @@ body {
   background: #ccbc7a;
 }
 
-/* Ô vừa đỏ vừa vàng: background vàng, chữ đen */
+/* Ô vừa đỏ vừa vàng: background vàng, chữ đỏ */
 .data-cell.purple-red {
   background: #f8c507bd;
-  color: #333;
+  color: #cf3535;
   font-weight: 700;
 }
 
 .data-cell.purple-red:hover {
   background: #ccbc7a;
-  color: #333;
+  color: #cf3535;
 }
 
 /* Highlight cells và rows - Chuyển sang tông VÀNG NHẠT */

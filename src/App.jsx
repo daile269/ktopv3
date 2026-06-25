@@ -496,8 +496,17 @@ function App() {
                   inline: "center",
                 });
 
-                // Highlight/Select cell to draw attention
-                handleCellClick(tableIndex, rowIndex, colIndex);
+                // Flash orange and then clear it
+                const origBg = cellElement.style.backgroundColor;
+                const origColor = cellElement.style.color;
+                cellElement.style.transition = "background-color 0.3s ease, color 0.3s ease";
+                cellElement.style.backgroundColor = "#fd7e14";
+                cellElement.style.color = "white";
+                setTimeout(() => {
+                  cellElement.style.backgroundColor = origBg;
+                  cellElement.style.color = origColor;
+                  cellElement.style.transition = "";
+                }, 1200);
                 scrolled = true;
               }
             }
@@ -1770,21 +1779,7 @@ function App() {
           </div>
           {renderAccessWarning()}
 
-          <div
-            style={{
-              marginLeft: "12px",
-              padding: "8px 12px",
-              backgroundColor: "#fff3cd",
-              border: "2px solid #ffc107",
-              borderRadius: "6px",
-              fontSize: "24px",
-              fontWeight: "bold",
-              whiteSpace: "normal",
-              width: "100%",
-            }}
-          >
-            📍 BM Q: {getGlobalPurpleCellsInfo()}
-          </div>
+
 
           <div className="toolbar-group">
             {isLoading && (
@@ -2210,34 +2205,57 @@ function App() {
                                           ]?.[rowIndex] || ""}
                                         </span>
                                       </td>
-                                      {row.map((cell, colIndex) => (
-                                        <td
-                                          key={colIndex}
-                                          id={`cell-${tableIndex}-${rowIndex}-${colIndex}`}
-                                          className={`data-cell ${cell.color} ${
-                                            highlightedCells[tableIndex]?.[
-                                              rowIndex
-                                            ]?.[colIndex]
-                                              ? "highlighted-cell"
-                                              : highlightedDataColumns[
-                                                    tableIndex
-                                                  ]?.[colIndex]
-                                                ? "col-highlighted"
-                                                : highlightedRows[rowIndex]
-                                                  ? "highlighted-row"
-                                                  : ""
-                                          }`}
-                                          onClick={() =>
-                                            handleCellClick(
-                                              tableIndex,
-                                              rowIndex,
-                                              colIndex,
-                                            )
-                                          }
-                                        >
-                                          {cell.value}
-                                        </td>
-                                      ))}
+                                      {row.map((cell, colIndex) => {
+                                        const isYellow = cell.color === "purple" || cell.color === "purple-red";
+                                        const parts = cell.value ? cell.value.split("-") : [];
+                                        const yVal = parts.length === 2 ? parseInt(parts[1], 10) : 0;
+                                        const canScroll = yVal >= 22 && yVal <= 85;
+
+                                        return (
+                                          <td
+                                            key={colIndex}
+                                            id={`cell-${tableIndex}-${rowIndex}-${colIndex}`}
+                                            className={`data-cell ${cell.color} ${
+                                              highlightedCells[tableIndex]?.[
+                                                rowIndex
+                                              ]?.[colIndex]
+                                                ? "highlighted-cell"
+                                                : highlightedDataColumns[
+                                                      tableIndex
+                                                    ]?.[colIndex]
+                                                  ? "col-highlighted"
+                                                  : highlightedRows[rowIndex]
+                                                    ? "highlighted-row"
+                                                    : ""
+                                            }`}
+                                            style={isYellow ? { cursor: "pointer" } : {}}
+                                            onClick={() => {
+                                              if (isYellow) {
+                                                if (canScroll) {
+                                                  window.location.href = `/bao-mau?scrollToCount=${yVal}&q=${qIdx + 1}&x=${relativeTapIdx + 1}&y=${tableIndex + 1}&g=${colIndex}`;
+                                                } else {
+                                                  window.location.href = `/bao-mau`;
+                                                }
+                                              } else {
+                                                handleCellClick(
+                                                  tableIndex,
+                                                  rowIndex,
+                                                  colIndex,
+                                                );
+                                              }
+                                            }}
+                                            title={
+                                              isYellow
+                                                ? (canScroll
+                                                  ? `Nhấp để xem báo màu của số đếm ${yVal}`
+                                                  : "Nhấp để về bảng báo màu")
+                                                : undefined
+                                            }
+                                          >
+                                            {cell.value}
+                                          </td>
+                                        );
+                                      })}
                                     </tr>
                                   );
                                 });

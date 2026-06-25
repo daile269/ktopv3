@@ -284,8 +284,14 @@ function ColorReportPage({ accessWarningContent = null }) {
           .map(() => Array(10).fill(1)),
       );
 
+    const countsHistory = [];
+
     // 4. Quét qua từng dòng R từ 0 đến actualRows để tìm kết quả mới (R = actualRows đại diện cho dòng tương lai)
     for (let R = 0; R <= actualRows; R++) {
+      // Lưu lại trạng thái số đếm tại dòng R từ lịch sử
+      const currentCounts = historyCounts.map(taps => taps.map(tables => [...tables]));
+      countsHistory.push(currentCounts);
+
       // a. Kiểm tra xem ở dòng R, có bảng T nào đạt số đếm báo màu c
       for (let c = 22; c <= 85; c++) {
         const limit = getLimitForCount(c);
@@ -308,9 +314,12 @@ function ColorReportPage({ accessWarningContent = null }) {
 
                     matchesData[c].push({
                       row: R,
-                      value: `${q}-${x}-${y}-${g}-${z}`,
-                      globalTIndex,
+                      q,
+                      x,
+                      y,
                       g,
+                      z,
+                      globalTIndex,
                     });
                   }
                 }
@@ -359,22 +368,36 @@ function ColorReportPage({ accessWarningContent = null }) {
             // Chưa tìm thấy kết quả thứ k -> Luôn hiển thị "||" (kế thừa hoặc chờ kết quả)
             rowData.cells[`${c}-${k}`] = { value: "||", isPlaceholder: true };
           } else {
+            const tapGlobalIdx = (match.q - 1) * 10 + (match.x - 1);
+            const tableIdx = match.y - 1;
+            const col = match.g;
+            
+            // Lấy số đếm thực tế của ô này tại dòng R từ lịch sử
+            const cellY = countsHistory[R]?.[tapGlobalIdx]?.[tableIdx]?.[col] || 1;
+            const displayValue = `${match.q}-${match.x}-${match.y}-${match.g}-${cellY}`;
+
+            // Xác định xem tại dòng R ô này có màu đỏ hay không
+            const tValAtR = tapsTValues[tapGlobalIdx]?.[tableIdx]?.[R];
+            const isRedCellAtR = (tValAtR !== undefined && tValAtR !== "" && tValAtR !== null) ? (col === parseInt(tValAtR, 10)) : false;
+
             if (match.row === R) {
               rowData.cells[`${c}-${k}`] = {
-                value: match.value,
+                value: displayValue,
                 globalTIndex: match.globalTIndex,
                 row: match.row,
                 col: match.g,
                 isNew: true,
+                isRedCell: isRedCellAtR,
               };
             } else if (R > match.row) {
               // Kết quả cũ ở dòng trước -> Tiếp tục hiển thị giá trị cũ để đảm bảo tính liên tục
               rowData.cells[`${c}-${k}`] = {
-                value: match.value,
+                value: displayValue,
                 globalTIndex: match.globalTIndex,
                 row: match.row,
                 col: match.g,
                 isNew: false,
+                isRedCell: isRedCellAtR,
               };
             } else {
               // R < match.row: Chưa tìm thấy kết quả ở dòng này (chờ kết quả ở tương lai)
@@ -633,7 +656,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                             padding: "12px",
                             border: "2px solid #333",
                             borderRight: "4px solid #333",
-                            minWidth: `${limit * 180}px`,
+                            minWidth: `${limit * 250}px`,
                             backgroundColor: "#6f42c1",
                           }}
                         >
@@ -663,7 +686,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                               padding: "8px 6px",
                               border: "2px solid #333",
                               borderRight: k === limit ? "4px solid #333" : "2px solid #333",
-                              width: "180px",
+                              width: "250px",
                               backgroundColor: "#f2edf8",
                             }}
                           >
@@ -718,15 +741,16 @@ function ColorReportPage({ accessWarningContent = null }) {
                                   padding: "8px",
                                   border: "2px solid #333",
                                   borderRight: k === limit - 1 ? "4px solid #333" : "2px solid #333",
-                                  fontWeight: hasValue ? "bold" : "600",
+                                  fontWeight: cell.isRedCell ? "700" : (hasValue ? "600" : "500"),
                                   fontStyle: row.isFuture ? "italic" : "normal",
                                   backgroundColor: hasValue ? "#f8c507bd" : "transparent",
-                                  color: row.isFuture
-                                    ? (hasValue ? "#333" : "#888")
-                                    : "#333",
+                                  color: cell.isRedCell
+                                    ? "#cf3535"
+                                    : (row.isFuture ? (hasValue ? "#333" : "#888") : "#333"),
                                   cursor: hasValue ? "pointer" : "default",
                                   fontSize: "35px",
-                                  minWidth: "180px",
+                                  minWidth: "250px",
+                                  whiteSpace: "nowrap",
                                   transition: "all 0.15s ease",
                                 }}
                                 onClick={() => {
