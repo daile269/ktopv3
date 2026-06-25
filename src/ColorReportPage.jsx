@@ -367,19 +367,21 @@ function ColorReportPage({ accessWarningContent = null }) {
                 col: match.g,
                 isNew: true,
               };
+            } else if (R > match.row) {
+              // Kết quả cũ ở dòng trước -> Tiếp tục hiển thị giá trị cũ để đảm bảo tính liên tục
+              rowData.cells[`${c}-${k}`] = {
+                value: match.value,
+                globalTIndex: match.globalTIndex,
+                row: match.row,
+                col: match.g,
+                isNew: false,
+              };
             } else {
-              // Kết quả cũ ở dòng trước
-              // Kiểm tra xem toàn bộ các kết quả (tối đa limit số) đã được tìm thấy ở ngày trước R chưa.
-              const lastMatch = matchesData[c][limit - 1];
-              const allFoundInPast = lastMatch && lastMatch.row < R;
-              if (allFoundInPast) {
-                rowData.cells[`${c}-${k}`] = { value: "" };
-              } else {
-                rowData.cells[`${c}-${k}`] = {
-                  value: "||",
-                  isPlaceholder: true,
-                };
-              }
+              // R < match.row: Chưa tìm thấy kết quả ở dòng này (chờ kết quả ở tương lai)
+              rowData.cells[`${c}-${k}`] = {
+                value: "||",
+                isPlaceholder: true,
+              };
             }
           }
         }
@@ -706,38 +708,39 @@ function ColorReportPage({ accessWarningContent = null }) {
                               value: "",
                             };
                             const isNew = cell.isNew;
+                            const hasValue = !cell.isPlaceholder && cell.value && cell.value !== "||" && cell.value !== "";
                             cellsArr.push(
                               <td
                                 key={`${c}-${k}`}
                                 id={isNew ? `cell-report-${cell.value}` : undefined}
-                                className={isNew ? "cell-new" : ""}
+                                className={hasValue ? "cell-new" : ""}
                                 style={{
                                   padding: "8px",
                                   border: "2px solid #333",
                                   borderRight: k === limit - 1 ? "4px solid #333" : "2px solid #333",
-                                  fontWeight: isNew ? "bold" : "600",
+                                  fontWeight: hasValue ? "bold" : "600",
                                   fontStyle: row.isFuture ? "italic" : "normal",
-                                  backgroundColor: "transparent",
+                                  backgroundColor: hasValue ? "#f8c507bd" : "transparent",
                                   color: row.isFuture
-                                    ? (isNew ? "#333" : "#888")
-                                    : (isNew ? "#cf3535" : "#333"),
-                                  cursor: isNew ? "pointer" : "default",
+                                    ? (hasValue ? "#333" : "#888")
+                                    : "#333",
+                                  cursor: hasValue ? "pointer" : "default",
                                   fontSize: "35px",
                                   minWidth: "180px",
                                   transition: "all 0.15s ease",
                                 }}
                                 onClick={() => {
-                                  if (isNew && cell.globalTIndex) {
+                                  if (hasValue && cell.globalTIndex) {
                                     window.location.href = `/?scrollToT=${cell.globalTIndex}&row=${cell.row}&col=${cell.col}`;
                                   }
                                 }}
                                 onDoubleClick={() => {
-                                  if (isNew && cell.globalTIndex) {
+                                  if (hasValue && cell.globalTIndex) {
                                     window.location.href = `/?scrollToT=${cell.globalTIndex}&row=${cell.row}&col=${cell.col}`;
                                   }
                                 }}
                                 title={
-                                  isNew ? "Click để cuộn xem bảng tính" : ""
+                                  hasValue ? "Click để cuộn xem bảng tính" : ""
                                 }
                               >
                                 {cell.value}
