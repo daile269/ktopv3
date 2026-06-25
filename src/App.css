@@ -966,3 +966,23 @@ body {
 .access-warning-ok-button {
   font-size: 36px !important;
 }
+
+/* Alternating volume backgrounds */
+.tap-section.volume-odd {
+  background-color: #f2f4f8 !important;
+}
+.tap-section.volume-even {
+  background-color: #ffffff !important;
+}
+
+.tap-section.volume-odd .data-cell.white {
+  background-color: #f2f4f8 !important;
+}
+
+.tap-section.volume-odd .data-cell.fixed {
+  background-color: #e5e9f0 !important;
+}
+
+.tap-section.volume-odd .grid-input {
+  background-color: #f2f4f8 !important;
+}

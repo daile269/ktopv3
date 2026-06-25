@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, Fragment } from "react";
 import "./App.css";
 import "./TopToolbar.css";
 import { savePageData, loadPageData, deletePageData } from "./dataService";
@@ -1857,33 +1857,63 @@ function App() {
           style={{
             display: "flex",
             flexDirection: "row",
-            gap: "40px",
+            gap: "0",
             width: "max-content",
+            alignItems: "stretch",
           }}
         >
           {tapsTableData.map((tapTableData, tapIndex) => {
             const qIdx = Math.floor(tapIndex / 10);
             const relativeTapIdx = tapIndex % 10;
+            const qOffset = import.meta.env.VITE_SITE_ID === "site_b" ? 5 : 0;
+            const qNumDisplay = qIdx + 1 + qOffset;
+
             return (
-              <div
-                key={tapIndex}
-                className="tap-section"
-                style={{
-                  border: "2px solid #ccc",
-                  borderRadius: "10px",
-                  padding: "20px",
-                  backgroundColor: "#fff",
-                }}
-              >
+              <Fragment key={tapIndex}>
+                {/* Divider between Qs */}
+                {relativeTapIdx === 0 && tapIndex > 0 && (
+                  <div
+                    className="q-divider"
+                    style={{
+                      borderLeft: "6px double red",
+                      marginLeft: "24px",
+                      marginRight: "48px",
+                      alignSelf: "stretch",
+                    }}
+                  />
+                )}
+
+                {/* Divider between Tậps inside the same Q */}
+                {relativeTapIdx > 0 && (
+                  <div
+                    className="tap-divider"
+                    style={{
+                      borderLeft: "3px dashed red",
+                      marginLeft: "12px",
+                      marginRight: "24px",
+                      alignSelf: "stretch",
+                    }}
+                  />
+                )}
+
                 <div
-                  className="tables-container"
+                  className={`tap-section ${relativeTapIdx % 2 === 0 ? "volume-odd" : "volume-even"}`}
                   style={{
-                    display: "flex",
-                    gap: "24px",
-                    width: "max-content",
-                    overflow: "visible",
+                    border: "2px solid #ccc",
+                    borderRadius: "10px",
+                    padding: "20px",
                   }}
                 >
+
+                  <div
+                    className="tables-container"
+                    style={{
+                      display: "flex",
+                      gap: "24px",
+                      width: "max-content",
+                      overflow: "visible",
+                    }}
+                  >
                   {tapTableData.map((tableData, tableIndex) => (
                     <div
                       key={tableIndex}
@@ -1913,7 +1943,7 @@ function App() {
                             <thead>
                               <tr>
                                 <th colSpan="3" className="group-header">
-                                  Q{qIdx + 1}
+                                  Q{qNumDisplay}
                                   {tapIndex === 0 && (
                                     <input
                                       type="text"
@@ -1940,18 +1970,17 @@ function App() {
                                   <>
                                     <th colSpan="1" className="group-header">
                                       A
-                                    </th>
+                                      </th>
                                     <th colSpan="1" className="group-header">
                                       B
-                                    </th>
+                                      </th>
                                   </>
                                 )}
                                 <th colSpan="1" className="group-header">
                                   Thông
                                 </th>
                                 <th colSpan="10" className="group-header">
-                                  Q{qIdx + 1} - Tham số (Tập{" "}
-                                  {relativeTapIdx + 1})
+                                  Q{qNumDisplay} - Tập {relativeTapIdx + 1} - Thông {tableIndex + 1}
                                 </th>
                               </tr>
                               <tr>
@@ -2349,8 +2378,9 @@ function App() {
                   ))}
                 </div>
               </div>
-            );
-          })}
+            </Fragment>
+          );
+        })}
         </div>
       </div>
 
