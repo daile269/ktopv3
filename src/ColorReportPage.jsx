@@ -592,7 +592,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                   borderCollapse: "collapse",
                   width: "max-content",
                   minWidth: "100%",
-                  fontSize: "30px",
+                  fontSize: "35px",
                 }}
               >
                 <thead>
@@ -603,13 +603,14 @@ function ColorReportPage({ accessWarningContent = null }) {
                       position: "sticky",
                       top: 0,
                       zIndex: 3,
-                      fontSize: "30px",
+                      fontSize: "35px",
                     }}
                   >
                     <th
                       style={{
                         padding: "12px",
-                        border: "1px solid #ddd",
+                        border: "2px solid #333",
+                        borderRight: "4px solid #333",
                         width: "240px",
                         backgroundColor: "#6f42c1",
                       }}
@@ -628,7 +629,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                           colSpan={limit}
                           style={{
                             padding: "12px",
-                            border: "1px solid #ddd",
+                            border: "2px solid #333",
+                            borderRight: "4px solid #333",
                             minWidth: `${limit * 180}px`,
                             backgroundColor: "#6f42c1",
                           }}
@@ -641,9 +643,9 @@ function ColorReportPage({ accessWarningContent = null }) {
                   <tr
                     style={{
                       backgroundColor: "#f2edf8",
-                      fontSize: "22px",
+                      fontSize: "30px",
                       position: "sticky",
-                      top: "54px",
+                      top: "60px",
                       zIndex: 3,
                     }}
                   >
@@ -656,8 +658,9 @@ function ColorReportPage({ accessWarningContent = null }) {
                           <th
                             key={`${c}-${k}`}
                             style={{
-                              padding: "6px",
-                              border: "1px solid #ddd",
+                              padding: "8px 6px",
+                              border: "2px solid #333",
+                              borderRight: k === limit ? "4px solid #333" : "2px solid #333",
                               width: "180px",
                               backgroundColor: "#f2edf8",
                             }}
@@ -678,17 +681,18 @@ function ColorReportPage({ accessWarningContent = null }) {
                         style={{
                           backgroundColor:
                             index % 2 === 0 ? "#ffffff" : "#fcfcff",
-                          borderBottom: "1px solid #eee",
+                          borderBottom: "2px solid #333",
                           textAlign: "center",
                         }}
                       >
                         <td
                           style={{
                             padding: "10px",
-                            border: "1px solid #ddd",
+                            border: "2px solid #333",
+                            borderRight: "4px solid #333",
                             fontWeight: "bold",
                             color: "#6f42c1",
-                            fontSize: "30px",
+                            fontSize: "35px",
                           }}
                         >
                           {row.date}
@@ -709,15 +713,16 @@ function ColorReportPage({ accessWarningContent = null }) {
                                 className={isNew ? "cell-new" : ""}
                                 style={{
                                   padding: "8px",
-                                  border: "1px solid #ddd",
-                                  fontWeight: isNew ? "bold" : "normal",
+                                  border: "2px solid #333",
+                                  borderRight: k === limit - 1 ? "4px solid #333" : "2px solid #333",
+                                  fontWeight: isNew ? "bold" : "600",
                                   fontStyle: row.isFuture ? "italic" : "normal",
                                   backgroundColor: "transparent",
                                   color: row.isFuture
-                                    ? (isNew ? "#333" : "#777")
-                                    : (isNew ? "#cf3535" : "#777"),
+                                    ? (isNew ? "#333" : "#888")
+                                    : (isNew ? "#cf3535" : "#333"),
                                   cursor: isNew ? "pointer" : "default",
-                                  fontSize: "30px",
+                                  fontSize: "35px",
                                   minWidth: "180px",
                                   transition: "all 0.15s ease",
                                 }}

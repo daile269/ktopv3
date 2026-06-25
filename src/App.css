@@ -405,6 +405,8 @@ body {
 
 /* Ô nhập ngày tháng năm trong bảng tính */
 .date-input {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
   border: none;
   background: transparent;
@@ -413,6 +415,7 @@ body {
   padding: 4px 2px;
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s;
+  pointer-events: none;
 }
 
 /* Nổi màu hồng nhạt khi click vào ô ngày */
@@ -424,6 +427,8 @@ body {
 }
 
 .grid-input {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
   border: 1px solid #e0e0e0;
   padding: 6px 8px;
@@ -436,6 +441,7 @@ body {
   color: #ef4444;
   /* Text màu đỏ */
   font-weight: 600;
+  pointer-events: none;
 }
 
 .grid-input:focus {
@@ -491,7 +497,7 @@ body {
 .data-cell.highlighted-cell {
   border: 4px solid #fdd835 !important;
   /* Border vàng đậm */
-  background-color: #fffde7 !important;
+  background-color: #fff59d !important;
   /* Nền vàng nhạt hẳn */
   box-shadow: 0 0 10px rgba(253, 216, 53, 0.5);
   /* Hiệu ứng tỏa sáng vàng */
@@ -985,4 +991,50 @@ body {
 
 .tap-section.volume-odd .grid-input {
   background-color: #f2f4f8 !important;
+}
+
+/* Đảm bảo trạng thái highlight hoạt động đè lên màu nền xen kẽ của các Tập lẻ/chẵn */
+.tap-section.volume-odd .data-cell.col-highlighted,
+.tap-section.volume-even .data-cell.col-highlighted {
+  background-color: orange !important;
+}
+
+.tap-section.volume-odd .data-cell.highlighted-t-cell,
+.tap-section.volume-even .data-cell.highlighted-t-cell {
+  background-color: #ff9800 !important;
+  color: white !important;
+}
+
+.tap-section.volume-odd .grid-input.col-highlighted,
+.tap-section.volume-even .grid-input.col-highlighted,
+.data-cell.col-highlighted .grid-input,
+.tap-section.volume-odd .data-cell.col-highlighted .grid-input,
+.tap-section.volume-even .data-cell.col-highlighted .grid-input {
+  background: transparent !important;
+  color: #ef4444 !important;
+}
+
+.data-cell.highlighted-t-cell .grid-input,
+.tap-section.volume-odd .data-cell.highlighted-t-cell .grid-input,
+.tap-section.volume-even .data-cell.highlighted-t-cell .grid-input {
+  background: transparent !important;
+  color: white !important;
+}
+
+.data-cell.highlighted-row .grid-input,
+.tap-section.volume-odd .data-cell.highlighted-row .grid-input,
+.tap-section.volume-even .data-cell.highlighted-row .grid-input,
+.data-cell.highlighted-column .grid-input,
+.tap-section.volume-odd .data-cell.highlighted-column .grid-input,
+.tap-section.volume-even .data-cell.highlighted-column .grid-input,
+.data-cell.highlighted-cell .grid-input,
+.tap-section.volume-odd .data-cell.highlighted-cell .grid-input,
+.tap-section.volume-even .data-cell.highlighted-cell .grid-input {
+  background: transparent !important;
+}
+
+/* Đảm bảo trạng thái highlighted-cell hoạt động đè lên màu nền xen kẽ của các Tập lẻ/chẵn */
+.tap-section.volume-odd .data-cell.highlighted-cell,
+.tap-section.volume-even .data-cell.highlighted-cell {
+  background-color: #fff59d !important;
 }

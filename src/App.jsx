@@ -291,6 +291,24 @@ function App() {
     loadData();
   }, [pageId]);
 
+  const formatDate = useCallback((dateStr) => {
+    if (!dateStr) return "";
+    const trimmed = String(dateStr).trim();
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return trimmed;
+    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return `${match[3]}/${match[2]}/${match[1]}`;
+    }
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) {
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+    return dateStr;
+  }, []);
+
   const generateTableDataArr = useCallback(
     (tValues, skipColor = false) => {
       let actualRows = 0;
@@ -1966,21 +1984,12 @@ function App() {
                                     />
                                   )}
                                 </th>
-                                {tableIndex === 0 && (
-                                  <>
-                                    <th colSpan="1" className="group-header">
-                                      A
-                                      </th>
-                                    <th colSpan="1" className="group-header">
-                                      B
-                                      </th>
-                                  </>
-                                )}
-                                <th colSpan="1" className="group-header">
-                                  Thông
-                                </th>
-                                <th colSpan="10" className="group-header">
-                                  Q{qNumDisplay} - Tập {relativeTapIdx + 1} - Thông {tableIndex + 1}
+                                <th
+                                  colSpan={tableIndex === 0 ? 13 : 11}
+                                  className="group-header"
+                                  style={{ textAlign: "left", paddingLeft: "20px" }}
+                                >
+                                  Thông {tableIndex + 1} - Tập {relativeTapIdx + 1} - Q{qNumDisplay}
                                 </th>
                               </tr>
                               <tr>
@@ -2078,13 +2087,9 @@ function App() {
                                         onClick={() => handleRowClick(rowIndex)}
                                         style={{ cursor: "pointer" }}
                                       >
-                                        <input
-                                          type="date"
-                                          className="date-input"
-                                          value={dateValues[rowIndex] || ""}
-                                          style={{ pointerEvents: "none" }}
-                                          readOnly
-                                        />
+                                        <span className="date-input">
+                                          {formatDate(dateValues[rowIndex])}
+                                        </span>
                                       </td>
                                       <td
                                         className={`data-cell fixed ${
@@ -2097,15 +2102,9 @@ function App() {
                                           width: "150px",
                                         }}
                                       >
-                                        <input
-                                          type="text"
+                                        <span
                                           className="grid-input"
-                                          value={
-                                            sourceSTTValues[rowIndex] || ""
-                                          }
-                                          readOnly={true}
                                           style={{
-                                            width: "100%",
                                             border: "none",
                                             background: "transparent",
                                             fontSize: "35px",
@@ -2113,7 +2112,9 @@ function App() {
                                             fontWeight: "bold",
                                             color: "#6f42c1",
                                           }}
-                                        />
+                                        >
+                                          {sourceSTTValues[rowIndex] || ""}
+                                        </span>
                                       </td>
                                       {tableIndex === 0 && (
                                         <>
@@ -2131,17 +2132,9 @@ function App() {
                                               handleACellClick(rowIndex)
                                             }
                                           >
-                                            <input
-                                              type="text"
+                                            <span
                                               className="grid-input"
-                                              value={
-                                                allQData[qIdx]?.tapsData?.[
-                                                  relativeTapIdx
-                                                ]?.aValues[rowIndex] || ""
-                                              }
-                                              readOnly={true}
                                               style={{
-                                                width: "100%",
                                                 border: "none",
                                                 background: "transparent",
                                                 fontSize: "35px",
@@ -2152,9 +2145,12 @@ function App() {
                                                   ? "white"
                                                   : "#ef4444",
                                                 fontWeight: "600",
-                                                pointerEvents: "none",
                                               }}
-                                            />
+                                            >
+                                              {allQData[qIdx]?.tapsData?.[
+                                                relativeTapIdx
+                                              ]?.aValues[rowIndex] || ""}
+                                            </span>
                                           </td>
                                           <td
                                             className={`data-cell fixed value-col ${
@@ -2170,17 +2166,9 @@ function App() {
                                               handleBCellClick(rowIndex)
                                             }
                                           >
-                                            <input
-                                              type="text"
+                                            <span
                                               className="grid-input"
-                                              value={
-                                                allQData[qIdx]?.tapsData?.[
-                                                  relativeTapIdx
-                                                ]?.bValues[rowIndex] || ""
-                                              }
-                                              readOnly={true}
                                               style={{
-                                                width: "100%",
                                                 border: "none",
                                                 background: "transparent",
                                                 fontSize: "35px",
@@ -2191,9 +2179,12 @@ function App() {
                                                   ? "white"
                                                   : "#ef4444",
                                                 fontWeight: "600",
-                                                pointerEvents: "none",
                                               }}
-                                            />
+                                            >
+                                              {allQData[qIdx]?.tapsData?.[
+                                                relativeTapIdx
+                                              ]?.bValues[rowIndex] || ""}
+                                            </span>
                                           </td>
                                         </>
                                       )}
@@ -2213,20 +2204,11 @@ function App() {
                                           handleTCellClick(tableIndex, rowIndex)
                                         }
                                       >
-                                        <input
-                                          type="text"
-                                          className="grid-input"
-                                          value={
-                                            tapsTValues[tapIndex]?.[
-                                              tableIndex
-                                            ]?.[rowIndex] || ""
-                                          }
-                                          onChange={() => {}}
-                                          readOnly={true}
-                                          style={{
-                                            pointerEvents: "none",
-                                          }}
-                                        />
+                                        <span className="grid-input">
+                                          {tapsTValues[tapIndex]?.[
+                                            tableIndex
+                                          ]?.[rowIndex] || ""}
+                                        </span>
                                       </td>
                                       {row.map((cell, colIndex) => (
                                         <td
