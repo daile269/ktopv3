@@ -339,7 +339,7 @@ function ColorReportPage({ accessWarningContent = null }) {
               for (let col = 0; col < 10; col++) {
                 const isRed = col === val;
                 historyCounts[tapGlobalIdx][tableIdx][col] = isRed
-                  ? 1
+                  ? 2
                   : historyCounts[tapGlobalIdx][tableIdx][col] + 1;
               }
             }
@@ -372,13 +372,14 @@ function ColorReportPage({ accessWarningContent = null }) {
             const tableIdx = match.y - 1;
             const col = match.g;
             
-            // Lấy số đếm thực tế của ô này tại dòng R từ lịch sử
-            const cellY = countsHistory[R]?.[tapGlobalIdx]?.[tableIdx]?.[col] || 1;
-            const displayValue = `${match.q}-${match.x}-${match.y}-${match.g}-${cellY}`;
-
             // Xác định xem tại dòng R ô này có màu đỏ hay không
             const tValAtR = tapsTValues[tapGlobalIdx]?.[tableIdx]?.[R];
             const isRedCellAtR = (tValAtR !== undefined && tValAtR !== "" && tValAtR !== null) ? (col === parseInt(tValAtR, 10)) : false;
+
+            // Lấy số đếm thực tế của ô này tại dòng R từ lịch sử
+            const rawCellY = countsHistory[R]?.[tapGlobalIdx]?.[tableIdx]?.[col] || 1;
+            const cellY = isRedCellAtR ? 1 : rawCellY;
+            const displayValue = `${match.q}-${match.x}-${match.y}-${match.g}-${cellY}`;
 
             if (match.row === R) {
               rowData.cells[`${c}-${k}`] = {

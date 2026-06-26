@@ -336,6 +336,9 @@ function App() {
 
           const tVal = tValues[row] !== "" ? parseInt(tValues[row]) : -1;
           const isRed = col === tVal && tVal !== -1;
+
+          if (isRed) y = 1;
+
           const isPurple =
             Number(y) >= Number(purpleRangeFrom) &&
             Number(y) <= Number(purpleRangeTo);
@@ -347,7 +350,6 @@ function App() {
 
           table[row][col] = { value: `${col}-${y}`, color: color };
           y++;
-          if (isRed) y = 1;
         }
       }
       return table;
@@ -817,15 +819,7 @@ function App() {
         }
       }
 
-      let nextY;
-      if (!lastCell) {
-        nextY = 1;
-      } else {
-        const parts = lastCell.value.split("-");
-        const lastY = parseInt(parts[1]) || 0;
-        const isRed = lastCell.color && lastCell.color.includes("red");
-        nextY = isRed ? 1 : lastY + 1;
-      }
+      const nextY = lastCell ? (parseInt(lastCell.value.split("-")[1], 10) || 0) + 1 : 1;
 
       const isPurple =
         Number(nextY) >= Number(purpleRangeFrom) &&
