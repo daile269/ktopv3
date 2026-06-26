@@ -379,7 +379,8 @@ function ColorReportPage({ accessWarningContent = null }) {
             // Lấy số đếm thực tế của ô này tại dòng R từ lịch sử
             const rawCellY = countsHistory[R]?.[tapGlobalIdx]?.[tableIdx]?.[col] || 1;
             const cellY = isRedCellAtR ? 1 : rawCellY;
-            const displayValue = `${match.q}-${match.x}-${match.y}-${match.g}-${cellY}`;
+            const displayZ = cellY >= c ? (cellY - c + 1) : cellY;
+            const displayValue = `${match.q}-${match.x}-${match.y}-${match.g}-${displayZ}`;
 
             if (match.row === R) {
               rowData.cells[`${c}-${k}`] = {
