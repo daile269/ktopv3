@@ -268,12 +268,14 @@ function ColorReportPage({ accessWarningContent = null }) {
     // 3. Khởi tạo mảng lưu trữ kết quả quét lũy kế cho các Số đếm từ 22 đến 85
     // matchesData[c] là danh sách kết quả tìm được cho số đếm c (tối đa N kết quả)
     // thamCountsData[c][col] là số lần xuất hiện của tham số col cho số đếm c
-    const matchesData = {};
-    const thamCountsData = {};
-    for (let c = 22; c <= 85; c++) {
-      matchesData[c] = [];
-      thamCountsData[c] = {};
-    }
+    // matchesData[R][c] là danh sách kết quả tìm được cho số đếm c tại dòng R (tối đa N kết quả)
+    const matchesData = Array(actualRows + 1).fill(null).map(() => {
+      const obj = {};
+      for (let c = 22; c <= 85; c++) {
+        obj[c] = [];
+      }
+      return obj;
+    });
 
     // historyCounts[tapGlobalIdx][tableIdx][col] = số đếm tương lai tích lũy hiện tại
     const historyCounts = Array(50)
@@ -296,29 +298,31 @@ function ColorReportPage({ accessWarningContent = null }) {
       for (let c = 22; c <= 85; c++) {
         const limit = getLimitForCount(c);
 
-        if (matchesData[c].length < limit) {
+        if (matchesData[R][c].length < limit) {
           // Quét từ trái qua phải trên toàn bộ 50 Tập (100 bảng T)
           for (let tapGlobalIdx = 0; tapGlobalIdx < 50; tapGlobalIdx++) {
             for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
               const counts = historyCounts[tapGlobalIdx][tableIdx];
               for (let col = 0; col < 10; col++) {
-                if (counts[col] === c) {
-                  if (matchesData[c].length < limit) {
-                    thamCountsData[c][col] = (thamCountsData[c][col] || 0) + 1;
-                    const z = thamCountsData[c][col];
+                const valStr = tapsTValues[tapGlobalIdx]?.[tableIdx]?.[R];
+                const isRedCellAtR = (valStr !== undefined && valStr !== "" && valStr !== null)
+                  ? (col === parseInt(valStr, 10))
+                  : false;
+
+                if (counts[col] === c && !isRedCellAtR) {
+                  if (matchesData[R][c].length < limit) {
                     const q = Math.floor(tapGlobalIdx / 10) + 1; // Q (1-5)
                     const x = (tapGlobalIdx % 10) + 1; // Tập trong Q (1-10)
                     const y = tableIdx + 1; // Thông (1-2)
                     const g = col; // Tham số (0-9)
                     const globalTIndex = tapGlobalIdx * 2 + tableIdx + 1;
 
-                    matchesData[c].push({
+                    matchesData[R][c].push({
                       row: R,
                       q,
                       x,
                       y,
                       g,
-                      z,
                       globalTIndex,
                     });
                   }
@@ -363,7 +367,7 @@ function ColorReportPage({ accessWarningContent = null }) {
         const limit = getLimitForCount(c);
 
         for (let k = 0; k < limit; k++) {
-          const match = matchesData[c][k];
+          const match = matchesData[R]?.[c]?.[k];
           if (!match) {
             // Chưa tìm thấy kết quả thứ k -> Luôn hiển thị "||" (kế thừa hoặc chờ kết quả)
             rowData.cells[`${c}-${k}`] = { value: "||", isPlaceholder: true };
@@ -391,18 +395,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                 isNew: true,
                 isRedCell: isRedCellAtR,
               };
-            } else if (R > match.row) {
-              // Kết quả cũ ở dòng trước -> Tiếp tục hiển thị giá trị cũ để đảm bảo tính liên tục
-              rowData.cells[`${c}-${k}`] = {
-                value: displayValue,
-                globalTIndex: match.globalTIndex,
-                row: match.row,
-                col: match.g,
-                isNew: false,
-                isRedCell: isRedCellAtR,
-              };
             } else {
-              // R < match.row: Chưa tìm thấy kết quả ở dòng này (chờ kết quả ở tương lai)
               rowData.cells[`${c}-${k}`] = {
                 value: "||",
                 isPlaceholder: true,
