@@ -2493,7 +2493,7 @@ function App() {
                                                 orangeCell.colIndex === colIndex
                                                   ? {
                                                       backgroundColor:
-                                                        "#ffc078",
+                                                        "#74c0fc",
                                                       fontWeight: "bold",
                                                     }
                                                   : {}),
@@ -2626,7 +2626,7 @@ function App() {
                                               orangeCell.colIndex === colIdx
                                                 ? {
                                                     backgroundColor:
-                                                       "#ffc078",
+                                                       "#74c0fc",
                                                     fontWeight: "bold",
                                                   }
                                                 : {}),
