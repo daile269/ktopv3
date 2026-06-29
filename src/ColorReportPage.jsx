@@ -388,17 +388,27 @@ function ColorReportPage({ accessWarningContent = null }) {
               countsHistory[R]?.[tapGlobalIdx]?.[tableIdx]?.[col] || 1;
             const cellY = rawCellY;
 
-            const displayZ = k + 1;
-            const displayValue = `${match.q}-${match.x}-${match.y}-${match.g}-${displayZ}`;
+             let matchCount = 0;
+             for (let r = 0; r <= R; r++) {
+               if (matchesData[r]?.[c]?.[k]) {
+                 matchCount++;
+               }
+             }
+             const displayValue = `${k + 1}/${match.q}-${match.x}-${match.y}-${match.g}/${matchCount}`;
 
-            rowData.cells[`${c}-${k}`] = {
-              value: displayValue,
-              globalTIndex: match.globalTIndex,
-              row: match.row, // click quay lại dòng đạt mốc c
-              col: match.g,
-              isNew: true,
-              isRedCell: isRedCellAtR,
-            };
+             rowData.cells[`${c}-${k}`] = {
+               value: displayValue,
+               globalTIndex: match.globalTIndex,
+               row: match.row, // click quay lại dòng đạt mốc c
+               col: match.g,
+               isNew: true,
+               isRedCell: isRedCellAtR,
+               qVal: String(match.q),
+               xVal: String(match.x),
+               yVal: String(match.y),
+               gVal: String(match.g),
+               cellId: `cell-report-${match.q}-${match.x}-${match.y}-${match.g}-${c}-${k}`
+             };
           }
         }
       }
@@ -409,7 +419,14 @@ function ColorReportPage({ accessWarningContent = null }) {
     }
 
     return rows;
-  }, [isLoading, dateValues, allQData, getLimitForCount, formatDate, deletedRows]);
+  }, [
+    isLoading,
+    dateValues,
+    allQData,
+    getLimitForCount,
+    formatDate,
+    deletedRows,
+  ]);
 
   return (
     <div
@@ -757,26 +774,16 @@ function ColorReportPage({ accessWarningContent = null }) {
                             const isOrange =
                               orangeCell &&
                               hasValue &&
-                              cell.value &&
-                              (() => {
-                                const parts = cell.value.split("-");
-                                return (
-                                  parts[0] === orangeCell.qVal &&
-                                  parts[1] === orangeCell.xVal &&
-                                  parts[2] === orangeCell.yVal &&
-                                  parts[3] === orangeCell.gVal &&
-                                  c === orangeCell.c
-                                );
-                              })();
+                              cell.qVal === orangeCell.qVal &&
+                              cell.xVal === orangeCell.xVal &&
+                              cell.yVal === orangeCell.yVal &&
+                              cell.gVal === orangeCell.gVal &&
+                              c === orangeCell.c;
 
                             cellsArr.push(
                               <td
                                 key={`${c}-${k}`}
-                                id={
-                                  isNew
-                                    ? `cell-report-${cell.value}`
-                                    : undefined
-                                }
+                                id={isNew ? cell.cellId : undefined}
                                 className={hasValue ? "cell-new" : ""}
                                 style={{
                                   padding: "8px",
