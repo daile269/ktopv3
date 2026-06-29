@@ -134,7 +134,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                   inline: "center",
                 });
                 element.style.transition = "background-color 0.3s ease";
-                 element.style.backgroundColor = "#74c0fc";
+                 element.style.backgroundColor = "#91d5ff";
                 setTimeout(() => {
                   element.style.backgroundColor = "#6f42c1";
                 }, 1000);
@@ -801,7 +801,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                         : "500",
                                   fontStyle: row.isFuture ? "italic" : "normal",
                                   backgroundColor: isOrange
-                                    ? "#74c0fc"
+                                    ? "#91d5ff"
                                     : hasValue
                                       ? "#f8c507"
                                       : "transparent",
