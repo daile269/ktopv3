@@ -317,8 +317,162 @@ function App() {
     return dateStr;
   }, []);
 
+  // Lấy giới hạn số lượng kết quả cho từng số đếm
+  const getLimitForCount = useCallback((c) => {
+    if (c >= 22 && c <= 29) return 5;
+    if (c >= 30 && c <= 41) return 4;
+    if (c >= 42 && c <= 58) return 3;
+    if (c >= 59 && c <= 70) return 2;
+    if (c >= 71 && c <= 85) return 2;
+    return 0;
+  }, []);
+
+  const warningZMap = useMemo(() => {
+    let actualRows = 0;
+    for (let i = ROWS - 1; i >= 0; i--) {
+      let hasData =
+        dateValues[i] !== "" &&
+        dateValues[i] !== null &&
+        dateValues[i] !== undefined;
+      if (!hasData) {
+        for (let qIdx = 0; qIdx < 5; qIdx++) {
+          const qData = allQData[qIdx];
+          if (qData && qData.tapsData) {
+            for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+              const tap = qData.tapsData[tapIdx];
+              if (tap && (tap.aValues[i] || tap.bValues[i])) {
+                hasData = true;
+                break;
+              }
+            }
+          }
+          if (hasData) break;
+        }
+      }
+      if (hasData) {
+        actualRows = i + 1;
+        break;
+      }
+    }
+
+    if (actualRows === 0) return {};
+
+    const tapsTValuesArr = [];
+    for (let qIdx = 0; qIdx < 5; qIdx++) {
+      const qData = allQData[qIdx] || { tapsData: [] };
+      for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+        const tap = qData.tapsData?.[tapIdx] || {
+          aValues: Array(ROWS).fill(""),
+          bValues: Array(ROWS).fill(""),
+        };
+        const tapA = tap.aValues;
+        const tapB = tap.bValues;
+
+        const newTValuesArr = Array(2)
+          .fill(null)
+          .map(() => Array(ROWS).fill(""));
+
+        for (let i = 0; i < 2; i++) {
+          let v1, v2;
+          if (i === 0) {
+            v1 = tapA;
+            v2 = tapB;
+          } else if (i === 1) {
+            v1 = tapB;
+            v2 = newTValuesArr[0];
+          }
+
+          for (let r = 0; r < actualRows; r++) {
+            if (v1[r] === "" && v2[r] === "") {
+              newTValuesArr[i][r] = "";
+              continue;
+            }
+            const n1 = parseInt(v1[r]) || 0;
+            const n2 = parseInt(v2[r]) || 0;
+            newTValuesArr[i][r] = String((n1 + n2) % 10);
+          }
+        }
+        tapsTValuesArr.push(newTValuesArr);
+      }
+    }
+
+    const matchesData = Array(actualRows + 1)
+      .fill(null)
+      .map(() => {
+        const obj = {};
+        for (let c = 22; c <= 85; c++) {
+          obj[c] = [];
+        }
+        return obj;
+      });
+
+    const historyCounts = Array(50)
+      .fill(null)
+      .map(() =>
+        Array(2)
+          .fill(null)
+          .map(() => Array(10).fill(1)),
+      );
+
+    const map = {};
+
+    for (let R = 0; R <= actualRows; R++) {
+      for (let c = 22; c <= 85; c++) {
+        const limit = getLimitForCount(c);
+
+        if (matchesData[R][c].length < limit) {
+          for (let tapGlobalIdx = 0; tapGlobalIdx < 50; tapGlobalIdx++) {
+            for (let tableIdx = 0; tableIdx < 2; tableIdx++) {
+              const counts = historyCounts[tapGlobalIdx][tableIdx];
+              for (let col = 0; col < 10; col++) {
+                if (counts[col] === c) {
+                  if (matchesData[R][c].length < limit) {
+                    const globalTIndex = tapGlobalIdx * 2 + tableIdx + 1;
+                    matchesData[R][c].push({
+                      row: R,
+                      g: col,
+                      globalTIndex,
+                    });
+
+                    let matchCount = 0;
+                    const slotK = matchesData[R][c].length - 1;
+                    for (let r = 0; r <= R; r++) {
+                      if (matchesData[r]?.[c]?.[slotK]) {
+                        matchCount++;
+                      }
+                    }
+                    map[`${globalTIndex}-${col}-${R}`] = matchCount;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (R < actualRows) {
+        for (let tapGlobalIdx = 0; tapGlobalIdx < 50; tapGlobalIdx++) {
+          for (let tableIdx = 0; tableIdx < 2; tableIdx++) {
+            const valStr = tapsTValuesArr[tapGlobalIdx][tableIdx][R];
+            if (valStr !== "") {
+              const val = parseInt(valStr, 10);
+              for (let col = 0; col < 10; col++) {
+                const isRed = col === val;
+                historyCounts[tapGlobalIdx][tableIdx][col] = isRed
+                  ? 1
+                  : historyCounts[tapGlobalIdx][tableIdx][col] + 1;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return map;
+  }, [allQData, dateValues, getLimitForCount]);
+
   const generateTableDataArr = useCallback(
-    (tValues, skipColor = false) => {
+    (tValues, skipColor = false, globalTIndex) => {
       let actualRows = 0;
       for (let i = dateValues.length - 1; i >= 0; i--) {
         if (dateValues[i] || tValues[i]) {
@@ -354,7 +508,15 @@ function App() {
           else if (isRed) color = "red";
           else if (isPurple && !skipColor) color = "purple";
 
-          table[row][col] = { value: `${col}-${y}`, color: color };
+          let cellVal = `${col}-${y}`;
+          if ((color === "purple" || color === "purple-red") && y >= 22 && y <= 85 && globalTIndex) {
+            const zVal = warningZMap[`${globalTIndex}-${col}-${row}`];
+            if (zVal) {
+              cellVal = `${col}-${y}/${zVal}`;
+            }
+          }
+
+          table[row][col] = { value: cellVal, color: color };
           if (isRed) {
             y = 1;
           } else {
@@ -364,7 +526,7 @@ function App() {
       }
       return table;
     },
-    [dateValues, purpleRangeFrom, purpleRangeTo],
+    [dateValues, purpleRangeFrom, purpleRangeTo, warningZMap],
   );
 
   const getPurpleTablesForData = useCallback(
@@ -577,6 +739,7 @@ function App() {
     dateValues,
     deletedRows,
   ]);
+
   const { tapsTValues, tapsTableData } = useMemo(() => {
     let actualRows = 0;
     for (let i = ROWS - 1; i >= 0; i--) {
@@ -644,7 +807,8 @@ function App() {
             const n2 = parseInt(v2[r]) || 0;
             newTValuesArr[i][r] = String((n1 + n2) % 10);
           }
-          newTableDataArr.push(generateTableDataArr(newTValuesArr[i], false));
+          const globalTIndex = (qIdx * 10 + tapIdx) * 2 + i + 1;
+          newTableDataArr.push(generateTableDataArr(newTValuesArr[i], false, globalTIndex));
         }
 
         nextTapsTValues.push(newTValuesArr);
@@ -743,7 +907,8 @@ function App() {
 
     tableDataOfTap.forEach((tableData, tableIndex) => {
       const tablePurpleCells = [];
-      const futureRow = getFutureRow(tableData);
+      const globalTIndex = tapIdx * 2 + tableIndex + 1;
+      const futureRow = getFutureRow(tableData, globalTIndex);
 
       futureRow.forEach((cell) => {
         if (cell.color === "purple" || cell.color === "purple-red") {
@@ -811,11 +976,12 @@ function App() {
     }
   };
 
-  const getFutureRow = (tableData) => {
+  const getFutureRow = (tableData, globalTIndex) => {
     if (!tableData || tableData.length === 0)
       return Array(10).fill({ value: "", color: "white" });
 
     const futureRow = [];
+    const rowIdx = tableData.length;
     for (let col = 0; col < 10; col++) {
       let lastCell = null;
       for (let row = tableData.length - 1; row >= 0; row--) {
@@ -840,7 +1006,16 @@ function App() {
         Number(nextY) >= Number(purpleRangeFrom) &&
         Number(nextY) <= Number(purpleRangeTo);
       const color = isPurple ? "purple" : "white";
-      futureRow.push({ value: `${col}-${nextY}`, color: color });
+
+      let cellVal = `${col}-${nextY}`;
+      if (isPurple && nextY >= 22 && nextY <= 85 && globalTIndex) {
+        const zVal = warningZMap[`${globalTIndex}-${col}-${rowIdx}`];
+        if (zVal) {
+          cellVal = `${col}-${nextY}/${zVal}`;
+        }
+      }
+
+      futureRow.push({ value: cellVal, color: color });
     }
     return futureRow;
   };
@@ -2017,11 +2192,13 @@ function App() {
                       overflow: "visible",
                     }}
                   >
-                    {tapTableData.map((tableData, tableIndex) => (
-                      <div
-                        key={tableIndex}
-                        className={`table-section ${tableIndex === 0 ? "first-table" : ""}`}
-                      >
+                    {tapTableData.map((tableData, tableIndex) => {
+                      const globalTIndex = tapIndex * 2 + tableIndex;
+                      return (
+                        <div
+                          key={tableIndex}
+                          className={`table-section ${tableIndex === 0 ? "first-table" : ""}`}
+                        >
                         <div
                           className="data-grid-wrapper"
                           style={{ maxHeight: "none", overflow: "visible" }}
@@ -2331,7 +2508,7 @@ function App() {
                                           return (
                                             <td
                                               key={colIndex}
-                                              id={`cell-${tableIndex}-${rowIndex}-${colIndex}`}
+                                              id={`cell-${globalTIndex}-${rowIndex}-${colIndex}`}
                                               className={`data-cell ${cell.color} ${
                                                 highlightedCells[tableIndex]?.[
                                                   rowIndex
@@ -2351,7 +2528,7 @@ function App() {
                                                   : undefined,
                                                 ...(orangeCell &&
                                                 orangeCell.tableIndex ===
-                                                  tableIndex &&
+                                                  globalTIndex &&
                                                 orangeCell.rowIndex ===
                                                   rowIndex &&
                                                 orangeCell.colIndex === colIndex
@@ -2458,7 +2635,7 @@ function App() {
                                     >
                                       &nbsp;
                                     </td>
-                                    {getFutureRow(tableData).map(
+                                    {getFutureRow(tableData, tapIndex * 2 + tableIndex + 1).map(
                                       (cell, colIdx) => {
                                         const parts = cell.value.split("-");
                                         const yVal =
@@ -2470,7 +2647,7 @@ function App() {
                                         return (
                                           <td
                                             key={colIdx}
-                                            id={`cell-${tableIndex}-${tableData.length}-${colIdx}`}
+                                            id={`cell-${globalTIndex}-${tableData.length}-${colIdx}`}
                                             className={`data-cell ${cell.color} future-cell ${
                                               highlightedCells[tableIndex]?.[
                                                 tableData.length
@@ -2483,6 +2660,19 @@ function App() {
                                               fontStyle: "italic",
                                               fontWeight: 600,
                                               cursor: "pointer",
+                                              ...(orangeCell &&
+                                              orangeCell.tableIndex ===
+                                                globalTIndex &&
+                                              orangeCell.rowIndex ===
+                                                tableData.length &&
+                                              orangeCell.colIndex === colIdx
+                                                ? {
+                                                    backgroundColor:
+                                                      "#fd7e14",
+                                                    color: "white",
+                                                    fontWeight: "bold",
+                                                  }
+                                                : {}),
                                             }}
                                             onClick={() => {
                                               if (canScroll) {
@@ -2513,7 +2703,8 @@ function App() {
                           )}
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
                   </div>
                 </div>
               </Fragment>

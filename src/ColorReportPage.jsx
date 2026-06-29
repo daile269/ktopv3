@@ -103,9 +103,6 @@ function ColorReportPage({ accessWarningContent = null }) {
 
       setTimeout(() => {
         const container = document.getElementById("report-table-container");
-        if (container) {
-          container.scrollTop = container.scrollHeight;
-        }
 
         if (scrollToCount) {
           const num = parseInt(scrollToCount, 10);
@@ -119,7 +116,7 @@ function ColorReportPage({ accessWarningContent = null }) {
               if (cellElement) {
                 cellElement.scrollIntoView({
                   behavior: "smooth",
-                  block: "nearest",
+                  block: "center",
                   inline: "center",
                 });
 
@@ -133,7 +130,7 @@ function ColorReportPage({ accessWarningContent = null }) {
               if (element) {
                 element.scrollIntoView({
                   behavior: "smooth",
-                  block: "nearest",
+                  block: "center",
                   inline: "center",
                 });
                 element.style.transition = "background-color 0.3s ease";
@@ -146,6 +143,10 @@ function ColorReportPage({ accessWarningContent = null }) {
 
             const newUrl = window.location.pathname;
             window.history.replaceState({}, "", newUrl);
+          }
+        } else {
+          if (container) {
+            container.scrollTop = container.scrollHeight;
           }
         }
       }, 600);
@@ -309,13 +310,7 @@ function ColorReportPage({ accessWarningContent = null }) {
             for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
               const counts = historyCounts[tapGlobalIdx][tableIdx];
               for (let col = 0; col < 10; col++) {
-                const valStr = tapsTValues[tapGlobalIdx]?.[tableIdx]?.[R];
-                const isRedCellAtR =
-                  valStr !== undefined && valStr !== "" && valStr !== null
-                    ? col === parseInt(valStr, 10)
-                    : false;
-
-                if (counts[col] === c && !isRedCellAtR) {
+                if (counts[col] === c) {
                   if (matchesData[R][c].length < limit) {
                     const q = Math.floor(tapGlobalIdx / 10) + 1; // Q (1-5)
                     const x = (tapGlobalIdx % 10) + 1; // Tập trong Q (1-10)
