@@ -134,7 +134,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                   inline: "center",
                 });
                 element.style.transition = "background-color 0.3s ease";
-                element.style.backgroundColor = "#fd7e14";
+                element.style.backgroundColor = "#ffc078";
                 setTimeout(() => {
                   element.style.backgroundColor = "#6f42c1";
                 }, 1000);
@@ -801,20 +801,18 @@ function ColorReportPage({ accessWarningContent = null }) {
                                         : "500",
                                   fontStyle: row.isFuture ? "italic" : "normal",
                                   backgroundColor: isOrange
-                                    ? "#fd7e14"
+                                    ? "#ffc078"
                                     : hasValue
                                       ? "#f8c507"
                                       : "transparent",
                                   backgroundClip: "padding-box",
-                                  color: isOrange
-                                    ? "white"
-                                    : cell.isRedCell
-                                      ? "#cf3535"
-                                      : row.isFuture
-                                        ? hasValue
-                                          ? "#333"
-                                          : "#888"
-                                        : "#333",
+                                  color: cell.isRedCell
+                                    ? "#cf3535"
+                                    : row.isFuture
+                                      ? hasValue
+                                        ? "#333"
+                                        : "#888"
+                                      : "#333",
                                   cursor: hasValue ? "pointer" : "default",
                                   fontSize: "35px",
                                   minWidth: "250px",

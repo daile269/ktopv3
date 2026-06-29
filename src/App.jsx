@@ -2019,43 +2019,8 @@ function App() {
             className="toolbar-group"
             style={{
               marginLeft: "12px",
-              border: "3px solid #28a745",
-              borderRadius: "8px",
-              padding: "5px 12px",
-              backgroundColor: "#e8f5e9",
             }}
           >
-            <input
-              type="number"
-              value={goToTableNumber}
-              onChange={(e) => setGoToTableNumber(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  handleGoToTable();
-                }
-              }}
-              min="1"
-              max={100}
-              style={{
-                width: "80px",
-                padding: "8px",
-                fontSize: "18px",
-                border: "2px solid #28a745",
-                borderRadius: "4px",
-                textAlign: "center",
-              }}
-            />
-            <button
-              onClick={handleGoToTable}
-              className="toolbar-button primary"
-              style={{
-                fontSize: "25px",
-                fontWeight: "bold",
-                padding: "8px 16px",
-              }}
-            >
-              Xem
-            </button>
             <button
               className="toolbar-button"
               style={{
@@ -2528,8 +2493,7 @@ function App() {
                                                 orangeCell.colIndex === colIndex
                                                   ? {
                                                       backgroundColor:
-                                                        "#fd7e14",
-                                                      color: "white",
+                                                        "#ffc078",
                                                       fontWeight: "bold",
                                                     }
                                                   : {}),
@@ -2662,8 +2626,7 @@ function App() {
                                               orangeCell.colIndex === colIdx
                                                 ? {
                                                     backgroundColor:
-                                                      "#fd7e14",
-                                                    color: "white",
+                                                       "#ffc078",
                                                     fontWeight: "bold",
                                                   }
                                                 : {}),

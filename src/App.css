@@ -379,6 +379,7 @@ body {
   /* Cho biết có thể click */
   white-space: nowrap;
   /* Ngăn xuống dòng */
+  background-clip: padding-box;
 }
 
 .data-cell.fixed {
