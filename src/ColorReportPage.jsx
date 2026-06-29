@@ -395,7 +395,7 @@ function ColorReportPage({ accessWarningContent = null }) {
 
             let matchCount = 0;
             for (let r = 0; r <= R; r++) {
-              if (matchesData[r]?.[c]?.[k] && !deletedRows[r]) {
+              if (matchesData[r]?.[c]?.[k]) {
                 matchCount++;
               }
             }
@@ -807,8 +807,9 @@ function ColorReportPage({ accessWarningContent = null }) {
                                   backgroundColor: isOrange
                                     ? "#fd7e14"
                                     : hasValue
-                                      ? "#f8c507bd"
+                                      ? "#f8c507"
                                       : "transparent",
+                                  backgroundClip: "padding-box",
                                   color: isOrange
                                     ? "white"
                                     : cell.isRedCell
