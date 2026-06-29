@@ -1213,7 +1213,7 @@ function InputPage({ accessWarningContent = null }) {
                   fontWeight: "bold",
                 }}
               >
-                🎨 Báo màu
+                🎨 Về bảng màu
               </button>
               {accessWarningContent}
               {saveStatus && (

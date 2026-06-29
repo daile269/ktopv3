@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useMemo, useCallback, Fragment } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+  Fragment,
+} from "react";
 import "./App.css";
 import "./TopToolbar.css";
 import { savePageData, loadPageData, deletePageData } from "./dataService";
@@ -33,6 +40,7 @@ function App() {
   const [error, setError] = useState("");
   const [pageLabel, setPageLabel] = useState("");
 
+  const [orangeCell, setOrangeCell] = useState(null);
   const [highlightedCells, setHighlightedCells] = useState({});
   const [highlightedTCells, setHighlightedTCells] = useState({});
   const [highlightedACells, setHighlightedACells] = useState({});
@@ -337,8 +345,6 @@ function App() {
           const tVal = tValues[row] !== "" ? parseInt(tValues[row]) : -1;
           const isRed = col === tVal && tVal !== -1;
 
-          if (isRed) y = 1;
-
           const isPurple =
             Number(y) >= Number(purpleRangeFrom) &&
             Number(y) <= Number(purpleRangeTo);
@@ -349,7 +355,11 @@ function App() {
           else if (isPurple && !skipColor) color = "purple";
 
           table[row][col] = { value: `${col}-${y}`, color: color };
-          y++;
+          if (isRed) {
+            y = 1;
+          } else {
+            y++;
+          }
         }
       }
       return table;
@@ -498,17 +508,7 @@ function App() {
                   inline: "center",
                 });
 
-                // Flash orange and then clear it
-                const origBg = cellElement.style.backgroundColor;
-                const origColor = cellElement.style.color;
-                cellElement.style.transition = "background-color 0.3s ease, color 0.3s ease";
-                cellElement.style.backgroundColor = "#fd7e14";
-                cellElement.style.color = "white";
-                setTimeout(() => {
-                  cellElement.style.backgroundColor = origBg;
-                  cellElement.style.color = origColor;
-                  cellElement.style.transition = "";
-                }, 1200);
+                setOrangeCell({ tableIndex, rowIndex, colIndex });
                 scrolled = true;
               }
             }
@@ -532,6 +532,12 @@ function App() {
       }
     }
   }, [isDataLoaded, isLoading]);
+
+  useEffect(() => {
+    const clearOrange = () => setOrangeCell(null);
+    window.addEventListener("click", clearOrange);
+    return () => window.removeEventListener("click", clearOrange);
+  }, []);
 
   useEffect(() => {
     if (!isDataLoaded) return;
@@ -819,7 +825,16 @@ function App() {
         }
       }
 
-      const nextY = lastCell ? (parseInt(lastCell.value.split("-")[1], 10) || 0) + 1 : 1;
+      let nextY = 1;
+      if (lastCell) {
+        const isLastRed =
+          lastCell.color === "red" || lastCell.color === "purple-red";
+        if (isLastRed) {
+          nextY = 1;
+        } else {
+          nextY = (parseInt(lastCell.value.split("-")[1], 10) || 0) + 1;
+        }
+      }
 
       const isPurple =
         Number(nextY) >= Number(purpleRangeFrom) &&
@@ -1523,6 +1538,54 @@ function App() {
     }
   };
 
+  const handleScrollLeft = () => {
+    const container = document.querySelector(".main-content");
+    if (!container) return;
+    const tables = Array.from(container.querySelectorAll(".table-section"));
+    if (tables.length === 0) return;
+
+    const scrollLeft = container.scrollLeft;
+    let targetTable = null;
+    for (let i = tables.length - 1; i >= 0; i--) {
+      if (tables[i].offsetLeft < scrollLeft - 5) {
+        targetTable = tables[i];
+        break;
+      }
+    }
+
+    if (targetTable) {
+      targetTable.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "start",
+      });
+    }
+  };
+
+  const handleScrollRight = () => {
+    const container = document.querySelector(".main-content");
+    if (!container) return;
+    const tables = Array.from(container.querySelectorAll(".table-section"));
+    if (tables.length === 0) return;
+
+    const scrollLeft = container.scrollLeft;
+    let targetTable = null;
+    for (let i = 0; i < tables.length; i++) {
+      if (tables[i].offsetLeft > scrollLeft + 5) {
+        targetTable = tables[i];
+        break;
+      }
+    }
+
+    if (targetTable) {
+      targetTable.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "start",
+      });
+    }
+  };
+
   const currentPageHasPurple = Object.keys(getPurpleCellsInfo()).length > 0;
 
   return (
@@ -1738,7 +1801,7 @@ function App() {
                 borderRadius: "8px",
               }}
             >
-              📥 Về BT
+              📥 Về bảng thông
             </button>
             <button
               onClick={() => (window.location.href = "/chon-dong-thong")}
@@ -1768,12 +1831,10 @@ function App() {
                 fontWeight: "bold",
               }}
             >
-              🎨 Báo màu
+              🎨 Về bảng màu
             </button>
           </div>
           {renderAccessWarning()}
-
-
 
           <div className="toolbar-group">
             {isLoading && (
@@ -1840,10 +1901,46 @@ function App() {
                 fontWeight: "bold",
               }}
             >
-              📊 D đã toán:{" "}
+              📊 Số dòng hiện tại:{" "}
               {allTableData[0]
                 ? allTableData[0].filter((_, i) => !deletedRows[i]).length
                 : 0}
+            </button>
+            <button
+              onClick={handleScrollLeft}
+              className="toolbar-button"
+              title="Cuộn sang bảng thông bên trái"
+              style={{
+                fontSize: "25px",
+                padding: "8px 16px",
+                backgroundColor: "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                marginLeft: "8px",
+                fontWeight: "bold",
+              }}
+            >
+              ◀
+            </button>
+            <button
+              onClick={handleScrollRight}
+              className="toolbar-button"
+              title="Cuộn sang bảng thông bên phải"
+              style={{
+                fontSize: "25px",
+                padding: "8px 16px",
+                backgroundColor: "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                marginLeft: "4px",
+                fontWeight: "bold",
+              }}
+            >
+              ▶
             </button>
           </div>
         </div>
@@ -1911,7 +2008,6 @@ function App() {
                     padding: "20px",
                   }}
                 >
-
                   <div
                     className="tables-container"
                     style={{
@@ -1921,460 +2017,508 @@ function App() {
                       overflow: "visible",
                     }}
                   >
-                  {tapTableData.map((tableData, tableIndex) => (
-                    <div
-                      key={tableIndex}
-                      className={`table-section ${tableIndex === 0 ? "first-table" : ""}`}
-                    >
+                    {tapTableData.map((tableData, tableIndex) => (
                       <div
-                        className="data-grid-wrapper"
-                        style={{ maxHeight: "none", overflow: "visible" }}
+                        key={tableIndex}
+                        className={`table-section ${tableIndex === 0 ? "first-table" : ""}`}
                       >
-                        {tableData.length > 0 ? (
-                          <table className="data-grid">
-                            <colgroup>
-                              <col style={{ width: "80px" }} />
-                              <col style={{ width: "190px" }} />
-                              <col style={{ width: "150px" }} />
-                              {tableIndex === 0 && (
-                                <>
-                                  <col style={{ width: "100px" }} />
-                                  <col style={{ width: "100px" }} />
-                                </>
-                              )}
-                              <col style={{ width: "100px" }} />
-                              {[...Array(10)].map((_, i) => (
-                                <col key={i} style={{ width: "120px" }} />
-                              ))}
-                            </colgroup>
-                            <thead>
-                              <tr>
-                                <th colSpan="3" className="group-header">
-                                  Q{qNumDisplay}
-                                  {tapIndex === 0 && (
-                                    <input
-                                      type="text"
-                                      value={pageLabel}
-                                      onChange={(e) =>
-                                        setPageLabel(e.target.value)
-                                      }
-                                      placeholder="Ghi chú..."
-                                      className="header-label-input"
-                                      style={{
-                                        marginLeft: "15px",
-                                        fontSize: "22px",
-                                        width: "300px",
-                                        backgroundColor:
-                                          "rgba(255, 255, 255, 0.5)",
-                                        border: "1px solid #ddd",
-                                        padding: "4px 10px",
-                                        borderRadius: "6px",
-                                      }}
-                                    />
-                                  )}
-                                </th>
-                                <th
-                                  colSpan={tableIndex === 0 ? 13 : 11}
-                                  className="group-header"
-                                  style={{ textAlign: "left", paddingLeft: "20px" }}
-                                >
-                                  Thông {tableIndex + 1} - Tập {relativeTapIdx + 1} - Q{qNumDisplay}
-                                </th>
-                              </tr>
-                              <tr>
-                                <th className="col-header fixed">STT</th>
-                                <th
-                                  className="col-header fixed date-col-header"
-                                  style={{ minWidth: "190px", width: "190px" }}
-                                >
-                                  Ngày
-                                </th>
-                                <th
-                                  className="col-header fixed"
-                                  style={{ minWidth: "150px", width: "150px" }}
-                                ></th>
+                        <div
+                          className="data-grid-wrapper"
+                          style={{ maxHeight: "none", overflow: "visible" }}
+                        >
+                          {tableData.length > 0 ? (
+                            <table className="data-grid">
+                              <colgroup>
+                                <col style={{ width: "80px" }} />
+                                <col style={{ width: "190px" }} />
+                                <col style={{ width: "150px" }} />
                                 {tableIndex === 0 && (
                                   <>
-                                    <th
-                                      className={`col-header fixed col-header-clickable ${
-                                        highlightedAColumn
-                                          ? "col-header-highlighted"
-                                          : ""
-                                      }`}
-                                      onClick={handleAColHeader}
-                                    >
-                                      A
-                                    </th>
-                                    <th
-                                      className={`col-header fixed col-header-clickable ${
-                                        highlightedBColumn
-                                          ? "col-header-highlighted"
-                                          : ""
-                                      }`}
-                                      onClick={handleBColHeader}
-                                    >
-                                      B
-                                    </th>
+                                    <col style={{ width: "100px" }} />
+                                    <col style={{ width: "100px" }} />
                                   </>
                                 )}
-                                <th
-                                  className={`col-header fixed col-header-clickable ${
-                                    highlightedTColumns[tableIndex]
-                                      ? "col-header-highlighted"
-                                      : ""
-                                  }`}
-                                  onClick={() => handleTColHeader(tableIndex)}
-                                >
-                                  T{tapIndex * 2 + tableIndex + 1}
-                                </th>
-                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                                <col style={{ width: "100px" }} />
+                                {[...Array(10)].map((_, i) => (
+                                  <col key={i} style={{ width: "120px" }} />
+                                ))}
+                              </colgroup>
+                              <thead>
+                                <tr>
+                                  <th colSpan="3" className="group-header">
+                                    Q{qNumDisplay}
+                                    {tapIndex === 0 && (
+                                      <input
+                                        type="text"
+                                        value={pageLabel}
+                                        onChange={(e) =>
+                                          setPageLabel(e.target.value)
+                                        }
+                                        placeholder="Ghi chú..."
+                                        className="header-label-input"
+                                        style={{
+                                          marginLeft: "15px",
+                                          fontSize: "22px",
+                                          width: "300px",
+                                          backgroundColor:
+                                            "rgba(255, 255, 255, 0.5)",
+                                          border: "1px solid #ddd",
+                                          padding: "4px 10px",
+                                          borderRadius: "6px",
+                                        }}
+                                      />
+                                    )}
+                                  </th>
                                   <th
-                                    key={num}
-                                    className={`col-header col-header-clickable ${
-                                      highlightedDataColumns[tableIndex]?.[num]
+                                    colSpan={tableIndex === 0 ? 13 : 11}
+                                    className="group-header"
+                                    style={{
+                                      textAlign: "left",
+                                      paddingLeft: "20px",
+                                    }}
+                                  >
+                                    Thông {tableIndex + 1} - Tập{" "}
+                                    {relativeTapIdx + 1} - Q{qNumDisplay}
+                                  </th>
+                                </tr>
+                                <tr>
+                                  <th className="col-header fixed">STT</th>
+                                  <th
+                                    className="col-header fixed date-col-header"
+                                    style={{
+                                      minWidth: "190px",
+                                      width: "190px",
+                                    }}
+                                  >
+                                    Ngày
+                                  </th>
+                                  <th
+                                    className="col-header fixed"
+                                    style={{
+                                      minWidth: "150px",
+                                      width: "150px",
+                                    }}
+                                  ></th>
+                                  {tableIndex === 0 && (
+                                    <>
+                                      <th
+                                        className={`col-header fixed col-header-clickable ${
+                                          highlightedAColumn
+                                            ? "col-header-highlighted"
+                                            : ""
+                                        }`}
+                                        onClick={handleAColHeader}
+                                      >
+                                        A
+                                      </th>
+                                      <th
+                                        className={`col-header fixed col-header-clickable ${
+                                          highlightedBColumn
+                                            ? "col-header-highlighted"
+                                            : ""
+                                        }`}
+                                        onClick={handleBColHeader}
+                                      >
+                                        B
+                                      </th>
+                                    </>
+                                  )}
+                                  <th
+                                    className={`col-header fixed col-header-clickable ${
+                                      highlightedTColumns[tableIndex]
                                         ? "col-header-highlighted"
                                         : ""
                                     }`}
-                                    onClick={() =>
-                                      handleDataColHeader(tableIndex, num)
-                                    }
+                                    onClick={() => handleTColHeader(tableIndex)}
                                   >
-                                    {num}
+                                    T{tableIndex + 1}
                                   </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {(() => {
-                                let displayRowNumber = -1;
-                                return tableData.map((row, rowIndex) => {
-                                  if (deletedRows[rowIndex]) return null;
+                                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                                    <th
+                                      key={num}
+                                      className={`col-header col-header-clickable ${
+                                        highlightedDataColumns[tableIndex]?.[
+                                          num
+                                        ]
+                                          ? "col-header-highlighted"
+                                          : ""
+                                      }`}
+                                      onClick={() =>
+                                        handleDataColHeader(tableIndex, num)
+                                      }
+                                    >
+                                      {num}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(() => {
+                                  let displayRowNumber = -1;
+                                  return tableData.map((row, rowIndex) => {
+                                    if (deletedRows[rowIndex]) return null;
 
-                                  displayRowNumber++;
-                                  return (
-                                    <tr key={rowIndex}>
-                                      <td
-                                        className={`data-cell fixed ${
-                                          highlightedRows[rowIndex]
-                                            ? "highlighted-row"
-                                            : ""
-                                        }`}
-                                        onClick={() => handleRowClick(rowIndex)}
-                                        style={{ cursor: "pointer" }}
-                                      >
-                                        {String(displayRowNumber).padStart(
-                                          2,
-                                          "0",
-                                        )}
-                                      </td>
-                                      <td
-                                        className={`data-cell fixed date-col ${
-                                          highlightedRows[rowIndex]
-                                            ? "highlighted-row"
-                                            : ""
-                                        }`}
-                                        onClick={() => handleRowClick(rowIndex)}
-                                        style={{ cursor: "pointer" }}
-                                      >
-                                        <span className="date-input">
-                                          {formatDate(dateValues[rowIndex])}
-                                        </span>
-                                      </td>
-                                      <td
-                                        className={`data-cell fixed ${
-                                          highlightedRows[rowIndex]
-                                            ? "highlighted-row"
-                                            : ""
-                                        }`}
-                                        style={{
-                                          minWidth: "150px",
-                                          width: "150px",
-                                        }}
-                                      >
-                                        <span
-                                          className="grid-input"
+                                    displayRowNumber++;
+                                    return (
+                                      <tr key={rowIndex}>
+                                        <td
+                                          className={`data-cell fixed ${
+                                            highlightedRows[rowIndex]
+                                              ? "highlighted-row"
+                                              : ""
+                                          }`}
+                                          onClick={() =>
+                                            handleRowClick(rowIndex)
+                                          }
+                                          style={{ cursor: "pointer" }}
+                                        >
+                                          {String(displayRowNumber).padStart(
+                                            2,
+                                            "0",
+                                          )}
+                                        </td>
+                                        <td
+                                          className={`data-cell fixed date-col ${
+                                            highlightedRows[rowIndex]
+                                              ? "highlighted-row"
+                                              : ""
+                                          }`}
+                                          onClick={() =>
+                                            handleRowClick(rowIndex)
+                                          }
+                                          style={{ cursor: "pointer" }}
+                                        >
+                                          <span className="date-input">
+                                            {formatDate(dateValues[rowIndex])}
+                                          </span>
+                                        </td>
+                                        <td
+                                          className={`data-cell fixed ${
+                                            highlightedRows[rowIndex]
+                                              ? "highlighted-row"
+                                              : ""
+                                          }`}
                                           style={{
-                                            border: "none",
-                                            background: "transparent",
-                                            fontSize: "35px",
-                                            textAlign: "center",
-                                            fontWeight: "bold",
-                                            color: "#6f42c1",
+                                            minWidth: "150px",
+                                            width: "150px",
                                           }}
                                         >
-                                          {sourceSTTValues[rowIndex] || ""}
-                                        </span>
-                                      </td>
-                                      {tableIndex === 0 && (
-                                        <>
-                                          <td
-                                            className={`data-cell fixed value-col ${
-                                              highlightedACells[rowIndex]
-                                                ? "highlighted-t-cell"
-                                                : highlightedAColumn
-                                                  ? "col-highlighted"
-                                                  : highlightedRows[rowIndex]
-                                                    ? "highlighted-row"
-                                                    : ""
-                                            }`}
-                                            onClick={() =>
-                                              handleACellClick(rowIndex)
-                                            }
+                                          <span
+                                            className="grid-input"
+                                            style={{
+                                              border: "none",
+                                              background: "transparent",
+                                              fontSize: "35px",
+                                              textAlign: "center",
+                                              fontWeight: "bold",
+                                              color: "#6f42c1",
+                                            }}
                                           >
-                                            <span
-                                              className="grid-input"
-                                              style={{
-                                                border: "none",
-                                                background: "transparent",
-                                                fontSize: "35px",
-                                                textAlign: "center",
-                                                color: highlightedACells[
-                                                  rowIndex
-                                                ]
-                                                  ? "white"
-                                                  : "#ef4444",
-                                                fontWeight: "600",
-                                              }}
+                                            {sourceSTTValues[rowIndex] || ""}
+                                          </span>
+                                        </td>
+                                        {tableIndex === 0 && (
+                                          <>
+                                            <td
+                                              className={`data-cell fixed value-col ${
+                                                highlightedACells[rowIndex]
+                                                  ? "highlighted-t-cell"
+                                                  : highlightedAColumn
+                                                    ? "col-highlighted"
+                                                    : highlightedRows[rowIndex]
+                                                      ? "highlighted-row"
+                                                      : ""
+                                              }`}
+                                              onClick={() =>
+                                                handleACellClick(rowIndex)
+                                              }
                                             >
-                                              {allQData[qIdx]?.tapsData?.[
-                                                relativeTapIdx
-                                              ]?.aValues[rowIndex] || ""}
-                                            </span>
-                                          </td>
-                                          <td
-                                            className={`data-cell fixed value-col ${
-                                              highlightedBCells[rowIndex]
-                                                ? "highlighted-t-cell"
-                                                : highlightedBColumn
-                                                  ? "col-highlighted"
-                                                  : highlightedRows[rowIndex]
-                                                    ? "highlighted-row"
-                                                    : ""
-                                            }`}
-                                            onClick={() =>
-                                              handleBCellClick(rowIndex)
-                                            }
-                                          >
-                                            <span
-                                              className="grid-input"
-                                              style={{
-                                                border: "none",
-                                                background: "transparent",
-                                                fontSize: "35px",
-                                                textAlign: "center",
-                                                color: highlightedBCells[
-                                                  rowIndex
-                                                ]
-                                                  ? "white"
-                                                  : "#ef4444",
-                                                fontWeight: "600",
-                                              }}
+                                              <span
+                                                className="grid-input"
+                                                style={{
+                                                  border: "none",
+                                                  background: "transparent",
+                                                  fontSize: "35px",
+                                                  textAlign: "center",
+                                                  color: highlightedACells[
+                                                    rowIndex
+                                                  ]
+                                                    ? "white"
+                                                    : "#ef4444",
+                                                  fontWeight: "600",
+                                                }}
+                                              >
+                                                {allQData[qIdx]?.tapsData?.[
+                                                  relativeTapIdx
+                                                ]?.aValues[rowIndex] || ""}
+                                              </span>
+                                            </td>
+                                            <td
+                                              className={`data-cell fixed value-col ${
+                                                highlightedBCells[rowIndex]
+                                                  ? "highlighted-t-cell"
+                                                  : highlightedBColumn
+                                                    ? "col-highlighted"
+                                                    : highlightedRows[rowIndex]
+                                                      ? "highlighted-row"
+                                                      : ""
+                                              }`}
+                                              onClick={() =>
+                                                handleBCellClick(rowIndex)
+                                              }
                                             >
-                                              {allQData[qIdx]?.tapsData?.[
-                                                relativeTapIdx
-                                              ]?.bValues[rowIndex] || ""}
-                                            </span>
-                                          </td>
-                                        </>
-                                      )}
-                                      <td
-                                        className={`data-cell fixed value-col ${
-                                          highlightedTCells[tableIndex]?.[
-                                            rowIndex
-                                          ]
-                                            ? "highlighted-t-cell"
-                                            : highlightedTColumns[tableIndex]
-                                              ? "col-highlighted"
-                                              : highlightedRows[rowIndex]
-                                                ? "highlighted-row"
-                                                : ""
-                                        }`}
-                                        onClick={() =>
-                                          handleTCellClick(tableIndex, rowIndex)
-                                        }
-                                      >
-                                        <span className="grid-input">
-                                          {tapsTValues[tapIndex]?.[
-                                            tableIndex
-                                          ]?.[rowIndex] || ""}
-                                        </span>
-                                      </td>
-                                      {row.map((cell, colIndex) => {
-                                        const isYellow = cell.color === "purple" || cell.color === "purple-red";
-                                        const parts = cell.value ? cell.value.split("-") : [];
-                                        const yVal = parts.length === 2 ? parseInt(parts[1], 10) : 0;
-                                        const canScroll = yVal >= 22 && yVal <= 85;
+                                              <span
+                                                className="grid-input"
+                                                style={{
+                                                  border: "none",
+                                                  background: "transparent",
+                                                  fontSize: "35px",
+                                                  textAlign: "center",
+                                                  color: highlightedBCells[
+                                                    rowIndex
+                                                  ]
+                                                    ? "white"
+                                                    : "#ef4444",
+                                                  fontWeight: "600",
+                                                }}
+                                              >
+                                                {allQData[qIdx]?.tapsData?.[
+                                                  relativeTapIdx
+                                                ]?.bValues[rowIndex] || ""}
+                                              </span>
+                                            </td>
+                                          </>
+                                        )}
+                                        <td
+                                          className={`data-cell fixed value-col ${
+                                            highlightedTCells[tableIndex]?.[
+                                              rowIndex
+                                            ]
+                                              ? "highlighted-t-cell"
+                                              : highlightedTColumns[tableIndex]
+                                                ? "col-highlighted"
+                                                : highlightedRows[rowIndex]
+                                                  ? "highlighted-row"
+                                                  : ""
+                                          }`}
+                                          onClick={() =>
+                                            handleTCellClick(
+                                              tableIndex,
+                                              rowIndex,
+                                            )
+                                          }
+                                        >
+                                          <span className="grid-input">
+                                            {tapsTValues[tapIndex]?.[
+                                              tableIndex
+                                            ]?.[rowIndex] || ""}
+                                          </span>
+                                        </td>
+                                        {row.map((cell, colIndex) => {
+                                          const isYellow =
+                                            cell.color === "purple" ||
+                                            cell.color === "purple-red";
+                                          const parts = cell.value
+                                            ? cell.value.split("-")
+                                            : [];
+                                          const yVal =
+                                            parts.length === 2
+                                              ? parseInt(parts[1], 10)
+                                              : 0;
+                                          const canScroll =
+                                            yVal >= 22 && yVal <= 85;
 
+                                          return (
+                                            <td
+                                              key={colIndex}
+                                              id={`cell-${tableIndex}-${rowIndex}-${colIndex}`}
+                                              className={`data-cell ${cell.color} ${
+                                                highlightedCells[tableIndex]?.[
+                                                  rowIndex
+                                                ]?.[colIndex]
+                                                  ? "highlighted-cell"
+                                                  : highlightedDataColumns[
+                                                        tableIndex
+                                                      ]?.[colIndex]
+                                                    ? "col-highlighted"
+                                                    : highlightedRows[rowIndex]
+                                                      ? "highlighted-row"
+                                                      : ""
+                                              }`}
+                                              style={{
+                                                cursor: isYellow
+                                                  ? "pointer"
+                                                  : undefined,
+                                                ...(orangeCell &&
+                                                orangeCell.tableIndex ===
+                                                  tableIndex &&
+                                                orangeCell.rowIndex ===
+                                                  rowIndex &&
+                                                orangeCell.colIndex === colIndex
+                                                  ? {
+                                                      backgroundColor:
+                                                        "#fd7e14",
+                                                      color: "white",
+                                                      fontWeight: "bold",
+                                                    }
+                                                  : {}),
+                                              }}
+                                              onClick={() => {
+                                                if (isYellow) {
+                                                  if (canScroll) {
+                                                    window.location.href = `/bao-mau?scrollToCount=${yVal}&q=${qIdx + 1}&x=${relativeTapIdx + 1}&y=${tableIndex + 1}&g=${colIndex}`;
+                                                  } else {
+                                                    window.location.href = `/bao-mau`;
+                                                  }
+                                                } else {
+                                                  handleCellClick(
+                                                    tableIndex,
+                                                    rowIndex,
+                                                    colIndex,
+                                                  );
+                                                }
+                                              }}
+                                              title={
+                                                isYellow
+                                                  ? canScroll
+                                                    ? `Nhấp để xem báo màu của số đếm ${yVal}`
+                                                    : "Nhấp để về bảng báo màu"
+                                                  : undefined
+                                              }
+                                            >
+                                              {cell.value}
+                                            </td>
+                                          );
+                                        })}
+                                      </tr>
+                                    );
+                                  });
+                                })()}
+
+                                {tableData.length > 0 && (
+                                  <tr className="future-row">
+                                    <td
+                                      className="data-cell fixed future-cell"
+                                      style={{
+                                        opacity: 0.5,
+                                        fontStyle: "italic",
+                                        height: "50px",
+                                        fontWeight: "300",
+                                      }}
+                                    >
+                                      &nbsp;
+                                    </td>
+                                    <td
+                                      className="data-cell fixed future-cell"
+                                      style={{
+                                        opacity: 0.5,
+                                        fontStyle: "italic",
+                                        fontWeight: "300",
+                                      }}
+                                    >
+                                      &nbsp;
+                                    </td>
+                                    <td
+                                      className="data-cell fixed future-cell"
+                                      style={{
+                                        fontStyle: "italic",
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      &nbsp;
+                                    </td>
+                                    {tableIndex === 0 && (
+                                      <>
+                                        <td
+                                          className="data-cell fixed future-cell"
+                                          style={{
+                                            fontStyle: "italic",
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          &nbsp;
+                                        </td>
+                                        <td
+                                          className="data-cell fixed future-cell"
+                                          style={{
+                                            fontStyle: "italic",
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          &nbsp;
+                                        </td>
+                                      </>
+                                    )}
+                                    <td
+                                      className="data-cell fixed future-cell"
+                                      style={{
+                                        fontStyle: "italic",
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      &nbsp;
+                                    </td>
+                                    {getFutureRow(tableData).map(
+                                      (cell, colIdx) => {
+                                        const parts = cell.value.split("-");
+                                        const yVal =
+                                          parts.length === 2
+                                            ? parseInt(parts[1], 10)
+                                            : 0;
+                                        const canScroll =
+                                          yVal >= 22 && yVal <= 85;
                                         return (
                                           <td
-                                            key={colIndex}
-                                            id={`cell-${tableIndex}-${rowIndex}-${colIndex}`}
-                                            className={`data-cell ${cell.color} ${
+                                            key={colIdx}
+                                            id={`cell-${tableIndex}-${tableData.length}-${colIdx}`}
+                                            className={`data-cell ${cell.color} future-cell ${
                                               highlightedCells[tableIndex]?.[
-                                                rowIndex
-                                              ]?.[colIndex]
+                                                tableData.length
+                                              ]?.[colIdx]
                                                 ? "highlighted-cell"
-                                                : highlightedDataColumns[
-                                                      tableIndex
-                                                    ]?.[colIndex]
-                                                  ? "col-highlighted"
-                                                  : highlightedRows[rowIndex]
-                                                    ? "highlighted-row"
-                                                    : ""
+                                                : ""
                                             }`}
-                                            style={isYellow ? { cursor: "pointer" } : {}}
+                                            style={{
+                                              height: "50px",
+                                              fontStyle: "italic",
+                                              fontWeight: 600,
+                                              cursor: "pointer",
+                                            }}
                                             onClick={() => {
-                                              if (isYellow) {
-                                                if (canScroll) {
-                                                  window.location.href = `/bao-mau?scrollToCount=${yVal}&q=${qIdx + 1}&x=${relativeTapIdx + 1}&y=${tableIndex + 1}&g=${colIndex}`;
-                                                } else {
-                                                  window.location.href = `/bao-mau`;
-                                                }
+                                              if (canScroll) {
+                                                window.location.href = `/bao-mau?scrollToCount=${yVal}&q=${qIdx + 1}&x=${relativeTapIdx + 1}&y=${tableIndex + 1}&g=${colIdx}`;
                                               } else {
-                                                handleCellClick(
-                                                  tableIndex,
-                                                  rowIndex,
-                                                  colIndex,
-                                                );
+                                                window.location.href = `/bao-mau`;
                                               }
                                             }}
                                             title={
-                                              isYellow
-                                                ? (canScroll
-                                                  ? `Nhấp để xem báo màu của số đếm ${yVal}`
-                                                  : "Nhấp để về bảng báo màu")
-                                                : undefined
+                                              canScroll
+                                                ? `Nhấp để xem báo màu của số đếm ${yVal}`
+                                                : "Nhấp để về bảng báo màu"
                                             }
                                           >
                                             {cell.value}
                                           </td>
                                         );
-                                      })}
-                                    </tr>
-                                  );
-                                });
-                              })()}
-
-                              {tableData.length > 0 && (
-                                <tr className="future-row">
-                                  <td
-                                    className="data-cell fixed future-cell"
-                                    style={{
-                                      opacity: 0.5,
-                                      fontStyle: "italic",
-                                      height: "50px",
-                                      fontWeight: "300",
-                                    }}
-                                  >
-                                    &nbsp;
-                                  </td>
-                                  <td
-                                    className="data-cell fixed future-cell"
-                                    style={{
-                                      opacity: 0.5,
-                                      fontStyle: "italic",
-                                      fontWeight: "300",
-                                    }}
-                                  >
-                                    &nbsp;
-                                  </td>
-                                  <td
-                                    className="data-cell fixed future-cell"
-                                    style={{
-                                      fontStyle: "italic",
-                                      fontWeight: 600,
-                                    }}
-                                  >
-                                    &nbsp;
-                                  </td>
-                                  {tableIndex === 0 && (
-                                    <>
-                                      <td
-                                        className="data-cell fixed future-cell"
-                                        style={{
-                                          fontStyle: "italic",
-                                          fontWeight: 600,
-                                        }}
-                                      >
-                                        &nbsp;
-                                      </td>
-                                      <td
-                                        className="data-cell fixed future-cell"
-                                        style={{
-                                          fontStyle: "italic",
-                                          fontWeight: 600,
-                                        }}
-                                      >
-                                        &nbsp;
-                                      </td>
-                                    </>
-                                  )}
-                                  <td
-                                    className="data-cell fixed future-cell"
-                                    style={{
-                                      fontStyle: "italic",
-                                      fontWeight: 600,
-                                    }}
-                                  >
-                                    &nbsp;
-                                  </td>
-                                  {getFutureRow(tableData).map(
-                                    (cell, colIdx) => {
-                                      const parts = cell.value.split("-");
-                                      const yVal = parts.length === 2 ? parseInt(parts[1], 10) : 0;
-                                      const canScroll = yVal >= 22 && yVal <= 85;
-                                      return (
-                                        <td
-                                          key={colIdx}
-                                          id={`cell-${tableIndex}-${tableData.length}-${colIdx}`}
-                                          className={`data-cell ${cell.color} future-cell ${
-                                            highlightedCells[tableIndex]?.[
-                                              tableData.length
-                                            ]?.[colIdx]
-                                              ? "highlighted-cell"
-                                              : ""
-                                          }`}
-                                          style={{
-                                            height: "50px",
-                                            fontStyle: "italic",
-                                            fontWeight: 600,
-                                            cursor: "pointer",
-                                          }}
-                                          onClick={() => {
-                                            if (canScroll) {
-                                              window.location.href = `/bao-mau?scrollToCount=${yVal}&q=${qIdx + 1}&x=${relativeTapIdx + 1}&y=${tableIndex + 1}&g=${colIdx}`;
-                                            } else {
-                                              window.location.href = `/bao-mau`;
-                                            }
-                                          }}
-                                          title={
-                                            canScroll
-                                              ? `Nhấp để xem báo màu của số đếm ${yVal}`
-                                              : "Nhấp để về bảng báo màu"
-                                          }
-                                        >
-                                          {cell.value}
-                                        </td>
-                                      );
-                                    },
-                                  )}
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        ) : (
-                          <div className="empty-message">
-                            Nhập giá trị T{tableIndex + 1} và nhấn "Tính"
-                          </div>
-                        )}
+                                      },
+                                    )}
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          ) : (
+                            <div className="empty-message">
+                              Nhập giá trị T{tableIndex + 1} và nhấn "Tính"
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </Fragment>
-          );
-        })}
+              </Fragment>
+            );
+          })}
         </div>
       </div>
 

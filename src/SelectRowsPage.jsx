@@ -720,7 +720,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
                 onClick={() => (window.location.href = "/bao-mau")}
                 style={{ fontSize: "30px", background: "#ffc107", color: "#212529", border: "none", fontWeight: "bold" }}
               >
-                🎨 Báo màu
+                🎨 Về bảng màu
               </button>
               {accessWarningContent}
               {saveStatus && (

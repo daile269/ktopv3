@@ -24,6 +24,7 @@ function ColorReportPage({ accessWarningContent = null }) {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [orangeCell, setOrangeCell] = useState(null);
   const [searchCount, setSearchCount] = useState("");
 
   const handleScrollToCount = useCallback(() => {
@@ -86,6 +87,12 @@ function ColorReportPage({ accessWarningContent = null }) {
   }, [loadData]);
 
   useEffect(() => {
+    const clearOrange = () => setOrangeCell(null);
+    window.addEventListener("click", clearOrange);
+    return () => window.removeEventListener("click", clearOrange);
+  }, []);
+
+  useEffect(() => {
     if (!isLoading) {
       const params = new URLSearchParams(window.location.search);
       const scrollToCount = params.get("scrollToCount");
@@ -106,7 +113,9 @@ function ColorReportPage({ accessWarningContent = null }) {
             let scrolled = false;
 
             if (qVal && xVal && yVal && gVal) {
-              const cellElement = document.querySelector(`[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-"]`);
+              const cellElement = document.querySelector(
+                `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-"]`,
+              );
               if (cellElement) {
                 cellElement.scrollIntoView({
                   behavior: "smooth",
@@ -114,16 +123,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                   inline: "center",
                 });
 
-                const origBg = cellElement.style.backgroundColor;
-                const origColor = cellElement.style.color;
-                cellElement.style.transition = "background-color 0.3s ease, color 0.3s ease";
-                cellElement.style.backgroundColor = "#fd7e14";
-                cellElement.style.color = "white";
-                setTimeout(() => {
-                  cellElement.style.backgroundColor = origBg;
-                  cellElement.style.color = origColor;
-                }, 1200);
-
+                setOrangeCell({ qVal, xVal, yVal, gVal, c: num });
                 scrolled = true;
               }
             }
@@ -269,13 +269,16 @@ function ColorReportPage({ accessWarningContent = null }) {
     // matchesData[c] là danh sách kết quả tìm được cho số đếm c (tối đa N kết quả)
     // thamCountsData[c][col] là số lần xuất hiện của tham số col cho số đếm c
     // matchesData[R][c] là danh sách kết quả tìm được cho số đếm c tại dòng R (tối đa N kết quả)
-    const matchesData = Array(actualRows + 1).fill(null).map(() => {
-      const obj = {};
-      for (let c = 22; c <= 85; c++) {
-        obj[c] = [];
-      }
-      return obj;
-    });
+    // matchesData[R][c] là danh sách kết quả tìm được cho số đếm c tại dòng R (tối đa N kết quả)
+    const matchesData = Array(actualRows + 1)
+      .fill(null)
+      .map(() => {
+        const obj = {};
+        for (let c = 22; c <= 85; c++) {
+          obj[c] = [];
+        }
+        return obj;
+      });
 
     // historyCounts[tapGlobalIdx][tableIdx][col] = số đếm tương lai tích lũy hiện tại
     const historyCounts = Array(50)
@@ -291,7 +294,9 @@ function ColorReportPage({ accessWarningContent = null }) {
     // 4. Quét qua từng dòng R từ 0 đến actualRows để tìm kết quả mới (R = actualRows đại diện cho dòng tương lai)
     for (let R = 0; R <= actualRows; R++) {
       // Lưu lại trạng thái số đếm tại dòng R từ lịch sử
-      const currentCounts = historyCounts.map(taps => taps.map(tables => [...tables]));
+      const currentCounts = historyCounts.map((taps) =>
+        taps.map((tables) => [...tables]),
+      );
       countsHistory.push(currentCounts);
 
       // a. Kiểm tra xem ở dòng R, có bảng T nào đạt số đếm báo màu c
@@ -305,9 +310,10 @@ function ColorReportPage({ accessWarningContent = null }) {
               const counts = historyCounts[tapGlobalIdx][tableIdx];
               for (let col = 0; col < 10; col++) {
                 const valStr = tapsTValues[tapGlobalIdx]?.[tableIdx]?.[R];
-                const isRedCellAtR = (valStr !== undefined && valStr !== "" && valStr !== null)
-                  ? (col === parseInt(valStr, 10))
-                  : false;
+                const isRedCellAtR =
+                  valStr !== undefined && valStr !== "" && valStr !== null
+                    ? col === parseInt(valStr, 10)
+                    : false;
 
                 if (counts[col] === c && !isRedCellAtR) {
                   if (matchesData[R][c].length < limit) {
@@ -343,7 +349,7 @@ function ColorReportPage({ accessWarningContent = null }) {
               for (let col = 0; col < 10; col++) {
                 const isRed = col === val;
                 historyCounts[tapGlobalIdx][tableIdx][col] = isRed
-                  ? 2
+                  ? 1
                   : historyCounts[tapGlobalIdx][tableIdx][col] + 1;
               }
             }
@@ -358,7 +364,7 @@ function ColorReportPage({ accessWarningContent = null }) {
       const isFutureRow = R === actualRows;
       const rowData = {
         rowIdx: R,
-        date: isFutureRow ? "" : (formatDate(dateValues[R]) || `Dòng ${R + 1}`),
+        date: isFutureRow ? "" : formatDate(dateValues[R]) || `Dòng ${R + 1}`,
         isFuture: isFutureRow,
         cells: {},
       };
@@ -369,46 +375,52 @@ function ColorReportPage({ accessWarningContent = null }) {
         for (let k = 0; k < limit; k++) {
           const match = matchesData[R]?.[c]?.[k];
           if (!match) {
-            // Chưa tìm thấy kết quả thứ k -> Luôn hiển thị "||" (kế thừa hoặc chờ kết quả)
             rowData.cells[`${c}-${k}`] = { value: "||", isPlaceholder: true };
           } else {
             const tapGlobalIdx = (match.q - 1) * 10 + (match.x - 1);
             const tableIdx = match.y - 1;
             const col = match.g;
-            
+
             // Xác định xem tại dòng R ô này có màu đỏ hay không
             const tValAtR = tapsTValues[tapGlobalIdx]?.[tableIdx]?.[R];
-            const isRedCellAtR = (tValAtR !== undefined && tValAtR !== "" && tValAtR !== null) ? (col === parseInt(tValAtR, 10)) : false;
+            const isRedCellAtR =
+              tValAtR !== undefined && tValAtR !== "" && tValAtR !== null
+                ? col === parseInt(tValAtR, 10)
+                : false;
 
             // Lấy số đếm thực tế của ô này tại dòng R từ lịch sử
-            const rawCellY = countsHistory[R]?.[tapGlobalIdx]?.[tableIdx]?.[col] || 1;
-            const cellY = isRedCellAtR ? 1 : rawCellY;
-            const displayZ = cellY >= c ? (cellY - c + 1) : cellY;
+            const rawCellY =
+              countsHistory[R]?.[tapGlobalIdx]?.[tableIdx]?.[col] || 1;
+            const cellY = rawCellY;
+
+            let matchCount = 0;
+            for (let r = 0; r <= R; r++) {
+              if (matchesData[r]?.[c]?.[k] && !deletedRows[r]) {
+                matchCount++;
+              }
+            }
+            const displayZ = matchCount;
             const displayValue = `${match.q}-${match.x}-${match.y}-${match.g}-${displayZ}`;
 
-            if (match.row === R) {
-              rowData.cells[`${c}-${k}`] = {
-                value: displayValue,
-                globalTIndex: match.globalTIndex,
-                row: match.row,
-                col: match.g,
-                isNew: true,
-                isRedCell: isRedCellAtR,
-              };
-            } else {
-              rowData.cells[`${c}-${k}`] = {
-                value: "||",
-                isPlaceholder: true,
-              };
-            }
+            rowData.cells[`${c}-${k}`] = {
+              value: displayValue,
+              globalTIndex: match.globalTIndex,
+              row: match.row, // click quay lại dòng đạt mốc c
+              col: match.g,
+              isNew: true,
+              isRedCell: isRedCellAtR,
+            };
           }
         }
+      }
+      if (!isFutureRow && deletedRows[R]) {
+        continue;
       }
       rows.push(rowData);
     }
 
     return rows;
-  }, [isLoading, dateValues, allQData, getLimitForCount, formatDate]);
+  }, [isLoading, dateValues, allQData, getLimitForCount, formatDate, deletedRows]);
 
   return (
     <div
@@ -479,6 +491,25 @@ function ColorReportPage({ accessWarningContent = null }) {
                 backgroundColor: "#e7f3ff",
               }}
             >
+              <button
+                className="toolbar-btn"
+                disabled
+                style={{
+                  fontSize: "30px",
+                  fontWeight: "bold",
+                  backgroundColor: "#ffc107",
+                  color: "#000",
+                  cursor: "default",
+                  opacity: 1,
+                  border: "none",
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  marginRight: "10px",
+                }}
+              >
+                Bảng màu - APP {import.meta.env.VITE_APP_STT || ""}
+                {import.meta.env.VITE_SITE_ID === "site_a" ? "A" : "B"}
+              </button>
               <button
                 className="toolbar-btn"
                 onClick={() => (window.location.href = "/")}
@@ -680,7 +711,10 @@ function ColorReportPage({ accessWarningContent = null }) {
                             style={{
                               padding: "8px 6px",
                               border: "2px solid #333",
-                              borderRight: k === limit ? "4px solid #333" : "2px solid #333",
+                              borderRight:
+                                k === limit
+                                  ? "4px solid #333"
+                                  : "2px solid #333",
                               width: "250px",
                               backgroundColor: "#f2edf8",
                             }}
@@ -726,22 +760,64 @@ function ColorReportPage({ accessWarningContent = null }) {
                               value: "",
                             };
                             const isNew = cell.isNew;
-                            const hasValue = !cell.isPlaceholder && cell.value && cell.value !== "||" && cell.value !== "";
+                            const hasValue =
+                              !cell.isPlaceholder &&
+                              cell.value &&
+                              cell.value !== "||" &&
+                              cell.value !== "";
+                            const isOrange =
+                              orangeCell &&
+                              hasValue &&
+                              cell.value &&
+                              (() => {
+                                const parts = cell.value.split("-");
+                                return (
+                                  parts[0] === orangeCell.qVal &&
+                                  parts[1] === orangeCell.xVal &&
+                                  parts[2] === orangeCell.yVal &&
+                                  parts[3] === orangeCell.gVal &&
+                                  c === orangeCell.c
+                                );
+                              })();
+
                             cellsArr.push(
                               <td
                                 key={`${c}-${k}`}
-                                id={isNew ? `cell-report-${cell.value}` : undefined}
+                                id={
+                                  isNew
+                                    ? `cell-report-${cell.value}`
+                                    : undefined
+                                }
                                 className={hasValue ? "cell-new" : ""}
                                 style={{
                                   padding: "8px",
                                   border: "2px solid #333",
-                                  borderRight: k === limit - 1 ? "4px solid #333" : "2px solid #333",
-                                  fontWeight: cell.isRedCell ? "700" : (hasValue ? "600" : "500"),
+                                  borderRight:
+                                    k === limit - 1
+                                      ? "4px solid #333"
+                                      : "2px solid #333",
+                                  fontWeight: isOrange
+                                    ? "bold"
+                                    : cell.isRedCell
+                                      ? "700"
+                                      : hasValue
+                                        ? "600"
+                                        : "500",
                                   fontStyle: row.isFuture ? "italic" : "normal",
-                                  backgroundColor: hasValue ? "#f8c507bd" : "transparent",
-                                  color: cell.isRedCell
-                                    ? "#cf3535"
-                                    : (row.isFuture ? (hasValue ? "#333" : "#888") : "#333"),
+                                  backgroundColor: isOrange
+                                    ? "#fd7e14"
+                                    : hasValue
+                                      ? "#f8c507bd"
+                                      : "transparent",
+                                  color: isOrange
+                                    ? "white"
+                                    : cell.isRedCell
+                                      ? "#cf3535"
+                                      : row.isFuture
+                                        ? hasValue
+                                          ? "#333"
+                                          : "#888"
+                                        : "#333",
                                   cursor: hasValue ? "pointer" : "default",
                                   fontSize: "35px",
                                   minWidth: "250px",
@@ -793,10 +869,6 @@ function ColorReportPage({ accessWarningContent = null }) {
         .cell-new:hover {
           background-color: #f2edf8 !important;
           color: #6f42c1 !important;
-          transform: scale(1.05);
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          z-index: 1;
-          position: relative;
         }
       `}</style>
     </div>
