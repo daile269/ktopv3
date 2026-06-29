@@ -434,14 +434,8 @@ function App() {
                       globalTIndex,
                     });
 
-                    let matchCount = 0;
                     const slotK = matchesData[R][c].length - 1;
-                    for (let r = 0; r <= R; r++) {
-                      if (matchesData[r]?.[c]?.[slotK]) {
-                        matchCount++;
-                      }
-                    }
-                    map[`${globalTIndex}-${col}-${R}`] = matchCount;
+                    map[`${globalTIndex}-${col}-${R}`] = slotK + 1;
                   }
                 }
               }

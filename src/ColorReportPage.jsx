@@ -388,13 +388,7 @@ function ColorReportPage({ accessWarningContent = null }) {
               countsHistory[R]?.[tapGlobalIdx]?.[tableIdx]?.[col] || 1;
             const cellY = rawCellY;
 
-            let matchCount = 0;
-            for (let r = 0; r <= R; r++) {
-              if (matchesData[r]?.[c]?.[k]) {
-                matchCount++;
-              }
-            }
-            const displayZ = matchCount;
+            const displayZ = k + 1;
             const displayValue = `${match.q}-${match.x}-${match.y}-${match.g}-${displayZ}`;
 
             rowData.cells[`${c}-${k}`] = {
