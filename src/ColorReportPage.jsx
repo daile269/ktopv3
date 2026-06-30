@@ -822,9 +822,11 @@ function ColorReportPage({ accessWarningContent = null }) {
                                   fontStyle: row.isFuture ? "italic" : "normal",
                                   backgroundColor: isOrange
                                     ? "#91d5ff"
-                                    : hasValue
-                                      ? "#f8c507"
-                                      : "transparent",
+                                    : cell.isRedCell
+                                      ? "transparent"
+                                      : hasValue
+                                        ? "#f8c507"
+                                        : "transparent",
                                   backgroundClip: "padding-box",
                                   color: cell.isRedCell
                                     ? "#cf3535"
