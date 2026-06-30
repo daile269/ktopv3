@@ -9,9 +9,11 @@ const GRID_ROWS = 10;
 const MAX_PER_ROW = 4;
 const LAST_SELECTED_ROW_KEY = "ktop_select_last_row";
 
+const NUM_QS = 6;
+
 function SelectRowsPage({ accessWarningContent = null }) {
   const [allQData, setAllQData] = useState(
-    Array(5)
+    Array(NUM_QS)
       .fill(null)
       .map(() => ({
         tapsData: Array(10)
@@ -65,19 +67,31 @@ function SelectRowsPage({ accessWarningContent = null }) {
 
       if (result.success && result.data) {
         const data = result.data;
-        setAllQData(
-          data.allQData ||
-            Array(5)
-              .fill(null)
-              .map(() => ({
-                tapsData: Array(10)
-                  .fill(null)
-                  .map(() => ({
-                    aValues: Array(ROWS).fill(""),
-                    bValues: Array(ROWS).fill(""),
-                  })),
-              })),
-        );
+        let loadedAllQData = data.allQData || [];
+        loadedAllQData = JSON.parse(JSON.stringify(loadedAllQData));
+        while (loadedAllQData.length < NUM_QS) {
+          loadedAllQData.push({
+            tapsData: Array(10).fill(null).map(() => ({
+              aValues: Array(ROWS).fill(""),
+              bValues: Array(ROWS).fill(""),
+            })),
+          });
+        }
+        for (let q = 0; q < NUM_QS; q++) {
+          if (!loadedAllQData[q]) {
+            loadedAllQData[q] = { tapsData: [] };
+          }
+          if (!loadedAllQData[q].tapsData) {
+            loadedAllQData[q].tapsData = [];
+          }
+          while (loadedAllQData[q].tapsData.length < 10) {
+            loadedAllQData[q].tapsData.push({
+              aValues: Array(ROWS).fill(""),
+              bValues: Array(ROWS).fill(""),
+            });
+          }
+        }
+        setAllQData(loadedAllQData);
         setDateValues(data.dateValues || Array(ROWS).fill(""));
         setZValues(data.zValues || Array(ROWS).fill(""));
         setDeletedRows(data.deletedRows || Array(ROWS).fill(false));
@@ -185,7 +199,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
 
   const confirmDeleteAll = async () => {
     const nextDeletedRows = Array(ROWS).fill(true);
-    const emptyAllQData = Array(5)
+    const emptyAllQData = Array(NUM_QS)
       .fill(null)
       .map(() => ({
         tapsData: Array(10)
@@ -333,7 +347,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
     try {
       for (const rowIndex of [...new Set(selectedIndices)]) {
         let hasValueInAnyQ = false;
-        for (let q = 0; q < 5; q++) {
+        for (let q = 0; q < NUM_QS; q++) {
           const qData = allQData[q];
           if (qData && qData.tapsData) {
             for (let tap = 0; tap < 10; tap++) {
@@ -375,21 +389,39 @@ function SelectRowsPage({ accessWarningContent = null }) {
           ? currentData.data.pageLabel || ""
           : "";
 
-      let activeAllQData = currentData.success && currentData.data?.allQData
-        ? JSON.parse(JSON.stringify(currentData.data.allQData))
-        : Array(5).fill(null).map(() => ({
-            tapsData: Array(10).fill(null).map(() => ({
-              aValues: Array(ROWS).fill(""),
-              bValues: Array(ROWS).fill(""),
-            })),
-          }));
+      let activeAllQData = [];
+      if (currentData.success && currentData.data?.allQData) {
+        activeAllQData = JSON.parse(JSON.stringify(currentData.data.allQData));
+      }
+      while (activeAllQData.length < NUM_QS) {
+        activeAllQData.push({
+          tapsData: Array(10).fill(null).map(() => ({
+            aValues: Array(ROWS).fill(""),
+            bValues: Array(ROWS).fill(""),
+          })),
+        });
+      }
+      for (let q = 0; q < NUM_QS; q++) {
+        if (!activeAllQData[q]) {
+          activeAllQData[q] = { tapsData: [] };
+        }
+        if (!activeAllQData[q].tapsData) {
+          activeAllQData[q].tapsData = [];
+        }
+        while (activeAllQData[q].tapsData.length < 10) {
+          activeAllQData[q].tapsData.push({
+            aValues: Array(ROWS).fill(""),
+            bValues: Array(ROWS).fill(""),
+          });
+        }
+      }
 
       let activeZ = [];
       let activeD = [];
       let activeDel = [];
       let activeSourceSTT = [];
 
-      let newAllQData = Array(5).fill(null).map(() => ({
+      let newAllQData = Array(NUM_QS).fill(null).map(() => ({
         tapsData: Array(10).fill(null).map(() => ({
           aValues: [],
           bValues: [],
@@ -409,7 +441,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
             String(dVals[rowIndex] || "").trim() !== "";
 
           if (!hasAnyData) {
-            for (let q = 0; q < 5; q++) {
+            for (let q = 0; q < NUM_QS; q++) {
               const taps = activeAllQData[q]?.tapsData || [];
               for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
                 if (
@@ -429,7 +461,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
             activeD.push(dVals[rowIndex] || "");
             activeDel.push(delFlags[rowIndex] === undefined ? false : delFlags[rowIndex]);
             activeSourceSTT.push(sourceVals[rowIndex] || "");
-            for (let q = 0; q < 5; q++) {
+            for (let q = 0; q < NUM_QS; q++) {
               for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
                 newAllQData[q].tapsData[tapIdx].aValues.push(activeAllQData[q]?.tapsData?.[tapIdx]?.aValues[rowIndex] || "");
                 newAllQData[q].tapsData[tapIdx].bValues.push(activeAllQData[q]?.tapsData?.[tapIdx]?.bValues[rowIndex] || "");
@@ -445,7 +477,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
         activeDel.push(false);
         activeSourceSTT.push(formatStt(rowIndex));
 
-        for (let q = 0; q < 5; q++) {
+        for (let q = 0; q < NUM_QS; q++) {
           for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
             const draftTap = allQData[q]?.tapsData?.[tapIdx];
             newAllQData[q].tapsData[tapIdx].aValues.push(draftTap?.aValues[rowIndex] || "");
@@ -472,7 +504,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
         activeD.push("");
         activeDel.push(true);
         activeSourceSTT.push("");
-        for (let q = 0; q < 5; q++) {
+        for (let q = 0; q < NUM_QS; q++) {
           for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
             newAllQData[q].tapsData[tapIdx].aValues.push("");
             newAllQData[q].tapsData[tapIdx].bValues.push("");

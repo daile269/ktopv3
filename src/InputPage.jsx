@@ -64,7 +64,7 @@ const TaskRow = memo(
         </td>
 
         {/* Render 5 Qs, each has 10 Taps, each Tap has A and B */}
-        {Array.from({ length: 5 }).map((_, qIndex) => {
+        {Array.from({ length: NUM_QS }).map((_, qIndex) => {
           const qData = allQData[qIndex];
           const baseColor = qIndex % 2 === 0 ? "#fff" : "#f1f1f1";
 
@@ -172,12 +172,15 @@ const TaskRow = memo(
 const MIN_ROWS = 5000;
 const ROWS = MIN_ROWS;
 
+const NUM_QS = 6;
+const qOffset = import.meta.env.VITE_SITE_ID === "site_b" ? NUM_QS : 0;
+
 function InputPage({ accessWarningContent = null }) {
   const [keepLastNRows, setKeepLastNRows] = useState(110);
 
-  // State cho 5 Q, mỗi Q có 10 Tập (A, B)
+  // State cho 7 Q, mỗi Q có 10 Tập (A, B)
   const [allQData, setAllQData] = useState(
-    Array(5)
+    Array(NUM_QS)
       .fill(null)
       .map(() => ({
         tapsData: Array(10)
@@ -231,19 +234,31 @@ function InputPage({ accessWarningContent = null }) {
 
       if (result.success && result.data) {
         const d = result.data;
-        setAllQData(
-          d.allQData ||
-            Array(10)
-              .fill(null)
-              .map(() => ({
-                tapsData: Array(10)
-                  .fill(null)
-                  .map(() => ({
-                    aValues: Array(ROWS).fill(""),
-                    bValues: Array(ROWS).fill(""),
-                  })),
-              })),
-        );
+        let loadedAllQData = d.allQData || [];
+        loadedAllQData = JSON.parse(JSON.stringify(loadedAllQData));
+        while (loadedAllQData.length < NUM_QS) {
+          loadedAllQData.push({
+            tapsData: Array(10).fill(null).map(() => ({
+              aValues: Array(ROWS).fill(""),
+              bValues: Array(ROWS).fill(""),
+            })),
+          });
+        }
+        for (let q = 0; q < NUM_QS; q++) {
+          if (!loadedAllQData[q]) {
+            loadedAllQData[q] = { tapsData: [] };
+          }
+          if (!loadedAllQData[q].tapsData) {
+            loadedAllQData[q].tapsData = [];
+          }
+          while (loadedAllQData[q].tapsData.length < 10) {
+            loadedAllQData[q].tapsData.push({
+              aValues: Array(ROWS).fill(""),
+              bValues: Array(ROWS).fill(""),
+            });
+          }
+        }
+        setAllQData(loadedAllQData);
         setDateValues(d.dateValues || Array(ROWS).fill(""));
         setZValues(d.zValues || Array(ROWS).fill(""));
         setDeletedRows(d.deletedRows || Array(ROWS).fill(false));
@@ -251,18 +266,13 @@ function InputPage({ accessWarningContent = null }) {
         setPurpleRangeFrom(d.purpleRangeFrom || 0);
         setPurpleRangeTo(d.purpleRangeTo || 0);
       } else {
-        setAllQData(
-          Array(10)
-            .fill(null)
-            .map(() => ({
-              tapsData: Array(10)
-                .fill(null)
-                .map(() => ({
-                  aValues: Array(ROWS).fill(""),
-                  bValues: Array(ROWS).fill(""),
-                })),
-            })),
-        );
+        const emptyAllQ = Array(NUM_QS).fill(null).map(() => ({
+          tapsData: Array(10).fill(null).map(() => ({
+            aValues: Array(ROWS).fill(""),
+            bValues: Array(ROWS).fill(""),
+          })),
+        }));
+        setAllQData(emptyAllQ);
         setDateValues(Array(ROWS).fill(""));
         setZValues(Array(ROWS).fill(""));
         setDeletedRows(Array(ROWS).fill(false));
@@ -674,7 +684,7 @@ function InputPage({ accessWarningContent = null }) {
     const newDeletedRows = Array(dateValues.length).fill(true);
     setDeletedRows(newDeletedRows);
 
-    const emptyAllQData = Array(5)
+    const emptyAllQData = Array(NUM_QS)
       .fill(null)
       .map(() => ({
         tapsData: Array(10)
@@ -784,7 +794,7 @@ function InputPage({ accessWarningContent = null }) {
       // VALIDATE: Kiểm tra xem các dòng được chọn có giá trị A hoặc B không
       for (const idx of [...new Set(selectedIndices)]) {
         let hasValueInAnyQ = false;
-        for (let q = 0; q < 5; q++) {
+        for (let q = 0; q < NUM_QS; q++) {
           const qData = allQData[q];
           if (qData && qData.tapsData) {
             for (let tap = 0; tap < 10; tap++) {
@@ -830,21 +840,39 @@ function InputPage({ accessWarningContent = null }) {
           ? currentData.data.pageLabel || ""
           : "";
 
-      let activeAllQData = currentData.success && currentData.data?.allQData
-        ? JSON.parse(JSON.stringify(currentData.data.allQData))
-        : Array(5).fill(null).map(() => ({
-            tapsData: Array(10).fill(null).map(() => ({
-              aValues: Array(ROWS).fill(""),
-              bValues: Array(ROWS).fill(""),
-            })),
-          }));
+      let activeAllQData = [];
+      if (currentData.success && currentData.data?.allQData) {
+        activeAllQData = JSON.parse(JSON.stringify(currentData.data.allQData));
+      }
+      while (activeAllQData.length < NUM_QS) {
+        activeAllQData.push({
+          tapsData: Array(10).fill(null).map(() => ({
+            aValues: Array(ROWS).fill(""),
+            bValues: Array(ROWS).fill(""),
+          })),
+        });
+      }
+      for (let q = 0; q < NUM_QS; q++) {
+        if (!activeAllQData[q]) {
+          activeAllQData[q] = { tapsData: [] };
+        }
+        if (!activeAllQData[q].tapsData) {
+          activeAllQData[q].tapsData = [];
+        }
+        while (activeAllQData[q].tapsData.length < 10) {
+          activeAllQData[q].tapsData.push({
+            aValues: Array(ROWS).fill(""),
+            bValues: Array(ROWS).fill(""),
+          });
+        }
+      }
 
       let activeZ = [];
       let activeD = [];
       let activeDel = [];
       let activeSourceSTT = [];
 
-      let newAllQData = Array(5).fill(null).map(() => ({
+      let newAllQData = Array(NUM_QS).fill(null).map(() => ({
         tapsData: Array(10).fill(null).map(() => ({
           aValues: [],
           bValues: [],
@@ -864,7 +892,7 @@ function InputPage({ accessWarningContent = null }) {
             (dVals[j] && String(dVals[j]).trim() !== "");
 
           if (!hasAnyData) {
-            for (let q = 0; q < 5; q++) {
+            for (let q = 0; q < NUM_QS; q++) {
               const taps = activeAllQData[q]?.tapsData || [];
               for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
                 const a = taps[tapIdx]?.aValues[j];
@@ -883,7 +911,7 @@ function InputPage({ accessWarningContent = null }) {
             activeD.push(dVals[j] || "");
             activeDel.push(delFlags[j] === undefined ? false : delFlags[j]);
             activeSourceSTT.push(sourceVals[j] || "");
-            for (let q = 0; q < 5; q++) {
+            for (let q = 0; q < NUM_QS; q++) {
               for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
                 newAllQData[q].tapsData[tapIdx].aValues.push(activeAllQData[q]?.tapsData?.[tapIdx]?.aValues[j] || "");
                 newAllQData[q].tapsData[tapIdx].bValues.push(activeAllQData[q]?.tapsData?.[tapIdx]?.bValues[j] || "");
@@ -899,7 +927,7 @@ function InputPage({ accessWarningContent = null }) {
         activeDel.push(false);
         activeSourceSTT.push(String(idx).padStart(2, "0"));
 
-        for (let q = 0; q < 5; q++) {
+        for (let q = 0; q < NUM_QS; q++) {
           for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
             const draftTap = allQData[q]?.tapsData?.[tapIdx];
             newAllQData[q].tapsData[tapIdx].aValues.push(draftTap?.aValues[idx] || "");
@@ -926,7 +954,7 @@ function InputPage({ accessWarningContent = null }) {
         activeD.push("");
         activeDel.push(true);
         activeSourceSTT.push("");
-        for (let q = 0; q < 5; q++) {
+        for (let q = 0; q < NUM_QS; q++) {
           for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
             newAllQData[q].tapsData[tapIdx].aValues.push("");
             newAllQData[q].tapsData[tapIdx].bValues.push("");
@@ -1350,7 +1378,7 @@ function InputPage({ accessWarningContent = null }) {
                   <th rowSpan="3" style={{ minWidth: "200px", width: "200px" }}>
                     Z
                   </th>
-                  {Array.from({ length: 5 }, (_, qIndex) => {
+                  {Array.from({ length: NUM_QS }, (_, qIndex) => {
                     const baseColor = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd";
                     return (
                       <th
@@ -1366,7 +1394,7 @@ function InputPage({ accessWarningContent = null }) {
                           fontWeight: "bold",
                         }}
                       >
-                        Q{qIndex + 1}
+                        Q{qIndex + 1 + qOffset}
                       </th>
                     );
                   })}
@@ -1386,7 +1414,7 @@ function InputPage({ accessWarningContent = null }) {
                   </th>
                 </tr>
                 <tr>
-                  {Array.from({ length: 5 }).map((_, qIndex) => {
+                  {Array.from({ length: NUM_QS }).map((_, qIndex) => {
                     const baseColor = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd";
                     return Array.from({ length: 10 }).map((__, tapIndex) => (
                       <th
@@ -1407,7 +1435,7 @@ function InputPage({ accessWarningContent = null }) {
                   })}
                 </tr>
                 <tr>
-                  {Array.from({ length: 5 }).map((_, qIndex) => {
+                  {Array.from({ length: NUM_QS }).map((_, qIndex) => {
                     const baseColor = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd";
                     return Array.from({ length: 10 }).map((__, tapIndex) => {
                       const colKeyA = `${qIndex}-${tapIndex}-a`;

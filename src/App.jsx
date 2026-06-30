@@ -14,6 +14,8 @@ import InputPage from "./InputPage";
 import SelectRowsPage from "./SelectRowsPage";
 import ColorReportPage from "./ColorReportPage";
 
+const NUM_QS = 6;
+
 const TapSection = memo(({
   tapTableData,
   tapIndex,
@@ -45,11 +47,24 @@ const TapSection = memo(({
   handleBCellClick,
   handleTCellClick,
   handleCellClick,
+  purpleRangeFrom,
+  purpleRangeTo,
 }) => {
   const qIdx = Math.floor(tapIndex / 10);
   const relativeTapIdx = tapIndex % 10;
-  const qOffset = import.meta.env.VITE_SITE_ID === "site_b" ? 5 : 0;
+  const qOffset = import.meta.env.VITE_SITE_ID === "site_b" ? NUM_QS : 0;
   const qNumDisplay = qIdx + 1 + qOffset;
+
+  const outerRef = useRef(null);
+
+  useEffect(() => {
+    if (tapIndex === 0 && outerRef.current) {
+      const width = outerRef.current.getBoundingClientRect().width;
+      if (width > 0) {
+        window.__tapSectionWidth = width;
+      }
+    }
+  }, [tapIndex]);
 
   return (
     <Fragment>
@@ -80,6 +95,7 @@ const TapSection = memo(({
       )}
 
       <div
+        ref={outerRef}
         className={`tap-section ${relativeTapIdx % 2 === 0 ? "volume-odd" : "volume-even"}`}
         style={{
           border: "2px solid #ccc",
@@ -353,7 +369,9 @@ const TapSection = memo(({
                                     cell.color === "purple" || cell.color === "purple-red";
                                   const parts = cell.value ? cell.value.split("-") : [];
                                   const yVal = parts.length === 2 ? parseInt(parts[1], 10) : 0;
-                                  const canScroll = yVal >= 22 && yVal <= 85;
+                                  const from = Number(purpleRangeFrom) || 16;
+                                  const to = Number(purpleRangeTo) || 95;
+                                  const canScroll = yVal >= from && yVal <= to;
 
                                   return (
                                     <td
@@ -475,7 +493,9 @@ const TapSection = memo(({
                               (cell, colIdx) => {
                                 const parts = cell.value.split("-");
                                 const yVal = parts.length === 2 ? parseInt(parts[1], 10) : 0;
-                                const canScroll = yVal >= 22 && yVal <= 85;
+                                const from = Number(purpleRangeFrom) || 16;
+                                const to = Number(purpleRangeTo) || 95;
+                                const canScroll = yVal >= from && yVal <= to;
                                 return (
                                   <td
                                     key={colIdx}
@@ -537,13 +557,68 @@ const TapSection = memo(({
   );
 });
 
+const LazyTapSection = ({ tapIndex, ...props }) => {
+  const [isNearViewport, setIsNearViewport] = useState(false);
+  const containerRef = useRef(null);
+
+  // Mặc định luôn nạp trước 2 Tập đầu tiên để người dùng mở ra thấy ngay lập tức
+  const shouldRenderImmediately = tapIndex < 2;
+
+  useEffect(() => {
+    if (shouldRenderImmediately || isNearViewport) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsNearViewport(true);
+            observer.disconnect();
+          }
+        });
+      },
+      {
+        rootMargin: "600px 600px 600px 600px", // Tải trước khi cách màn hình khoảng 1 Tập
+      }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [shouldRenderImmediately, isNearViewport]);
+
+  if (shouldRenderImmediately || isNearViewport) {
+    return <TapSection tapIndex={tapIndex} {...props} />;
+  }
+
+  // Đo độ rộng thực tế của Tập đã render để làm placeholder chuẩn xác
+  const placeholderWidth = window.__tapSectionWidth || 606;
+
+  return (
+    <div
+      ref={containerRef}
+      className="tap-section-placeholder"
+      style={{
+        width: `${placeholderWidth}px`,
+        height: "100%",
+        display: "inline-block",
+        flexShrink: 0,
+        backgroundColor: "transparent",
+      }}
+    />
+  );
+};
+
 function App() {
   const TOTAL_TABLES = 2; // số bảng T mỗi Tập (chỉ còn T1, T2)
   const ROWS = 5000;
 
-  // State lưu trữ dữ liệu 5 Q, mỗi Q có 10 Tập (mỗi Tập có A và B)
+  // State lưu trữ dữ liệu 7 Q, mỗi Q có 10 Tập (mỗi Tập có A và B)
   const [allQData, setAllQData] = useState(
-    Array(5)
+    Array(NUM_QS)
       .fill(null)
       .map(() => ({
         tapsData: Array(10)
@@ -843,13 +918,19 @@ function App() {
 
   // Lấy giới hạn số lượng kết quả cho từng số đếm
   const getLimitForCount = useCallback((c) => {
-    if (c >= 22 && c <= 29) return 5;
-    if (c >= 30 && c <= 41) return 4;
-    if (c >= 42 && c <= 58) return 3;
-    if (c >= 59 && c <= 70) return 2;
-    if (c >= 71 && c <= 85) return 2;
+    const from = Number(purpleRangeFrom);
+    const to = Number(purpleRangeTo);
+    if (from > 0 && to > 0 && (c < from || c > to)) return 0;
+
+    if (c >= 16 && c <= 22) return 16;
+    if (c >= 23 && c <= 30) return 15;
+    if (c >= 31 && c <= 40) return 14;
+    if (c >= 41 && c <= 55) return 12;
+    if (c >= 56 && c <= 75) return 8;
+    if (c >= 76 && c <= 85) return 4;
+    if (c >= 86 && c <= 95) return 3;
     return 0;
-  }, []);
+  }, [purpleRangeFrom, purpleRangeTo]);
 
   const warningZMap = useMemo(() => {
     let actualRows = 0;
@@ -859,7 +940,7 @@ function App() {
         dateValues[i] !== null &&
         dateValues[i] !== undefined;
       if (!hasData) {
-        for (let qIdx = 0; qIdx < 5; qIdx++) {
+        for (let qIdx = 0; qIdx < NUM_QS; qIdx++) {
           const qData = allQData[qIdx];
           if (qData && qData.tapsData) {
             for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
@@ -882,7 +963,7 @@ function App() {
     if (actualRows === 0) return {};
 
     const tapsTValuesArr = [];
-    for (let qIdx = 0; qIdx < 5; qIdx++) {
+    for (let qIdx = 0; qIdx < NUM_QS; qIdx++) {
       const qData = allQData[qIdx] || { tapsData: [] };
       for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
         const tap = qData.tapsData?.[tapIdx] || {
@@ -924,13 +1005,13 @@ function App() {
       .fill(null)
       .map(() => {
         const obj = {};
-        for (let c = 22; c <= 85; c++) {
+        for (let c = 16; c <= 95; c++) {
           obj[c] = [];
         }
         return obj;
       });
 
-    const historyCounts = Array(50)
+    const historyCounts = Array(NUM_QS * 10)
       .fill(null)
       .map(() =>
         Array(2)
@@ -941,11 +1022,11 @@ function App() {
     const map = {};
 
     for (let R = 0; R <= actualRows; R++) {
-      for (let c = 22; c <= 85; c++) {
+      for (let c = 16; c <= 95; c++) {
         const limit = getLimitForCount(c);
 
         if (matchesData[R][c].length < limit) {
-          for (let tapGlobalIdx = 0; tapGlobalIdx < 50; tapGlobalIdx++) {
+          for (let tapGlobalIdx = 0; tapGlobalIdx < NUM_QS * 10; tapGlobalIdx++) {
             for (let tableIdx = 0; tableIdx < 2; tableIdx++) {
               const counts = historyCounts[tapGlobalIdx][tableIdx];
               for (let col = 0; col < 10; col++) {
@@ -969,7 +1050,7 @@ function App() {
       }
 
       if (R < actualRows) {
-        for (let tapGlobalIdx = 0; tapGlobalIdx < 50; tapGlobalIdx++) {
+        for (let tapGlobalIdx = 0; tapGlobalIdx < NUM_QS * 10; tapGlobalIdx++) {
           for (let tableIdx = 0; tableIdx < 2; tableIdx++) {
             const valStr = tapsTValuesArr[tapGlobalIdx][tableIdx][R];
             if (valStr !== "") {
@@ -1027,7 +1108,7 @@ function App() {
           else if (isPurple && !skipColor) color = "purple";
 
           let cellVal = `${col}-${y}`;
-          if ((color === "purple" || color === "purple-red") && y >= 22 && y <= 85 && globalTIndex) {
+          if ((color === "purple" || color === "purple-red") && y >= 16 && y <= 95 && globalTIndex) {
             const zVal = warningZMap[`${globalTIndex}-${col}-${row}`];
             if (zVal) {
               cellVal = `${col}-${y}/${zVal}`;
@@ -1222,7 +1303,7 @@ function App() {
   useEffect(() => {
     if (!isDataLoaded) return;
     const info = {};
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < NUM_QS; i++) {
       const qId = `q${i + 1}`;
       const qTaps = allQData[i]?.tapsData || [];
       let hasPurple = false;
@@ -1266,7 +1347,7 @@ function App() {
         dateValues[i] !== null &&
         dateValues[i] !== undefined;
       if (!hasData) {
-        for (let qIdx = 0; qIdx < 5; qIdx++) {
+        for (let qIdx = 0; qIdx < NUM_QS; qIdx++) {
           const qData = allQData[qIdx];
           if (qData && qData.tapsData) {
             for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
@@ -1289,7 +1370,7 @@ function App() {
     const nextTapsTValues = [];
     const nextTapsTableData = [];
 
-    for (let qIdx = 0; qIdx < 5; qIdx++) {
+    for (let qIdx = 0; qIdx < NUM_QS; qIdx++) {
       const qData = allQData[qIdx] || { tapsData: [] };
       for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
         const tap = qData.tapsData?.[tapIdx] || {
@@ -1446,7 +1527,7 @@ function App() {
 
   const getGlobalPurpleCellsInfo = () => {
     const reports = [];
-    for (let tapIdx = 0; tapIdx < 50; tapIdx++) {
+    for (let tapIdx = 0; tapIdx < NUM_QS * 10; tapIdx++) {
       const tapTableData = tapsTableData[tapIdx];
       if (tapTableData) {
         const purpleCells = getFuturePurpleCellsInfoOfTap(tapTableData, tapIdx);
@@ -1464,7 +1545,7 @@ function App() {
   };
 
   const getPurpleCellsInfo = () => {
-    for (let tapIdx = 0; tapIdx < 50; tapIdx++) {
+    for (let tapIdx = 0; tapIdx < NUM_QS * 10; tapIdx++) {
       const info = getPurpleCellsInfoOfTap(tapsTableData[tapIdx], tapIdx);
       if (Object.keys(info).length > 0) return info;
     }
@@ -1526,7 +1607,7 @@ function App() {
       const color = isPurple ? "purple" : "white";
 
       let cellVal = `${col}-${nextY}`;
-      if (isPurple && nextY >= 22 && nextY <= 85 && globalTIndex) {
+      if (isPurple && nextY >= 16 && nextY <= 95 && globalTIndex) {
         const zVal = warningZMap[`${globalTIndex}-${col}-${rowIdx}`];
         if (zVal) {
           cellVal = `${col}-${nextY}/${zVal}`;
@@ -2625,7 +2706,7 @@ function App() {
           }}
         >
           {tapsTableData.map((tapTableData, tapIndex) => (
-            <TapSection
+            <LazyTapSection
               key={tapIndex}
               tapTableData={tapTableData}
               tapIndex={tapIndex}
@@ -2657,6 +2738,8 @@ function App() {
               handleBCellClick={handleBCellClick}
               handleTCellClick={handleTCellClick}
               handleCellClick={handleCellClick}
+              purpleRangeFrom={purpleRangeFrom}
+              purpleRangeTo={purpleRangeTo}
             />
           ))}
         </div>

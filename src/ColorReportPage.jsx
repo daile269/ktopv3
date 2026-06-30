@@ -6,11 +6,15 @@ import { loadPageData } from "./dataService";
 const ROWS = 5000;
 const TOTAL_TABLES = 2;
 
+const NUM_QS = 6;
+
 function ColorReportPage({ accessWarningContent = null }) {
   const [dateValues, setDateValues] = useState(Array(ROWS).fill(""));
+  const [purpleRangeFrom, setPurpleRangeFrom] = useState(0);
+  const [purpleRangeTo, setPurpleRangeTo] = useState(0);
   const [deletedRows, setDeletedRows] = useState(Array(ROWS).fill(false));
   const [allQData, setAllQData] = useState(
-    Array(5)
+    Array(NUM_QS)
       .fill(null)
       .map(() => ({
         tapsData: Array(10)
@@ -29,8 +33,8 @@ function ColorReportPage({ accessWarningContent = null }) {
 
   const handleScrollToCount = useCallback(() => {
     const num = parseInt(searchCount, 10);
-    if (isNaN(num) || num < 22 || num > 85) {
-      alert("Vui lòng nhập số đếm từ 22 đến 85!");
+    if (isNaN(num) || num < 16 || num > 95) {
+      alert("Vui lòng nhập số đếm từ 16 đến 95!");
       return;
     }
     const element = document.getElementById(`col-count-${num}`);
@@ -73,6 +77,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                 })),
             }));
         setAllQData(loadedAllQData);
+        setPurpleRangeFrom(result.data.purpleRangeFrom || 0);
+        setPurpleRangeTo(result.data.purpleRangeTo || 0);
       }
     } catch (err) {
       console.error("Error loading data:", err);
@@ -106,7 +112,7 @@ function ColorReportPage({ accessWarningContent = null }) {
 
         if (scrollToCount) {
           const num = parseInt(scrollToCount, 10);
-          if (!isNaN(num) && num >= 22 && num <= 85) {
+          if (!isNaN(num) && num >= 16 && num <= 95) {
             let scrolled = false;
 
             if (qVal && xVal && yVal && gVal) {
@@ -153,24 +159,35 @@ function ColorReportPage({ accessWarningContent = null }) {
     }
   }, [isLoading]);
 
-  // Mảng các cột số đếm set cứng từ 22 đến 85
+  // Mảng các cột số đếm luôn hiển thị từ 16 đến 95
   const cols = useMemo(() => {
     const arr = [];
-    for (let c = 22; c <= 85; c++) {
+    for (let c = 16; c <= 95; c++) {
       arr.push(c);
     }
     return arr;
   }, []);
 
-  // Lấy giới hạn số lượng kết quả cho từng số đếm
-  const getLimitForCount = useCallback((c) => {
-    if (c >= 22 && c <= 29) return 5;
-    if (c >= 30 && c <= 41) return 4;
-    if (c >= 42 && c <= 58) return 3;
-    if (c >= 59 && c <= 70) return 2;
-    if (c >= 71 && c <= 85) return 2;
+  // Lấy giới hạn số lượng kết quả cho từng số đếm để dựng layout (không phụ thuộc khoảng báo màu)
+  const getLayoutLimitForCount = useCallback((c) => {
+    if (c >= 16 && c <= 22) return 16;
+    if (c >= 23 && c <= 30) return 15;
+    if (c >= 31 && c <= 40) return 14;
+    if (c >= 41 && c <= 55) return 12;
+    if (c >= 56 && c <= 75) return 8;
+    if (c >= 76 && c <= 85) return 4;
+    if (c >= 86 && c <= 95) return 3;
     return 0;
   }, []);
+
+  // Lấy giới hạn số lượng kết quả cho từng số đếm để quét cảnh báo (nếu ngoài khoảng báo màu thì trả về 0)
+  const getLimitForCount = useCallback((c) => {
+    const from = Number(purpleRangeFrom);
+    const to = Number(purpleRangeTo);
+    if (from > 0 && to > 0 && (c < from || c > to)) return 0;
+
+    return getLayoutLimitForCount(c);
+  }, [purpleRangeFrom, purpleRangeTo, getLayoutLimitForCount]);
 
   // Định dạng ngày tháng về dạng chuẩn DD/MM/YYYY
   const formatDate = useCallback((dateStr) => {
@@ -203,7 +220,7 @@ function ColorReportPage({ accessWarningContent = null }) {
         dateValues[i] !== null &&
         dateValues[i] !== undefined;
       if (!hasData) {
-        for (let qIdx = 0; qIdx < 5; qIdx++) {
+        for (let qIdx = 0; qIdx < NUM_QS; qIdx++) {
           const qData = allQData[qIdx];
           if (qData && qData.tapsData) {
             for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
@@ -228,7 +245,7 @@ function ColorReportPage({ accessWarningContent = null }) {
     // 2. Tính toán sẵn toàn bộ giá trị bảng T1 và T2 cho 50 Tập (100 bảng T)
     // tapsTValues[tapGlobalIdx][tableIdx][row]
     const tapsTValues = [];
-    for (let qIdx = 0; qIdx < 5; qIdx++) {
+    for (let qIdx = 0; qIdx < NUM_QS; qIdx++) {
       const qData = allQData[qIdx] || { tapsData: [] };
       for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
         const tap = qData.tapsData?.[tapIdx] || {
@@ -275,14 +292,14 @@ function ColorReportPage({ accessWarningContent = null }) {
       .fill(null)
       .map(() => {
         const obj = {};
-        for (let c = 22; c <= 85; c++) {
+        for (let c = 16; c <= 95; c++) {
           obj[c] = [];
         }
         return obj;
       });
 
     // historyCounts[tapGlobalIdx][tableIdx][col] = số đếm tương lai tích lũy hiện tại
-    const historyCounts = Array(50)
+    const historyCounts = Array(NUM_QS * 10)
       .fill(null)
       .map(() =>
         Array(TOTAL_TABLES)
@@ -301,12 +318,12 @@ function ColorReportPage({ accessWarningContent = null }) {
       countsHistory.push(currentCounts);
 
       // a. Kiểm tra xem ở dòng R, có bảng T nào đạt số đếm báo màu c
-      for (let c = 22; c <= 85; c++) {
+      for (let c = 16; c <= 95; c++) {
         const limit = getLimitForCount(c);
 
         if (matchesData[R][c].length < limit) {
           // Quét từ trái qua phải trên toàn bộ 50 Tập (100 bảng T)
-          for (let tapGlobalIdx = 0; tapGlobalIdx < 50; tapGlobalIdx++) {
+          for (let tapGlobalIdx = 0; tapGlobalIdx < NUM_QS * 10; tapGlobalIdx++) {
             for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
               const counts = historyCounts[tapGlobalIdx][tableIdx];
               for (let col = 0; col < 10; col++) {
@@ -336,7 +353,7 @@ function ColorReportPage({ accessWarningContent = null }) {
 
       // b. Cập nhật số đếm tương lai của tất cả bảng T tại dòng R (cho dòng R + 1)
       if (R < actualRows) {
-        for (let tapGlobalIdx = 0; tapGlobalIdx < 50; tapGlobalIdx++) {
+        for (let tapGlobalIdx = 0; tapGlobalIdx < NUM_QS * 10; tapGlobalIdx++) {
           for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
             const valStr = tapsTValues[tapGlobalIdx][tableIdx][R];
             if (valStr !== "") {
@@ -364,8 +381,8 @@ function ColorReportPage({ accessWarningContent = null }) {
         cells: {},
       };
 
-      for (let c = 22; c <= 85; c++) {
-        const limit = getLimitForCount(c);
+      for (let c = 16; c <= 95; c++) {
+        const limit = getLayoutLimitForCount(c);
 
         for (let k = 0; k < limit; k++) {
           const match = matchesData[R]?.[c]?.[k];
@@ -444,6 +461,7 @@ function ColorReportPage({ accessWarningContent = null }) {
     dateValues,
     allQData,
     getLimitForCount,
+    getLayoutLimitForCount,
     formatDate,
     deletedRows,
   ]);
@@ -583,7 +601,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                     handleScrollToCount();
                   }
                 }}
-                placeholder="22-85"
+                placeholder="16-95"
                 style={{
                   width: "140px",
                   fontSize: "30px",
@@ -698,7 +716,7 @@ function ColorReportPage({ accessWarningContent = null }) {
 
                     {/* Headers cho các cột số đếm */}
                     {cols.map((c) => {
-                      const limit = getLimitForCount(c);
+                      const limit = getLayoutLimitForCount(c);
                       return (
                         <th
                           id={`col-count-${c}`}
@@ -728,7 +746,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                   >
                     {/* Subheaders chạy từ (1) đến (N) tương ứng với giới hạn kết quả */}
                     {cols.flatMap((c) => {
-                      const limit = getLimitForCount(c);
+                      const limit = getLayoutLimitForCount(c);
                       const subHeaders = [];
                       for (let k = 1; k <= limit; k++) {
                         subHeaders.push(
@@ -779,7 +797,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                         </td>
 
                         {cols.flatMap((c) => {
-                          const limit = getLimitForCount(c);
+                          const limit = getLayoutLimitForCount(c);
                           const cellsArr = [];
                           for (let k = 0; k < limit; k++) {
                             const cell = row.cells[`${c}-${k}`] || {
