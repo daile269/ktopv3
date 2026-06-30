@@ -389,6 +389,7 @@ function ColorReportPage({ accessWarningContent = null }) {
             const cellY = rawCellY;
 
              let matchCount = 0;
+             let resetOnNext = false;
              for (let r = 0; r <= R; r++) {
                if (matchesData[r]?.[c]?.[k]) {
                  const matchAtR = matchesData[r][c][k];
@@ -401,9 +402,15 @@ function ColorReportPage({ accessWarningContent = null }) {
                      ? colAtR === parseInt(tValAtR, 10)
                      : false;
 
-                 matchCount++;
-                 if (isRedCellAtR) {
+                 if (resetOnNext) {
                    matchCount = 1;
+                   resetOnNext = false;
+                 } else {
+                   matchCount++;
+                 }
+
+                 if (isRedCellAtR) {
+                   resetOnNext = true;
                  }
                }
              }
