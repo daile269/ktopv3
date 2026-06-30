@@ -804,7 +804,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                               <td
                                 key={`${c}-${k}`}
                                 id={isNew ? cell.cellId : undefined}
-                                className={hasValue ? "cell-new" : ""}
+                                className={hasValue ? (cell.isRedCell ? "cell-new cell-red-warning" : "cell-new") : ""}
                                 style={{
                                   padding: "8px",
                                   border: "2px solid #333",
@@ -821,20 +821,18 @@ function ColorReportPage({ accessWarningContent = null }) {
                                         : "500",
                                   fontStyle: row.isFuture ? "italic" : "normal",
                                   backgroundColor: isOrange
-                                    ? "#91d5ff"
-                                    : cell.isRedCell
-                                      ? "transparent"
-                                      : hasValue
-                                        ? "#f8c507"
-                                        : "transparent",
+                                    ? (cell.isRedCell ? "#cf3535" : "#91d5ff")
+                                    : "transparent",
                                   backgroundClip: "padding-box",
-                                  color: cell.isRedCell
-                                    ? "#cf3535"
-                                    : row.isFuture
-                                      ? hasValue
-                                        ? "#333"
-                                        : "#888"
-                                      : "#333",
+                                  color: isOrange
+                                    ? (cell.isRedCell ? "white" : "#333")
+                                    : cell.isRedCell
+                                      ? "#cf3535"
+                                      : row.isFuture
+                                        ? hasValue
+                                          ? "#333"
+                                          : "#888"
+                                        : "#333",
                                   cursor: hasValue ? "pointer" : "default",
                                   fontSize: "35px",
                                   minWidth: "250px",
@@ -884,8 +882,12 @@ function ColorReportPage({ accessWarningContent = null }) {
           transform: scale(0.95);
         }
         .cell-new:hover {
-          background-color: #f2edf8 !important;
-          color: #6f42c1 !important;
+          background-color: #f8c507 !important;
+          color: #333 !important;
+        }
+        .cell-new.cell-red-warning:hover {
+          background-color: #cf3535 !important;
+          color: white !important;
         }
       `}</style>
     </div>
