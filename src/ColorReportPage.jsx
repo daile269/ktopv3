@@ -391,7 +391,20 @@ function ColorReportPage({ accessWarningContent = null }) {
              let matchCount = 0;
              for (let r = 0; r <= R; r++) {
                if (matchesData[r]?.[c]?.[k]) {
+                 const matchAtR = matchesData[r][c][k];
+                 const tapGlobalIdxAtR = (matchAtR.q - 1) * 10 + (matchAtR.x - 1);
+                 const tableIdxAtR = matchAtR.y - 1;
+                 const colAtR = matchAtR.g;
+                 const tValAtR = tapsTValues[tapGlobalIdxAtR]?.[tableIdxAtR]?.[r];
+                 const isRedCellAtR =
+                   tValAtR !== undefined && tValAtR !== "" && tValAtR !== null
+                     ? colAtR === parseInt(tValAtR, 10)
+                     : false;
+
                  matchCount++;
+                 if (isRedCellAtR) {
+                   matchCount = 1;
+                 }
                }
              }
              const displayValue = `${k + 1}/${match.q}-${match.x}-${match.y}-${match.g}/${matchCount}`;
