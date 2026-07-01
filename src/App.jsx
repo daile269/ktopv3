@@ -947,7 +947,7 @@ function App() {
           if (result.data.keepLastNRows || result.data.keepLastNRows === 0) {
             setKeepLastNRows(result.data.keepLastNRows);
           } else {
-            setKeepLastNRows(110);
+            setKeepLastNRows(500);
           }
           setIsDataLoaded(true);
         } else {

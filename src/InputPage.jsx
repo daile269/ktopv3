@@ -176,7 +176,7 @@ const NUM_QS = 6;
 const qOffset = import.meta.env.VITE_SITE_ID === "site_b" ? NUM_QS : 0;
 
 function InputPage({ accessWarningContent = null }) {
-  const [keepLastNRows, setKeepLastNRows] = useState(110);
+  const [keepLastNRows, setKeepLastNRows] = useState(500);
 
   // State cho NUM_QS Q, mỗi Q có 10 Tập (A, B)
   const [allQData, setAllQData] = useState(
@@ -262,7 +262,7 @@ function InputPage({ accessWarningContent = null }) {
         setDateValues(d.dateValues || Array(ROWS).fill(""));
         setZValues(d.zValues || Array(ROWS).fill(""));
         setDeletedRows(d.deletedRows || Array(ROWS).fill(false));
-        setKeepLastNRows(d.keepLastNRows || 110);
+        setKeepLastNRows(d.keepLastNRows || 500);
         setPurpleRangeFrom(d.purpleRangeFrom || 0);
         setPurpleRangeTo(d.purpleRangeTo || 0);
       } else {
@@ -853,7 +853,7 @@ function InputPage({ accessWarningContent = null }) {
       const existingKeepN =
         currentData.success && currentData.data && currentData.data.keepLastNRows !== undefined && currentData.data.keepLastNRows !== null
           ? currentData.data.keepLastNRows
-          : 110;
+          : 500;
       const existingPageLabel =
         currentData.success && currentData.data
           ? currentData.data.pageLabel || ""
@@ -1025,7 +1025,7 @@ function InputPage({ accessWarningContent = null }) {
 
   const sortedIndices = useMemo(() => {
     return Array.from(
-      { length: Math.max(Number(keepLastNRows) || 110, 110) },
+      { length: Math.max(Number(keepLastNRows) || 500, 500) },
       (_, i) => i,
     ).sort((a, b) => {
       const aDeleted = deletedRows[a] || false;

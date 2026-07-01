@@ -29,7 +29,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
   const [deletedRows, setDeletedRows] = useState(Array(ROWS).fill(false));
   const [purpleRangeFrom, setPurpleRangeFrom] = useState(0);
   const [purpleRangeTo, setPurpleRangeTo] = useState(0);
-  const [keepLastNRows, setKeepLastNRows] = useState(110);
+  const [keepLastNRows, setKeepLastNRows] = useState(500);
   const [queue, setQueue] = useState([]);
   const [highlightedRows, setHighlightedRows] = useState(() => {
     const savedRow = parseInt(localStorage.getItem(LAST_SELECTED_ROW_KEY), 10);
@@ -97,7 +97,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
         setDeletedRows(data.deletedRows || Array(ROWS).fill(false));
         setPurpleRangeFrom(data.purpleRangeFrom || 0);
         setPurpleRangeTo(data.purpleRangeTo || 0);
-        setKeepLastNRows(Math.min(data.keepLastNRows || 110, ROWS));
+        setKeepLastNRows(Math.min(data.keepLastNRows || 500, ROWS));
       }
 
       setIsLoading(false);
@@ -383,7 +383,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
       const existingKeepN =
         currentData.success && currentData.data && currentData.data.keepLastNRows !== undefined && currentData.data.keepLastNRows !== null
           ? currentData.data.keepLastNRows
-          : 110;
+          : 500;
       const existingPageLabel =
         currentData.success && currentData.data
           ? currentData.data.pageLabel || ""
