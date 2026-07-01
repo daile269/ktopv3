@@ -548,7 +548,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                   border: "none",
                   padding: "6px 12px",
                   borderRadius: "8px",
-                  marginRight: "10px",
+                  marginLeft: "5px",
+                  marginRight: "5px",
                 }}
               >
                 Bảng màu - APP {import.meta.env.VITE_APP_STT || ""}
@@ -562,6 +563,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                   background: "#28a745",
                   color: "white",
                   border: "none",
+                  marginLeft: "5px",
+                  marginRight: "5px",
                 }}
               >
                 🔍 Về bảng tính
@@ -574,6 +577,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                   background: "#17a2b8",
                   color: "white",
                   border: "none",
+                  marginLeft: "5px",
+                  marginRight: "5px",
                 }}
               >
                 🔍 Về bảng thông
@@ -586,6 +591,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                   background: "#6f42c1",
                   color: "white",
                   border: "none",
+                  marginLeft: "5px",
+                  marginRight: "5px",
                 }}
               >
                 🔍 Về chọn dòng thông
@@ -621,6 +628,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                   background: "#007bff",
                   color: "white",
                   border: "none",
+                  marginLeft: "5px",
+                  marginRight: "5px",
                 }}
               >
                 Xem 🔍
@@ -705,7 +714,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                       style={{
                         padding: "12px",
                         border: "2px solid #333",
-                        borderRight: "4px solid #333",
+                        borderRight: "6px solid #fd7e14",
                         width: "240px",
                         backgroundColor: "#6f42c1",
                       }}
@@ -725,7 +734,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                           style={{
                             padding: "12px",
                             border: "2px solid #333",
-                            borderRight: "4px solid #333",
+                            borderRight: "6px solid #fd7e14",
                             minWidth: `${limit * 250}px`,
                             backgroundColor: "#6f42c1",
                           }}
@@ -757,7 +766,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                               border: "2px solid #333",
                               borderRight:
                                 k === limit
-                                  ? "4px solid #333"
+                                  ? "6px solid #fd7e14"
                                   : "2px solid #333",
                               width: "250px",
                               backgroundColor: "#f2edf8",
@@ -787,7 +796,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                           style={{
                             padding: "10px",
                             border: "2px solid #333",
-                            borderRight: "4px solid #333",
+                            borderRight: "6px solid #fd7e14",
                             fontWeight: "bold",
                             color: "#6f42c1",
                             fontSize: "35px",
@@ -828,7 +837,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                   border: "2px solid #333",
                                   borderRight:
                                     k === limit - 1
-                                      ? "4px solid #333"
+                                      ? "6px solid #fd7e14"
                                       : "2px solid #333",
                                   fontWeight: isOrange
                                     ? "bold"
