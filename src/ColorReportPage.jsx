@@ -121,7 +121,7 @@ function ColorReportPage({ accessWarningContent = null }) {
             console.log(`[SCROLL CHECK] Attempt ${attempts}: qVal=${qVal}, xVal=${xVal}, yVal=${yVal}, gVal=${gVal}, count=${num}`);
 
             if (qVal && xVal && yVal && gVal) {
-              const selector = `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-"]`;
+              const selector = `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-${num}-"]`;
               const cellElement = document.querySelector(selector);
               console.log(`[SCROLL CHECK] Cell selector: "${selector}", Found:`, !!cellElement);
               if (cellElement) {
