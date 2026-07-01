@@ -373,16 +373,16 @@ function SelectRowsPage({ accessWarningContent = null }) {
 
       const currentData = await loadPageData("q_all");
       const existingPurpleFrom =
-        currentData.success && currentData.data
+        currentData.success && currentData.data && currentData.data.purpleRangeFrom !== undefined && currentData.data.purpleRangeFrom !== null
           ? currentData.data.purpleRangeFrom
-          : 0;
+          : 16;
       const existingPurpleTo =
-        currentData.success && currentData.data
+        currentData.success && currentData.data && currentData.data.purpleRangeTo !== undefined && currentData.data.purpleRangeTo !== null
           ? currentData.data.purpleRangeTo
-          : 0;
+          : 95;
       const existingKeepN =
-        currentData.success && currentData.data
-          ? currentData.data.keepLastNRows || 110
+        currentData.success && currentData.data && currentData.data.keepLastNRows !== undefined && currentData.data.keepLastNRows !== null
+          ? currentData.data.keepLastNRows
           : 110;
       const existingPageLabel =
         currentData.success && currentData.data

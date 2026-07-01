@@ -706,8 +706,8 @@ function App() {
   const [newRowT2, setNewRowT2] = useState("");
   const [isAddingRow, setIsAddingRow] = useState(false);
   const [keepLastNRows, setKeepLastNRows] = useState("");
-  const [purpleRangeFrom, setPurpleRangeFrom] = useState(0);
-  const [purpleRangeTo, setPurpleRangeTo] = useState(0);
+  const [purpleRangeFrom, setPurpleRangeFrom] = useState(16);
+  const [purpleRangeTo, setPurpleRangeTo] = useState(95);
   const [deletedRows, setDeletedRows] = useState(Array(ROWS).fill(false));
   const [zValues, setZValues] = useState(Array(ROWS).fill(""));
   const [showDeleteFirstRowModal, setShowDeleteFirstRowModal] = useState(false);
@@ -923,8 +923,16 @@ function App() {
           setDeletedRows(result.data.deletedRows || Array(ROWS).fill(false));
           setPageLabel(result.data.pageLabel || "");
 
-          setPurpleRangeFrom(result.data.purpleRangeFrom || 0);
-          setPurpleRangeTo(result.data.purpleRangeTo || 0);
+          setPurpleRangeFrom(
+            result.data.purpleRangeFrom !== undefined && result.data.purpleRangeFrom !== null
+              ? result.data.purpleRangeFrom
+              : 16
+          );
+          setPurpleRangeTo(
+            result.data.purpleRangeTo !== undefined && result.data.purpleRangeTo !== null
+              ? result.data.purpleRangeTo
+              : 95
+          );
 
           if (result.data.keepLastNRows || result.data.keepLastNRows === 0) {
             setKeepLastNRows(result.data.keepLastNRows);
