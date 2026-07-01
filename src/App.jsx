@@ -1374,6 +1374,14 @@ function App() {
 
           tryScroll();
         }
+      } else {
+        // Scroll to the bottom when opening the page without target cell
+        setTimeout(() => {
+          const mainContent = document.querySelector(".main-content");
+          if (mainContent) {
+            mainContent.scrollTop = mainContent.scrollHeight;
+          }
+        }, 300);
       }
     }
   }, [isDataLoaded, isLoading]);
