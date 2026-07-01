@@ -620,6 +620,8 @@ const LazyTapSection = ({ tapIndex, ...props }) => {
   useEffect(() => {
     if (shouldRenderImmediately || isNearViewport) return;
 
+    const mainContent = document.querySelector(".main-content");
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -630,6 +632,7 @@ const LazyTapSection = ({ tapIndex, ...props }) => {
         });
       },
       {
+        root: mainContent || null, // Lắng nghe trực tiếp sự kiện cuộn của khung chứa chính
         rootMargin: "3000px 3000px 3000px 3000px", // Tải trước khi cách màn hình khoảng 4-5 Tập để lướt mượt mà hơn
       },
     );
