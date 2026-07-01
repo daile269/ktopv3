@@ -1376,12 +1376,18 @@ function App() {
         }
       } else {
         // Scroll to the bottom when opening the page without target cell
-        setTimeout(() => {
+        let scrollAttempts = 0;
+        const maxScrollAttempts = 15; // 1.5 seconds total
+        const scrollInterval = setInterval(() => {
           const mainContent = document.querySelector(".main-content");
           if (mainContent) {
             mainContent.scrollTop = mainContent.scrollHeight;
           }
-        }, 300);
+          scrollAttempts++;
+          if (scrollAttempts >= maxScrollAttempts) {
+            clearInterval(scrollInterval);
+          }
+        }, 100);
       }
     }
   }, [isDataLoaded, isLoading]);
