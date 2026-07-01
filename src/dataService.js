@@ -88,7 +88,13 @@ export const loadPageData = async (pageId) => {
   try {
     const realId = getRealPageId(pageId);
     console.log(`📖 Loading data for REAL ID: ${realId}`);
-    const response = await fetch(`${API_URL}/api/pages/${realId}`);
+    const response = await fetch(`${API_URL}/api/pages/${realId}?t=${Date.now()}`, {
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
+      }
+    });
     const result = await response.json();
 
     if (!response.ok) {

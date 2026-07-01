@@ -174,7 +174,7 @@ app.post("/api/pages/:pageId", async (req, res) => {
 
     console.log(`💾 Saving data for page: ${pageId}`);
 
-    const ROWS = 110;
+    const ROWS = 5000;
 
     // Find last index with data
     let lastIndex = -1;
