@@ -140,7 +140,7 @@ export const loadPageData = async (pageId) => {
       // Pad và xử lý allQData lồng tapsData (nếu có)
       let allQData = data.allQData;
       if (allQData && Array.isArray(allQData)) {
-        allQData = allQData.slice(0, 5).map((qItem) => {
+        allQData = allQData.slice(0, 6).map((qItem) => {
           let qTaps = qItem.tapsData;
           if (!qTaps || !Array.isArray(qTaps) || qTaps.length === 0) {
             qTaps = [];

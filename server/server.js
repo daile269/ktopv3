@@ -99,7 +99,7 @@ app.get("/api/pages/:pageId", async (req, res) => {
     // Pad và xử lý allQData cho master_draft (nếu có)
     let allQData = page.allQData;
     if (allQData && Array.isArray(allQData)) {
-      allQData = allQData.slice(0, 5).map((qItem) => {
+      allQData = allQData.slice(0, 6).map((qItem) => {
         let qTaps = qItem.tapsData;
         if (!qTaps || !Array.isArray(qTaps) || qTaps.length === 0) {
           qTaps = [];
@@ -273,7 +273,7 @@ app.post("/api/pages/:pageId", async (req, res) => {
     // Trim allQData
     const trimmedAllQData =
       lastIndex >= 0 && allQData && Array.isArray(allQData)
-        ? allQData.slice(0, 5).map((qItem) => {
+        ? allQData.slice(0, 6).map((qItem) => {
             let qTaps = qItem.tapsData;
             let trimmedQTaps = undefined;
             if (qTaps && Array.isArray(qTaps)) {

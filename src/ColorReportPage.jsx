@@ -140,7 +140,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                   inline: "center",
                 });
                 element.style.transition = "background-color 0.3s ease";
-                 element.style.backgroundColor = "#91d5ff";
+                element.style.backgroundColor = "#91d5ff";
                 setTimeout(() => {
                   element.style.backgroundColor = "#6f42c1";
                 }, 1000);
@@ -181,13 +181,16 @@ function ColorReportPage({ accessWarningContent = null }) {
   }, []);
 
   // Lấy giới hạn số lượng kết quả cho từng số đếm để quét cảnh báo (nếu ngoài khoảng báo màu thì trả về 0)
-  const getLimitForCount = useCallback((c) => {
-    const from = Number(purpleRangeFrom);
-    const to = Number(purpleRangeTo);
-    if (from > 0 && to > 0 && (c < from || c > to)) return 0;
+  const getLimitForCount = useCallback(
+    (c) => {
+      const from = Number(purpleRangeFrom);
+      const to = Number(purpleRangeTo);
+      if (from > 0 && to > 0 && (c < from || c > to)) return 0;
 
-    return getLayoutLimitForCount(c);
-  }, [purpleRangeFrom, purpleRangeTo, getLayoutLimitForCount]);
+      return getLayoutLimitForCount(c);
+    },
+    [purpleRangeFrom, purpleRangeTo, getLayoutLimitForCount],
+  );
 
   // Định dạng ngày tháng về dạng chuẩn DD/MM/YYYY
   const formatDate = useCallback((dateStr) => {
@@ -323,7 +326,11 @@ function ColorReportPage({ accessWarningContent = null }) {
 
         if (matchesData[R][c].length < limit) {
           // Quét từ trái qua phải trên toàn bộ 50 Tập (100 bảng T)
-          for (let tapGlobalIdx = 0; tapGlobalIdx < NUM_QS * 10; tapGlobalIdx++) {
+          for (
+            let tapGlobalIdx = 0;
+            tapGlobalIdx < NUM_QS * 10;
+            tapGlobalIdx++
+          ) {
             for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
               const counts = historyCounts[tapGlobalIdx][tableIdx];
               for (let col = 0; col < 10; col++) {
@@ -405,47 +412,49 @@ function ColorReportPage({ accessWarningContent = null }) {
               countsHistory[R]?.[tapGlobalIdx]?.[tableIdx]?.[col] || 1;
             const cellY = rawCellY;
 
-             let matchCount = 0;
-             let resetOnNext = false;
-             for (let r = 0; r <= R; r++) {
-               if (matchesData[r]?.[c]?.[k]) {
-                 const matchAtR = matchesData[r][c][k];
-                 const tapGlobalIdxAtR = (matchAtR.q - 1) * 10 + (matchAtR.x - 1);
-                 const tableIdxAtR = matchAtR.y - 1;
-                 const colAtR = matchAtR.g;
-                 const tValAtR = tapsTValues[tapGlobalIdxAtR]?.[tableIdxAtR]?.[r];
-                 const isRedCellAtR =
-                   tValAtR !== undefined && tValAtR !== "" && tValAtR !== null
-                     ? colAtR === parseInt(tValAtR, 10)
-                     : false;
+            let matchCount = 0;
+            let resetOnNext = false;
+            for (let r = 0; r <= R; r++) {
+              if (matchesData[r]?.[c]?.[k]) {
+                const matchAtR = matchesData[r][c][k];
+                const tapGlobalIdxAtR =
+                  (matchAtR.q - 1) * 10 + (matchAtR.x - 1);
+                const tableIdxAtR = matchAtR.y - 1;
+                const colAtR = matchAtR.g;
+                const tValAtR =
+                  tapsTValues[tapGlobalIdxAtR]?.[tableIdxAtR]?.[r];
+                const isRedCellAtR =
+                  tValAtR !== undefined && tValAtR !== "" && tValAtR !== null
+                    ? colAtR === parseInt(tValAtR, 10)
+                    : false;
 
-                 if (resetOnNext) {
-                   matchCount = 1;
-                   resetOnNext = false;
-                 } else {
-                   matchCount++;
-                 }
+                if (resetOnNext) {
+                  matchCount = 1;
+                  resetOnNext = false;
+                } else {
+                  matchCount++;
+                }
 
-                 if (isRedCellAtR) {
-                   resetOnNext = true;
-                 }
-               }
-             }
-             const displayValue = `${k + 1}/${match.q}-${match.x}-${match.y}-${match.g}/${matchCount}`;
+                if (isRedCellAtR) {
+                  resetOnNext = true;
+                }
+              }
+            }
+            const displayValue = `${k + 1}/${match.q}-${match.x}-${match.y}-${match.g}/${matchCount}`;
 
-             rowData.cells[`${c}-${k}`] = {
-               value: displayValue,
-               globalTIndex: match.globalTIndex,
-               row: match.row, // click quay lại dòng đạt mốc c
-               col: match.g,
-               isNew: true,
-               isRedCell: isRedCellAtR,
-               qVal: String(match.q),
-               xVal: String(match.x),
-               yVal: String(match.y),
-               gVal: String(match.g),
-               cellId: `cell-report-${match.q}-${match.x}-${match.y}-${match.g}-${c}-${k}`
-             };
+            rowData.cells[`${c}-${k}`] = {
+              value: displayValue,
+              globalTIndex: match.globalTIndex,
+              row: match.row, // click quay lại dòng đạt mốc c
+              col: match.g,
+              isNew: true,
+              isRedCell: isRedCellAtR,
+              qVal: String(match.q),
+              xVal: String(match.x),
+              yVal: String(match.y),
+              gVal: String(match.g),
+              cellId: `cell-report-${match.q}-${match.x}-${match.y}-${match.g}-${c}-${k}`,
+            };
           }
         }
       }
@@ -831,7 +840,13 @@ function ColorReportPage({ accessWarningContent = null }) {
                               <td
                                 key={`${c}-${k}`}
                                 id={isNew ? cell.cellId : undefined}
-                                className={hasValue ? (cell.isRedCell ? "cell-new cell-red-warning" : "cell-new") : ""}
+                                className={
+                                  hasValue
+                                    ? cell.isRedCell
+                                      ? "cell-new cell-red-warning"
+                                      : "cell-new"
+                                    : ""
+                                }
                                 style={{
                                   padding: "8px",
                                   border: "2px solid #333",
@@ -848,11 +863,15 @@ function ColorReportPage({ accessWarningContent = null }) {
                                         : "500",
                                   fontStyle: row.isFuture ? "italic" : "normal",
                                   backgroundColor: isOrange
-                                    ? (cell.isRedCell ? "#cf3535" : "#91d5ff")
+                                    ? cell.isRedCell
+                                      ? "#cf3535"
+                                      : "#91d5ff"
                                     : "transparent",
                                   backgroundClip: "padding-box",
                                   color: isOrange
-                                    ? (cell.isRedCell ? "white" : "#333")
+                                    ? cell.isRedCell
+                                      ? "white"
+                                      : "#333"
                                     : cell.isRedCell
                                       ? "#cf3535"
                                       : row.isFuture
