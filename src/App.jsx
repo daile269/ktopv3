@@ -1300,11 +1300,14 @@ function App() {
       if (scrollToT) {
         const tableNum = parseInt(scrollToT);
         if (!isNaN(tableNum) && tableNum >= 1 && tableNum <= 100) {
-          setTimeout(() => {
-            const tableIndex = tableNum - 1;
-            const rowIndex = rowParam !== null ? parseInt(rowParam, 10) : null;
-            const colIndex = colParam !== null ? parseInt(colParam, 10) : null;
+          const tableIndex = tableNum - 1;
+          const rowIndex = rowParam !== null ? parseInt(rowParam, 10) : null;
+          const colIndex = colParam !== null ? parseInt(colParam, 10) : null;
 
+          let attempts = 0;
+          const maxAttempts = 30; // 1.5 seconds maximum
+
+          const tryScroll = () => {
             let scrolled = false;
             if (
               rowIndex !== null &&
@@ -1335,12 +1338,20 @@ function App() {
                   block: "start",
                   inline: "start",
                 });
+                scrolled = true;
               }
             }
 
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, "", newUrl);
-          }, 600);
+            if (scrolled) {
+              const newUrl = window.location.pathname;
+              window.history.replaceState({}, "", newUrl);
+            } else if (attempts < maxAttempts) {
+              attempts++;
+              setTimeout(tryScroll, 50);
+            }
+          };
+
+          tryScroll();
         }
       }
     }

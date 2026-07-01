@@ -107,17 +107,20 @@ function ColorReportPage({ accessWarningContent = null }) {
       const yVal = params.get("y");
       const gVal = params.get("g");
 
-      setTimeout(() => {
-        const container = document.getElementById("report-table-container");
+      const container = document.getElementById("report-table-container");
 
-        if (scrollToCount) {
-          const num = parseInt(scrollToCount, 10);
-          if (!isNaN(num) && num >= 16 && num <= 95) {
+      if (scrollToCount) {
+        const num = parseInt(scrollToCount, 10);
+        if (!isNaN(num) && num >= 16 && num <= 95) {
+          let attempts = 0;
+          const maxAttempts = 30; // 1.5 seconds maximum
+
+          const tryScroll = () => {
             let scrolled = false;
 
             if (qVal && xVal && yVal && gVal) {
               const cellElement = document.querySelector(
-                `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-"]`,
+                `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-"]`
               );
               if (cellElement) {
                 cellElement.scrollIntoView({
@@ -144,18 +147,26 @@ function ColorReportPage({ accessWarningContent = null }) {
                 setTimeout(() => {
                   element.style.backgroundColor = "#6f42c1";
                 }, 1000);
+                scrolled = true;
               }
             }
 
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, "", newUrl);
-          }
-        } else {
-          if (container) {
-            container.scrollTop = container.scrollHeight;
-          }
+            if (scrolled) {
+              const newUrl = window.location.pathname;
+              window.history.replaceState({}, "", newUrl);
+            } else if (attempts < maxAttempts) {
+              attempts++;
+              setTimeout(tryScroll, 50);
+            }
+          };
+
+          tryScroll();
         }
-      }, 600);
+      } else {
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }
     }
   }, [isLoading]);
 
@@ -781,7 +792,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                               backgroundColor: "#f2edf8",
                             }}
                           >
-                            ({k})
+                            ({k}/{c})
                           </th>,
                         );
                       }

@@ -426,7 +426,7 @@ function InputPage({ accessWarningContent = null }) {
     setDeletedRows(newDeletedRows);
 
     setSaveStatus("💾 Đang lưu...");
-    await savePageData(
+    const result = await savePageData(
       "master_draft",
       null,
       null,
@@ -439,8 +439,13 @@ function InputPage({ accessWarningContent = null }) {
       adjustedN,
       allQData,
     );
-    setSaveStatus("✅ Đã giữ " + adjustedN + " dòng cuối!");
-    alert(`✅ Đã thực hiện giữ lại ${adjustedN} dòng cuối cùng!`);
+    if (result && result.success) {
+      setSaveStatus("✅ Đã giữ " + adjustedN + " dòng cuối!");
+      alert(`✅ Đã thực hiện giữ lại ${adjustedN} dòng cuối cùng!`);
+    } else {
+      setSaveStatus("⚠️ Lỗi!");
+      alert("⚠️ Lỗi khi giữ lại dòng cuối: " + (result?.error || "Không xác định"));
+    }
     setTimeout(() => setSaveStatus(""), 2000);
   };
 
@@ -608,7 +613,7 @@ function InputPage({ accessWarningContent = null }) {
     newDeletedRows[firstRowIndex] = true;
     setDeletedRows(newDeletedRows);
 
-    await savePageData(
+    const result = await savePageData(
       "master_draft",
       null,
       null,
@@ -623,7 +628,11 @@ function InputPage({ accessWarningContent = null }) {
     );
 
     setShowDeleteFirstRowModal(false);
-    alert("✅ Đã xóa dòng cũ nhất!");
+    if (result && result.success) {
+      alert("✅ Đã xóa dòng cũ nhất!");
+    } else {
+      alert("⚠️ Lỗi khi xóa dòng cũ nhất: " + (result?.error || "Không xác định"));
+    }
   };
 
   const handleDeleteLastRow = async () => {
@@ -662,7 +671,7 @@ function InputPage({ accessWarningContent = null }) {
     newDeletedRows[lastRowIndex] = true;
     setDeletedRows(newDeletedRows);
 
-    await savePageData(
+    const result = await savePageData(
       "master_draft",
       null,
       null,
@@ -677,7 +686,11 @@ function InputPage({ accessWarningContent = null }) {
     );
 
     setShowDeleteLastRowModal(false);
-    alert("✅ Đã xóa dòng mới nhất!");
+    if (result && result.success) {
+      alert("✅ Đã xóa dòng mới nhất!");
+    } else {
+      alert("⚠️ Lỗi khi xóa dòng mới nhất: " + (result?.error || "Không xác định"));
+    }
   };
 
   const confirmDeleteAll = async () => {
@@ -695,7 +708,7 @@ function InputPage({ accessWarningContent = null }) {
           })),
       }));
 
-    await savePageData(
+    const result = await savePageData(
       "master_draft",
       null,
       null,
@@ -709,12 +722,15 @@ function InputPage({ accessWarningContent = null }) {
       emptyAllQData,
     );
 
-    setAllQData(emptyAllQData);
-    setZValues(Array(dateValues.length).fill(""));
-    setDateValues(Array(dateValues.length).fill(""));
-
     setShowDeleteAllModal(false);
-    alert("✅ Đã xóa tất cả dữ liệu Bảng thông!");
+    if (result && result.success) {
+      setAllQData(emptyAllQData);
+      setZValues(Array(dateValues.length).fill(""));
+      setDateValues(Array(dateValues.length).fill(""));
+      alert("✅ Đã xóa tất cả dữ liệu Bảng thông!");
+    } else {
+      alert("⚠️ Lỗi khi xóa tất cả dữ liệu: " + (result?.error || "Không xác định"));
+    }
   };
 
   const confirmDeleteByRows = async () => {
@@ -741,8 +757,7 @@ function InputPage({ accessWarningContent = null }) {
       count++;
     }
 
-    setDeletedRows(newDeletedRows);
-    await savePageData(
+    const result = await savePageData(
       "master_draft",
       null,
       null,
@@ -757,7 +772,11 @@ function InputPage({ accessWarningContent = null }) {
     );
 
     setShowDeleteByRowsModal(false);
-    alert(`✅ Đã xóa ${count} dòng theo STT!`);
+    if (result && result.success) {
+      alert(`✅ Đã xóa ${count} dòng theo STT!`);
+    } else {
+      alert("⚠️ Lỗi khi xóa dòng theo STT: " + (result?.error || "Không xác định"));
+    }
   };
 
   const handleDelete = () => {
@@ -962,7 +981,7 @@ function InputPage({ accessWarningContent = null }) {
         }
       }
 
-      await savePageData(
+      const result = await savePageData(
         "q_all",
         null,
         null,
@@ -977,6 +996,10 @@ function InputPage({ accessWarningContent = null }) {
         existingPageLabel,
         undefined,
       );
+
+      if (!result || !result.success) {
+        throw new Error(result?.error || "Không thể lưu dữ liệu vào cơ sở dữ liệu.");
+      }
 
       setSaveStatus("✅ Đã thêm mới vào bảng tính!");
 

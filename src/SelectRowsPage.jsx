@@ -512,7 +512,7 @@ function SelectRowsPage({ accessWarningContent = null }) {
         }
       }
 
-      await savePageData(
+      const result = await savePageData(
         "q_all",
         null,
         null,
@@ -527,6 +527,10 @@ function SelectRowsPage({ accessWarningContent = null }) {
         existingPageLabel,
         undefined,
       );
+
+      if (!result || !result.success) {
+        throw new Error(result?.error || "Không thể lưu dữ liệu vào cơ sở dữ liệu.");
+      }
 
       const batchInfo = {
         stts: selectedIndices.map(formatStt),
