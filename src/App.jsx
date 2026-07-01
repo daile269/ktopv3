@@ -630,7 +630,7 @@ const LazyTapSection = ({ tapIndex, ...props }) => {
         });
       },
       {
-        rootMargin: "600px 600px 600px 600px", // Tải trước khi cách màn hình khoảng 1 Tập
+        rootMargin: "3000px 3000px 3000px 3000px", // Tải trước khi cách màn hình khoảng 4-5 Tập để lướt mượt mà hơn
       },
     );
 
