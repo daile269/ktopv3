@@ -1380,8 +1380,8 @@ function App() {
       } else {
         // Scroll to the bottom when opening the page without target cell
         let scrollAttempts = 0;
-        const maxScrollAttempts = 15; // 1.5 seconds total
-        console.log("[SCROLL TO BOTTOM] Triggered scroll-to-bottom interval loop.");
+        const maxScrollAttempts = 80; // 2.4 seconds total coverage
+        console.log("[SCROLL TO BOTTOM] Triggered scroll-to-bottom interval loop (30ms interval).");
         const scrollInterval = setInterval(() => {
           const mainContent = document.querySelector(".main-content");
           if (mainContent) {
@@ -1395,7 +1395,7 @@ function App() {
             clearInterval(scrollInterval);
             console.log("[SCROLL TO BOTTOM] Interval loop finished.");
           }
-        }, 100);
+        }, 30);
       }
     }
   }, [isDataLoaded, isLoading]);
