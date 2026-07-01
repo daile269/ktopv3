@@ -29,7 +29,7 @@ function createEmptyMasterDraft() {
     purpleRangeFrom: 0,
     purpleRangeTo: 0,
     keepLastNRows: 110,
-    allQData: Array.from({ length: 5 }, () => ({
+    allQData: Array.from({ length: 6 }, () => ({
       aValues: [],
       bValues: [],
       tapsData: Array.from({ length: 10 }, () => ({ aValues: [], bValues: [] }))
@@ -71,22 +71,22 @@ function readJsonFile(filePath) {
 
 async function runMigration() {
   console.log('==================================================');
-  console.log('🚀 BẮT ĐẦU DI CƯ ĐỒNG THỜI 5 FILE APP CŨ VÀO 5 Q MỚI');
+  console.log('🚀 BẮT ĐẦU DI CƯ ĐỒNG THỜI 6 FILE APP CŨ VÀO 6 Q MỚI');
   console.log(`📁 Thư mục nguồn: ${INPUT_DIR}`);
   console.log('==================================================\n');
 
   // Khởi tạo cấu trúc đích cho master_draft
   const newMaster = createEmptyMasterDraft();
   
-  // Khởi tạo cấu trúc đích cho 5 trang Q chi tiết (site_a_q1 đến site_a_q5)
-  const newQPages = Array.from({ length: 5 }, (_, idx) => 
+  // Khởi tạo cấu trúc đích cho 6 trang Q chi tiết (site_a_q1 đến site_a_q6)
+  const newQPages = Array.from({ length: 6 }, (_, idx) => 
     createEmptyQPage(`site_a_q${idx + 1}`)
   );
 
   let masterBasePopulated = false;
 
-  // Duyệt qua 5 file ứng với 5 Q mới
-  for (let pmIdx = 0; pmIdx < 5; pmIdx++) {
+  // Duyệt qua 6 file ứng với 6 Q mới
+  for (let pmIdx = 0; pmIdx < 6; pmIdx++) {
     const pmNumber = pmIdx + 1;
     const fileName = `ktop-new-pm${pmNumber}.pages.json`;
     const filePath = path.join(INPUT_DIR, fileName);
