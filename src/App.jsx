@@ -607,8 +607,15 @@ const LazyTapSection = ({ tapIndex, ...props }) => {
   const [isNearViewport, setIsNearViewport] = useState(false);
   const containerRef = useRef(null);
 
+  // Parse scrollToT to force-render the target tap immediately if it is lazy-loaded
+  const params = new URLSearchParams(window.location.search);
+  const scrollToT = params.get("scrollToT");
+  const targetTableIndex = scrollToT ? parseInt(scrollToT, 10) - 1 : -1;
+  const targetTapIndex = targetTableIndex >= 0 ? Math.floor(targetTableIndex / 2) : -1;
+
   // Mặc định luôn nạp trước 2 Tập đầu tiên để người dùng mở ra thấy ngay lập tức
-  const shouldRenderImmediately = tapIndex < 2;
+  // Hoặc nạp tập chứa ô cần scroll tới
+  const shouldRenderImmediately = tapIndex < 2 || tapIndex === targetTapIndex;
 
   useEffect(() => {
     if (shouldRenderImmediately || isNearViewport) return;
