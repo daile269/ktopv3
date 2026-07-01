@@ -63,7 +63,7 @@ const TaskRow = memo(
           />
         </td>
 
-        {/* Render 5 Qs, each has 10 Taps, each Tap has A and B */}
+        {/* Render NUM_QS Qs, each has 10 Taps, each Tap has A and B */}
         {Array.from({ length: NUM_QS }).map((_, qIndex) => {
           const qData = allQData[qIndex];
           const baseColor = qIndex % 2 === 0 ? "#fff" : "#f1f1f1";
@@ -178,7 +178,7 @@ const qOffset = import.meta.env.VITE_SITE_ID === "site_b" ? NUM_QS : 0;
 function InputPage({ accessWarningContent = null }) {
   const [keepLastNRows, setKeepLastNRows] = useState(110);
 
-  // State cho 7 Q, mỗi Q có 10 Tập (A, B)
+  // State cho NUM_QS Q, mỗi Q có 10 Tập (A, B)
   const [allQData, setAllQData] = useState(
     Array(NUM_QS)
       .fill(null)

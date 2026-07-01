@@ -661,8 +661,9 @@ const LazyTapSection = ({ tapIndex, ...props }) => {
 function App() {
   const TOTAL_TABLES = 2; // số bảng T mỗi Tập (chỉ còn T1, T2)
   const ROWS = 5000;
+  const qOffset = import.meta.env.VITE_SITE_ID === "site_b" ? NUM_QS : 0;
 
-  // State lưu trữ dữ liệu 7 Q, mỗi Q có 10 Tập (mỗi Tập có A và B)
+  // State lưu trữ dữ liệu NUM_QS Q, mỗi Q có 10 Tập (mỗi Tập có A và B)
   const [allQData, setAllQData] = useState(
     Array(NUM_QS)
       .fill(null)
@@ -899,10 +900,10 @@ function App() {
       try {
         const result = await loadPageData(pageId);
         if (result.success && result.data) {
-          // Lưu trữ mảng 5 Q
+          // Lưu trữ mảng NUM_QS Q
           const loadedAllQData =
             result.data.allQData ||
-            Array(5)
+            Array(NUM_QS)
               .fill(null)
               .map(() => ({
                 tapsData: Array(10)
@@ -2103,7 +2104,7 @@ function App() {
       setDateValues(Array(ROWS).fill(""));
       setDeletedRows(Array(ROWS).fill(false));
       setAllQData(
-        Array(5)
+        Array(NUM_QS)
           .fill(null)
           .map(() => ({
             tapsData: Array(10)
@@ -3257,7 +3258,7 @@ function App() {
                   margin: "20px 0",
                 }}
               >
-                Bạn có chắc chắn muốn xóa <strong>TẤT CẢ</strong> dữ liệu Q1-Q5?
+                Bạn có chắc chắn muốn xóa <strong>TẤT CẢ</strong> dữ liệu Q{1 + qOffset}-Q{NUM_QS + qOffset}?
                 <br />
                 <br />
                 <span style={{ color: "#dc3545", fontWeight: "bold" }}>
@@ -3309,7 +3310,7 @@ function App() {
                 </strong>
                 <br />
                 <br />
-                Dữ liệu sẽ được đồng bộ xóa trên tất cả Q1-Q5!
+                Dữ liệu sẽ được đồng bộ xóa trên tất cả Q{1 + qOffset}-Q{NUM_QS + qOffset}!
               </p>
             </div>
 
@@ -3356,7 +3357,7 @@ function App() {
                 </strong>
                 <br />
                 <br />
-                Dữ liệu sẽ được đồng bộ xóa trên tất cả Q1-Q5!
+                Dữ liệu sẽ được đồng bộ xóa trên tất cả Q{1 + qOffset}-Q{NUM_QS + qOffset}!
               </p>
             </div>
 

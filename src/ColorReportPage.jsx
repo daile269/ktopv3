@@ -66,7 +66,7 @@ function ColorReportPage({ accessWarningContent = null }) {
         setDeletedRows(result.data.deletedRows || Array(ROWS).fill(false));
         const loadedAllQData =
           result.data.allQData ||
-          Array(5)
+          Array(NUM_QS)
             .fill(null)
             .map(() => ({
               tapsData: Array(10)
@@ -211,7 +211,7 @@ function ColorReportPage({ accessWarningContent = null }) {
     return dateStr;
   }, []);
 
-  // Tính toán dữ liệu báo màu tổng hợp chung cho toàn bộ 5 Q
+  // Tính toán dữ liệu báo màu tổng hợp chung cho toàn bộ NUM_QS Q
   const reportRows = useMemo(() => {
     if (isLoading) return [];
 
