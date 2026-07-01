@@ -1317,6 +1317,7 @@ function App() {
 
           const tryScroll = () => {
             let scrolled = false;
+            console.log(`[SCROLL CHECK MAIN] Attempt ${attempts}: tableIndex=${tableIndex}, rowIndex=${rowIndex}, colIndex=${colIndex}`);
             if (
               rowIndex !== null &&
               !isNaN(rowIndex) &&
@@ -1325,6 +1326,7 @@ function App() {
             ) {
               const cellId = `cell-${tableIndex}-${rowIndex}-${colIndex}`;
               const cellElement = document.getElementById(cellId);
+              console.log(`[SCROLL CHECK MAIN] Cell ID: "${cellId}", Found:`, !!cellElement);
               if (cellElement) {
                 cellElement.scrollIntoView({
                   behavior: "smooth",
@@ -1340,6 +1342,7 @@ function App() {
             if (!scrolled) {
               const elements = document.querySelectorAll(".table-section");
               const tableElement = elements[tableIndex];
+              console.log(`[SCROLL CHECK MAIN] Table index: ${tableIndex}, Found table element:`, !!tableElement);
               if (tableElement) {
                 tableElement.scrollIntoView({
                   behavior: "smooth",
@@ -1351,11 +1354,14 @@ function App() {
             }
 
             if (scrolled) {
+              console.log("[SCROLL CHECK MAIN] Successfully scrolled!");
               const newUrl = window.location.pathname;
               window.history.replaceState({}, "", newUrl);
             } else if (attempts < maxAttempts) {
               attempts++;
               setTimeout(tryScroll, 50);
+            } else {
+              console.log("[SCROLL CHECK MAIN] Reached max attempts, scrolling failed.");
             }
           };
 
