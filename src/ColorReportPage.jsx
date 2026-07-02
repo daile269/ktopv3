@@ -33,44 +33,6 @@ function ColorReportPage({ accessWarningContent = null }) {
   const [highlightedRows, setHighlightedRows] = useState({});
   const [highlightedCols, setHighlightedCols] = useState({});
 
-  const handleRowClick = useCallback((rowIdx) => {
-    setHighlightedRows((prev) => ({
-      ...prev,
-      [rowIdx]: !prev[rowIdx],
-    }));
-  }, []);
-
-  const handleColClick = useCallback((c, kIndex) => {
-    const colKey = `${c}-${kIndex}`;
-    setHighlightedCols((prev) => ({
-      ...prev,
-      [colKey]: !prev[colKey],
-    }));
-  }, []);
-
-  const handleMainColClick = useCallback((c) => {
-    const limit = getLayoutLimitForCount(c);
-    setHighlightedCols((prev) => {
-      const next = { ...prev };
-      let anyHighlighted = false;
-      for (let k = 0; k < limit; k++) {
-        if (prev[`${c}-${k}`]) {
-          anyHighlighted = true;
-          break;
-        }
-      }
-      for (let k = 0; k < limit; k++) {
-        next[`${c}-${k}`] = !anyHighlighted;
-      }
-      return next;
-    });
-  }, [getLayoutLimitForCount]);
-
-  const clearHighlights = useCallback(() => {
-    setHighlightedRows({});
-    setHighlightedCols({});
-  }, []);
-
   const handleScrollToCount = useCallback(() => {
     const num = parseInt(searchCount, 10);
     if (isNaN(num) || num < 16 || num > 95) {
@@ -249,6 +211,44 @@ function ColorReportPage({ accessWarningContent = null }) {
     },
     [purpleRangeFrom, purpleRangeTo, getLayoutLimitForCount],
   );
+
+  const handleRowClick = useCallback((rowIdx) => {
+    setHighlightedRows((prev) => ({
+      ...prev,
+      [rowIdx]: !prev[rowIdx],
+    }));
+  }, []);
+
+  const handleColClick = useCallback((c, kIndex) => {
+    const colKey = `${c}-${kIndex}`;
+    setHighlightedCols((prev) => ({
+      ...prev,
+      [colKey]: !prev[colKey],
+    }));
+  }, []);
+
+  const handleMainColClick = useCallback((c) => {
+    const limit = getLayoutLimitForCount(c);
+    setHighlightedCols((prev) => {
+      const next = { ...prev };
+      let anyHighlighted = false;
+      for (let k = 0; k < limit; k++) {
+        if (prev[`${c}-${k}`]) {
+          anyHighlighted = true;
+          break;
+        }
+      }
+      for (let k = 0; k < limit; k++) {
+        next[`${c}-${k}`] = !anyHighlighted;
+      }
+      return next;
+    });
+  }, [getLayoutLimitForCount]);
+
+  const clearHighlights = useCallback(() => {
+    setHighlightedRows({});
+    setHighlightedCols({});
+  }, []);
 
   // Định dạng ngày tháng về dạng chuẩn DD/MM/YYYY
   const formatDate = useCallback((dateStr) => {
