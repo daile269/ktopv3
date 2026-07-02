@@ -697,8 +697,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                 style={{
                   fontSize: "30px",
                   padding: "6px 12px",
-                  background: "#ffc107",
-                  color: "black",
+                  background: "#6c757d",
+                  color: "white",
                   border: "none",
                   borderRadius: "8px",
                   marginLeft: "5px",
