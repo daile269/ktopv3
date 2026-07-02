@@ -620,7 +620,8 @@ const LazyTapSection = ({ tapIndex, ...props }) => {
   useEffect(() => {
     if (shouldRenderImmediately || isNearViewport) return;
 
-    const mainContent = document.querySelector(".main-content");
+    const mainContent = containerRef.current?.closest(".main-content");
+    console.log(`[LAZY LOAD] Tap ${tapIndex} mounting, mainContent found:`, !!mainContent);
 
     const observer = new IntersectionObserver(
       (entries) => {
