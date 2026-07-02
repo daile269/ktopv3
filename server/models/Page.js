@@ -60,7 +60,7 @@ const pageSchema = new mongoose.Schema(
     },
     keepLastNRows: {
       type: Number,
-      default: 500,
+      default: 1000,
     },
     allQData: {
       type: [
