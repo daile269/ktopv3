@@ -450,7 +450,51 @@ function ColorReportPage({ accessWarningContent = null }) {
                 ? col === parseInt(tValAtR, 10)
                 : false;
 
-            const matchCount = R - match.row + 1;
+            let matchCount = 0;
+            let resetOnNext = false;
+            let activeCell = null; // Theo vết ô đang hoạt động trong kênh dọc k
+
+            for (let r = 0; r <= R; r++) {
+              // 1. Nếu đang có ô hoạt động, kiểm tra xem chính nó có bị nổ đỏ ở dòng r này không
+              if (activeCell) {
+                const tVal = tapsTValues[activeCell.tapGlobalIdx]?.[activeCell.tableIdx]?.[r];
+                const isRed = tVal !== undefined && tVal !== "" && tVal !== null && activeCell.col === parseInt(tVal, 10);
+                if (isRed) {
+                  resetOnNext = true;
+                  activeCell = null; // Ô đã nổ đỏ, dừng theo vết
+                }
+              }
+
+              // 2. Kiểm tra xem dòng r này có xuất hiện ô cảnh báo mới ở cột k hay không
+              if (matchesData[r]?.[c]?.[k]) {
+                const matchAtR = matchesData[r][c][k];
+                const tapGlobalIdxAtR = (matchAtR.q - 1) * 10 + (matchAtR.x - 1);
+                const tableIdxAtR = matchAtR.y - 1;
+                const colAtR = matchAtR.g;
+
+                // Ghi nhận ô hoạt động mới để theo vết tiếp
+                activeCell = {
+                  tapGlobalIdx: tapGlobalIdxAtR,
+                  tableIdx: tableIdxAtR,
+                  col: colAtR,
+                };
+
+                if (resetOnNext) {
+                  matchCount = 1;
+                  resetOnNext = false;
+                } else {
+                  matchCount++;
+                }
+
+                // Kiểm tra xem ô mới này có bị nổ đỏ ngay tại dòng phát hiện r của nó không
+                const tValAtR = tapsTValues[tapGlobalIdxAtR]?.[tableIdxAtR]?.[r];
+                const isRedImmediately = tValAtR !== undefined && tValAtR !== "" && tValAtR !== null && colAtR === parseInt(tValAtR, 10);
+                if (isRedImmediately) {
+                  resetOnNext = true;
+                  activeCell = null;
+                }
+              }
+            }
             const displayValue = `${k + 1}/${match.q}-${match.x}-${match.y}-${match.g}/${matchCount}`;
 
             rowData.cells[`${c}-${k}`] = {
