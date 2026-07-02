@@ -432,17 +432,12 @@ function ColorReportPage({ accessWarningContent = null }) {
 
             let matchCount = 0;
             let resetOnNext = false;
-            let isRedCellAtR = false;
 
             for (let r = 0; r <= R; r++) {
               // 1. Kiểm tra xem ô cụ thể này có bị nổ đỏ ở dòng r hay không
               const tVal = tapsTValues[tapGlobalIdx]?.[tableIdx]?.[r];
               const isRed = tVal !== undefined && tVal !== "" && tVal !== null && parseInt(tVal, 10) === col;
               
-              if (r === R) {
-                isRedCellAtR = isRed;
-              }
-
               // 2. Kiểm tra xem ô cụ thể này có đạt số đếm c ở dòng r hay không
               const valAtR = countsHistory[r]?.[tapGlobalIdx]?.[tableIdx]?.[col];
               const isMatch = valAtR === c;
