@@ -30,6 +30,46 @@ function ColorReportPage({ accessWarningContent = null }) {
   const [error, setError] = useState("");
   const [orangeCell, setOrangeCell] = useState(null);
   const [searchCount, setSearchCount] = useState("");
+  const [highlightedRows, setHighlightedRows] = useState({});
+  const [highlightedCols, setHighlightedCols] = useState({});
+
+  const handleRowClick = useCallback((rowIdx) => {
+    setHighlightedRows((prev) => ({
+      ...prev,
+      [rowIdx]: !prev[rowIdx],
+    }));
+  }, []);
+
+  const handleColClick = useCallback((c, kIndex) => {
+    const colKey = `${c}-${kIndex}`;
+    setHighlightedCols((prev) => ({
+      ...prev,
+      [colKey]: !prev[colKey],
+    }));
+  }, []);
+
+  const handleMainColClick = useCallback((c) => {
+    const limit = getLayoutLimitForCount(c);
+    setHighlightedCols((prev) => {
+      const next = { ...prev };
+      let anyHighlighted = false;
+      for (let k = 0; k < limit; k++) {
+        if (prev[`${c}-${k}`]) {
+          anyHighlighted = true;
+          break;
+        }
+      }
+      for (let k = 0; k < limit; k++) {
+        next[`${c}-${k}`] = !anyHighlighted;
+      }
+      return next;
+    });
+  }, [getLayoutLimitForCount]);
+
+  const clearHighlights = useCallback(() => {
+    setHighlightedRows({});
+    setHighlightedCols({});
+  }, []);
 
   const handleScrollToCount = useCallback(() => {
     const num = parseInt(searchCount, 10);
@@ -651,6 +691,23 @@ function ColorReportPage({ accessWarningContent = null }) {
               >
                 📊 Số dòng hiện tại: {activeRowCount}
               </button>
+              <button
+                className="toolbar-btn"
+                onClick={clearHighlights}
+                style={{
+                  fontSize: "30px",
+                  padding: "6px 12px",
+                  background: "#ffc107",
+                  color: "black",
+                  border: "none",
+                  borderRadius: "8px",
+                  marginLeft: "5px",
+                  marginRight: "5px",
+                  fontWeight: "bold",
+                }}
+              >
+                🔄 X màu d.c
+              </button>
 
               {/* Ô Nhập Số & Nút Xem */}
               <input
@@ -780,17 +837,29 @@ function ColorReportPage({ accessWarningContent = null }) {
                     {/* Headers cho các cột số đếm */}
                     {cols.map((c) => {
                       const limit = getLayoutLimitForCount(c);
+                      const isMainHL = (() => {
+                        let allHL = true;
+                        for (let subK = 0; subK < limit; subK++) {
+                          if (!highlightedCols[`${c}-${subK}`]) {
+                            allHL = false;
+                            break;
+                          }
+                        }
+                        return allHL;
+                      })();
                       return (
                         <th
                           id={`col-count-${c}`}
                           key={c}
                           colSpan={limit}
+                          onClick={() => handleMainColClick(c)}
                           style={{
                             padding: "12px",
                             border: "2px solid #333",
                             borderRight: "6px solid #fd7e14",
                             minWidth: `${limit * 250}px`,
-                            backgroundColor: "#6f42c1",
+                            backgroundColor: isMainHL ? "#4a2491" : "#6f42c1",
+                            cursor: "pointer",
                           }}
                         >
                           {c}
@@ -812,9 +881,11 @@ function ColorReportPage({ accessWarningContent = null }) {
                       const limit = getLayoutLimitForCount(c);
                       const subHeaders = [];
                       for (let k = 1; k <= limit; k++) {
+                        const isSubHL = !!highlightedCols[`${c}-${k - 1}`];
                         subHeaders.push(
                           <th
                             key={`${c}-${k}`}
+                            onClick={() => handleColClick(c, k - 1)}
                             style={{
                               padding: "8px 6px",
                               border: "2px solid #333",
@@ -823,7 +894,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                                   ? "6px solid #fd7e14"
                                   : "2px solid #333",
                               width: "250px",
-                              backgroundColor: "#f2edf8",
+                              backgroundColor: isSubHL ? "#bce5f7" : "#f2edf8",
+                              cursor: "pointer",
                             }}
                           >
                             ({k}/{c})
@@ -836,17 +908,20 @@ function ColorReportPage({ accessWarningContent = null }) {
                 </thead>
                 <tbody>
                   {reportRows.map((row, index) => {
+                    const isRowHL = !!highlightedRows[row.rowIdx];
                     return (
                       <tr
                         key={row.rowIdx}
                         style={{
-                          backgroundColor:
-                            index % 2 === 0 ? "#ffffff" : "#fcfcff",
+                          backgroundColor: isRowHL
+                            ? "#fcf8e3"
+                            : index % 2 === 0 ? "#ffffff" : "#fcfcff",
                           borderBottom: "2px solid #333",
                           textAlign: "center",
                         }}
                       >
                         <td
+                          onClick={() => handleRowClick(row.rowIdx)}
                           style={{
                             padding: "10px",
                             border: "2px solid #333",
@@ -854,6 +929,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                             fontWeight: "bold",
                             color: "#6f42c1",
                             fontSize: "35px",
+                            cursor: "pointer",
                           }}
                         >
                           {row.date}
@@ -880,6 +956,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                               cell.yVal === orangeCell.yVal &&
                               cell.gVal === orangeCell.gVal &&
                               c === orangeCell.c;
+                            const isColHL = !!highlightedCols[`${c}-${k}`];
 
                             cellsArr.push(
                               <td
@@ -911,7 +988,11 @@ function ColorReportPage({ accessWarningContent = null }) {
                                     ? cell.isRedCell
                                       ? "#cf3535"
                                       : "#91d5ff"
-                                    : "transparent",
+                                    : isColHL
+                                      ? "#d9edf7"
+                                      : isRowHL
+                                        ? "#fcf8e3"
+                                        : "transparent",
                                   backgroundClip: "padding-box",
                                   color: isOrange
                                     ? cell.isRedCell
