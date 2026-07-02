@@ -620,30 +620,46 @@ const LazyTapSection = ({ tapIndex, ...props }) => {
   useEffect(() => {
     if (shouldRenderImmediately || isNearViewport) return;
 
-    const mainContent = containerRef.current?.closest(".main-content");
-    console.log(`[LAZY LOAD] Tap ${tapIndex} mounting, mainContent found:`, !!mainContent);
+    let observer = null;
+    let timeoutId = null;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsNearViewport(true);
-            observer.disconnect();
-          }
-        });
-      },
-      {
-        root: mainContent || null, // Lắng nghe trực tiếp sự kiện cuộn của khung chứa chính
-        rootMargin: "3000px 3000px 3000px 3000px", // Tải trước khi cách màn hình khoảng 4-5 Tập để lướt mượt mà hơn
-      },
-    );
+    const setupObserver = () => {
+      const mainContent = document.querySelector(".main-content") || containerRef.current?.closest(".main-content");
+      if (!mainContent) {
+        // Nếu chưa tìm thấy .main-content (do React đang render dở dang), thử lại sau 50ms
+        timeoutId = setTimeout(setupObserver, 50);
+        return;
+      }
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setIsNearViewport(true);
+              observer?.disconnect();
+            }
+          });
+        },
+        {
+          root: mainContent,
+          rootMargin: "3000px 3000px 3000px 3000px", // Tải trước khoảng 4-5 Tập
+        },
+      );
+
+      if (containerRef.current) {
+        observer.observe(containerRef.current);
+      }
+    };
+
+    setupObserver();
 
     return () => {
-      observer.disconnect();
+      if (observer) {
+        observer.disconnect();
+      }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [shouldRenderImmediately, isNearViewport]);
 
