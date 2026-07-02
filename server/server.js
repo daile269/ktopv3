@@ -65,7 +65,7 @@ app.get("/api/pages/:pageId", async (req, res) => {
     }
 
     // Pad arrays to 110 rows
-    const ROWS = 110;
+    const ROWS = 5000;
     const aValues = [...page.aValues].slice(0, ROWS);
     const bValues = [...page.bValues].slice(0, ROWS);
     const zValues = page.zValues ? [...page.zValues].slice(0, ROWS) : [];
@@ -134,7 +134,7 @@ app.get("/api/pages/:pageId", async (req, res) => {
         sourceSTTValues,
         purpleRangeFrom: page.purpleRangeFrom || 0,
         purpleRangeTo: page.purpleRangeTo || 0,
-        keepLastNRows: typeof page.keepLastNRows === "number" ? page.keepLastNRows : 110,
+        keepLastNRows: typeof page.keepLastNRows === "number" ? page.keepLastNRows : 500,
         allQData,
         pageLabel: page.pageLabel || "",
       },
@@ -304,7 +304,7 @@ app.post("/api/pages/:pageId", async (req, res) => {
         sourceSTTValues: trimmedSourceSTT,
         purpleRangeFrom: purpleRangeFrom || 0,
         purpleRangeTo: purpleRangeTo || 0,
-        keepLastNRows: typeof keepLastNRows === "number" ? keepLastNRows : 110,
+        keepLastNRows: typeof keepLastNRows === "number" ? keepLastNRows : 500,
         allQData: trimmedAllQData,
         pageLabel: pageLabel || "",
         updatedAt: new Date(),
