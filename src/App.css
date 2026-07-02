@@ -462,7 +462,6 @@ body {
 }
 
 .data-cell.red {
-  background: #fff;
   color: #cf3535;
   font-weight: 600;
 }
@@ -982,7 +981,8 @@ body {
   background-color: #ffffff !important;
 }
 
-.tap-section.volume-odd .data-cell.white {
+.tap-section.volume-odd .data-cell.white,
+.tap-section.volume-odd .data-cell.red {
   background-color: #f2f4f8 !important;
 }
 
