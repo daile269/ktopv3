@@ -1111,16 +1111,36 @@ function App() {
               const counts = historyCounts[tapGlobalIdx][tableIdx];
               for (let col = 0; col < 10; col++) {
                 if (counts[col] === c) {
-                  if (matchesData[R][c].length < limit) {
-                    const globalTIndex = tapGlobalIdx * 2 + tableIdx + 1;
+                  const globalTIndex = tapGlobalIdx * 2 + tableIdx + 1;
+                  
+                  let zVal = null;
+                  if (c > 16 && R > 0) {
+                    const prevZ = map[`${globalTIndex}-${col}-${R - 1}`];
+                    if (prevZ !== undefined) {
+                      zVal = prevZ;
+                    }
+                  }
+
+                  if (zVal === null) {
+                    let slot = 1;
+                    const usedSlots = new Set();
+                    matchesData[R][c].forEach(m => {
+                      const s = map[`${m.globalTIndex}-${m.g}-${R}`];
+                      if (s) usedSlots.add(s);
+                    });
+                    while (usedSlots.has(slot)) {
+                      slot++;
+                    }
+                    zVal = slot;
+                  }
+
+                  if (zVal <= limit) {
                     matchesData[R][c].push({
                       row: R,
                       g: col,
                       globalTIndex,
                     });
-
-                    const slotK = matchesData[R][c].length - 1;
-                    map[`${globalTIndex}-${col}-${R}`] = slotK + 1;
+                    map[`${globalTIndex}-${col}-${R}`] = zVal;
                   }
                 }
               }

@@ -328,53 +328,78 @@ function ColorReportPage({ accessWarningContent = null }) {
           .map(() => Array(10).fill(1)),
       );
 
-    const countsHistory = [];
+     const countsHistory = [];
+     const cellZMap = {}; // Map lưu trữ zVal của từng ô qua các dòng R: `globalTIndex-col-R`
+ 
+     // 4. Quét qua từng dòng R từ 0 đến actualRows để tìm kết quả mới (R = actualRows đại diện cho dòng tương lai)
+     for (let R = 0; R <= actualRows; R++) {
+       // Lưu lại trạng thái số đếm tại dòng R từ lịch sử
+       const currentCounts = historyCounts.map((taps) =>
+         taps.map((tables) => [...tables]),
+       );
+       countsHistory.push(currentCounts);
+ 
+       // a. Kiểm tra xem ở dòng R, có bảng T nào đạt số đếm báo màu c
+       for (let c = 16; c <= 95; c++) {
+         const limit = getLimitForCount(c);
+ 
+         // Quét từ trái qua phải trên toàn bộ 50 Tập (100 bảng T)
+         for (
+           let tapGlobalIdx = 0;
+           tapGlobalIdx < NUM_QS * 10;
+           tapGlobalIdx++
+         ) {
+           for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
+             const counts = historyCounts[tapGlobalIdx][tableIdx];
+             for (let col = 0; col < 10; col++) {
+               if (counts[col] === c) {
+                 const globalTIndex = tapGlobalIdx * 2 + tableIdx + 1;
 
-    // 4. Quét qua từng dòng R từ 0 đến actualRows để tìm kết quả mới (R = actualRows đại diện cho dòng tương lai)
-    for (let R = 0; R <= actualRows; R++) {
-      // Lưu lại trạng thái số đếm tại dòng R từ lịch sử
-      const currentCounts = historyCounts.map((taps) =>
-        taps.map((tables) => [...tables]),
-      );
-      countsHistory.push(currentCounts);
+                 let zVal = null;
+                 if (c > 16 && R > 0) {
+                   const prevZ = cellZMap[`${globalTIndex}-${col}-${R - 1}`];
+                   if (prevZ !== undefined) {
+                     zVal = prevZ;
+                   }
+                 }
 
-      // a. Kiểm tra xem ở dòng R, có bảng T nào đạt số đếm báo màu c
-      for (let c = 16; c <= 95; c++) {
-        const limit = getLimitForCount(c);
+                 if (zVal === null) {
+                   let slot = 1;
+                   const usedSlots = new Set();
+                   for (let k = 0; k < limit; k++) {
+                     const m = matchesData[R][c][k];
+                     if (m) {
+                       const s = cellZMap[`${m.globalTIndex}-${m.g}-${R}`];
+                       if (s) usedSlots.add(s);
+                     }
+                   }
+                   while (usedSlots.has(slot)) {
+                     slot++;
+                   }
+                   zVal = slot;
+                 }
 
-        if (matchesData[R][c].length < limit) {
-          // Quét từ trái qua phải trên toàn bộ 50 Tập (100 bảng T)
-          for (
-            let tapGlobalIdx = 0;
-            tapGlobalIdx < NUM_QS * 10;
-            tapGlobalIdx++
-          ) {
-            for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
-              const counts = historyCounts[tapGlobalIdx][tableIdx];
-              for (let col = 0; col < 10; col++) {
-                if (counts[col] === c) {
-                  if (matchesData[R][c].length < limit) {
-                    const q = Math.floor(tapGlobalIdx / 10) + 1; // Q (1-5)
-                    const x = (tapGlobalIdx % 10) + 1; // Tập trong Q (1-10)
-                    const y = tableIdx + 1; // Thông (1-2)
-                    const g = col; // Tham số (0-9)
-                    const globalTIndex = tapGlobalIdx * 2 + tableIdx + 1;
+                 if (zVal <= limit) {
+                   const q = Math.floor(tapGlobalIdx / 10) + 1; // Q (1-5)
+                   const x = (tapGlobalIdx % 10) + 1; // Tập trong Q (1-10)
+                   const y = tableIdx + 1; // Thông (1-2)
+                   const g = col; // Tham số (0-9)
 
-                    matchesData[R][c].push({
-                      row: R,
-                      q,
-                      x,
-                      y,
-                      g,
-                      globalTIndex,
-                    });
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                   matchesData[R][c][zVal - 1] = {
+                     row: R,
+                     q,
+                     x,
+                     y,
+                     g,
+                     globalTIndex,
+                   };
+                   cellZMap[`${globalTIndex}-${col}-${R}`] = zVal;
+                 }
+               }
+             }
+           }
+         }
+       }
 
       // b. Cập nhật số đếm tương lai của tất cả bảng T tại dòng R (cho dòng R + 1)
       if (R < actualRows) {
