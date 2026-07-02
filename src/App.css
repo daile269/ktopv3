@@ -467,8 +467,8 @@ body {
 }
 
 .data-cell.red:hover {
-  background: #dc2626;
-  color: white;
+  background: #dc2626 !important;
+  color: white !important;
 }
 
 .data-cell.purple {
