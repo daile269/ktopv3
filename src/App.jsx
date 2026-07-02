@@ -1196,7 +1196,7 @@ function App() {
           ) {
             const zVal = warningZMap[`${globalTIndex}-${col}-${row}`];
             if (zVal) {
-              cellVal = `${col}-${y}/${zVal}`;
+              cellVal = `${zVal}/${col}-${y}`;
             }
           }
 
