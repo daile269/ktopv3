@@ -620,42 +620,40 @@ const LazyTapSection = ({ tapIndex, ...props }) => {
   useEffect(() => {
     if (shouldRenderImmediately || isNearViewport) return;
 
-    let observer = null;
     let timeoutId = null;
+    let mainContent = null;
 
-    const setupObserver = () => {
-      const mainContent = document.querySelector(".main-content") || containerRef.current?.closest(".main-content");
-      if (!mainContent) {
-        // Nếu chưa tìm thấy .main-content (do React đang render dở dang), thử lại sau 50ms
-        timeoutId = setTimeout(setupObserver, 50);
-        return;
-      }
+    const handleScroll = () => {
+      if (!containerRef.current || !mainContent) return;
 
-      observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              setIsNearViewport(true);
-              observer?.disconnect();
-            }
-          });
-        },
-        {
-          root: mainContent,
-          rootMargin: "3000px 3000px 3000px 3000px", // Tải trước khoảng 4-5 Tập
-        },
-      );
+      const containerLeft = containerRef.current.offsetLeft;
+      const scrollLeft = mainContent.scrollLeft;
+      const clientWidth = mainContent.clientWidth;
 
-      if (containerRef.current) {
-        observer.observe(containerRef.current);
+      // Nếu ô đặt chỗ nằm trong vùng đệm 3000px bên phải viewport, tiến hành nạp ngay
+      if (containerLeft <= scrollLeft + clientWidth + 3000) {
+        setIsNearViewport(true);
       }
     };
 
-    setupObserver();
+    const setupListener = () => {
+      mainContent = document.querySelector(".main-content");
+      if (!mainContent) {
+        // Thử lại sau 50ms nếu chưa dựng xong container
+        timeoutId = setTimeout(setupListener, 50);
+        return;
+      }
+
+      mainContent.addEventListener("scroll", handleScroll, { passive: true });
+      // Thực hiện kiểm tra lần đầu tiên ngay khi mount
+      handleScroll();
+    };
+
+    setupListener();
 
     return () => {
-      if (observer) {
-        observer.disconnect();
+      if (mainContent) {
+        mainContent.removeEventListener("scroll", handleScroll);
       }
       if (timeoutId) {
         clearTimeout(timeoutId);
