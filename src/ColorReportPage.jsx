@@ -430,7 +430,6 @@ function ColorReportPage({ accessWarningContent = null }) {
             let activeCell = null; // Theo vết ô đang hoạt động trong kênh dọc k
 
             for (let r = 0; r <= R; r++) {
-              if (r < actualRows && deletedRows[r]) continue;
 
               // 1. Nếu đang có ô hoạt động, kiểm tra xem chính nó có bị nổ đỏ ở dòng r này không
               if (activeCell) {
