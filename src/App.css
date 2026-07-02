@@ -466,8 +466,10 @@ body {
   font-weight: 600;
 }
 
-.data-cell.red:hover {
-  background: #dc2626 !important;
+.data-cell.red:hover,
+.tap-section.volume-odd .data-cell.red:hover,
+.tap-section.volume-even .data-cell.red:hover {
+  background-color: #dc2626 !important;
   color: white !important;
 }
 
