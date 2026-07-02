@@ -894,7 +894,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                   ? "6px solid #fd7e14"
                                   : "2px solid #333",
                               width: "250px",
-                              backgroundColor: isSubHL ? "#bce5f7" : "#f2edf8",
+                              backgroundColor: isSubHL ? "#d3f0ff" : "#f2edf8",
                               cursor: "pointer",
                             }}
                           >
@@ -989,7 +989,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                       ? "#cf3535"
                                       : "#91d5ff"
                                     : isColHL
-                                      ? "#d9edf7"
+                                      ? "#ebf7ff"
                                       : isRowHL
                                         ? "#fcf8e3"
                                         : "transparent",
