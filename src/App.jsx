@@ -437,7 +437,7 @@ const TapSection = memo(
                                         onClick={() => {
                                           if (isYellow) {
                                             if (canScroll) {
-                                              window.location.href = `/bao-mau?scrollToCount=${yVal}&q=${qIdx + 1}&x=${relativeTapIdx + 1}&y=${tableIndex + 1}&g=${colIndex}`;
+                                              window.location.href = `/bao-mau?scrollToCount=${yVal}&q=${qIdx + 1}&x=${relativeTapIdx + 1}&y=${tableIndex + 1}&g=${colIndex}&row=${rowIndex}`;
                                             } else {
                                               window.location.href = `/bao-mau`;
                                             }
@@ -568,7 +568,7 @@ const TapSection = memo(
                                     }}
                                     onClick={() => {
                                       if (canScroll) {
-                                        window.location.href = `/bao-mau?scrollToCount=${yVal}&q=${qIdx + 1}&x=${relativeTapIdx + 1}&y=${tableIndex + 1}&g=${colIdx}`;
+                                        window.location.href = `/bao-mau?scrollToCount=${yVal}&q=${qIdx + 1}&x=${relativeTapIdx + 1}&y=${tableIndex + 1}&g=${colIdx}&row=${tableData.length}`;
                                       } else {
                                         window.location.href = `/bao-mau`;
                                       }

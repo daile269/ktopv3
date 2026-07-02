@@ -108,22 +108,25 @@ function ColorReportPage({ accessWarningContent = null }) {
       const xVal = params.get("x");
       const yVal = params.get("y");
       const gVal = params.get("g");
-
+      const rowVal = params.get("row");
+ 
       const container = document.getElementById("report-table-container");
-
+ 
       if (scrollToCount) {
         const num = parseInt(scrollToCount, 10);
         if (!isNaN(num) && num >= 16 && num <= 95) {
           let attempts = 0;
           const maxAttempts = 30; // 1.5 seconds maximum
-
+ 
           const tryScroll = () => {
             let scrolled = false;
-
-            console.log(`[SCROLL CHECK] Attempt ${attempts}: qVal=${qVal}, xVal=${xVal}, yVal=${yVal}, gVal=${gVal}, count=${num}`);
-
+ 
+            console.log(`[SCROLL CHECK] Attempt ${attempts}: qVal=${qVal}, xVal=${xVal}, yVal=${yVal}, gVal=${gVal}, count=${num}, rowVal=${rowVal}`);
+ 
             if (qVal && xVal && yVal && gVal) {
-              const selector = `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-${num}-"]`;
+              const selector = rowVal !== null
+                ? `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-${num}-"][id$="-${rowVal}"]`
+                : `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-${num}-"]`;
               const cellElement = document.querySelector(selector);
               console.log(`[SCROLL CHECK] Cell selector: "${selector}", Found:`, !!cellElement);
               if (cellElement) {
@@ -132,8 +135,15 @@ function ColorReportPage({ accessWarningContent = null }) {
                   block: "center",
                   inline: "center",
                 });
-
-                setOrangeCell({ qVal, xVal, yVal, gVal, c: num });
+ 
+                setOrangeCell({
+                  qVal,
+                  xVal,
+                  yVal,
+                  gVal,
+                  c: num,
+                  row: rowVal !== null ? parseInt(rowVal, 10) : null,
+                });
                 scrolled = true;
               }
             }
@@ -518,7 +528,7 @@ function ColorReportPage({ accessWarningContent = null }) {
               xVal: String(match.x),
               yVal: String(match.y),
               gVal: String(match.g),
-              cellId: `cell-report-${match.q}-${match.x}-${match.y}-${match.g}-${c}-${k}`,
+              cellId: `cell-report-${match.q}-${match.x}-${match.y}-${match.g}-${c}-${k}-${match.row}`,
             };
           }
         }
@@ -955,7 +965,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                               cell.xVal === orangeCell.xVal &&
                               cell.yVal === orangeCell.yVal &&
                               cell.gVal === orangeCell.gVal &&
-                              c === orangeCell.c;
+                              c === orangeCell.c &&
+                              (orangeCell.row === undefined || orangeCell.row === null || String(row.rowIdx) === String(orangeCell.row));
                             const isColHL = !!highlightedCols[`${c}-${k}`];
 
                             cellsArr.push(
