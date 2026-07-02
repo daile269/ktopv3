@@ -229,12 +229,10 @@ function ColorReportPage({ accessWarningContent = null }) {
     return dateStr;
   }, []);
 
-  // Tính toán dữ liệu báo màu tổng hợp chung cho toàn bộ NUM_QS Q
-  const reportRows = useMemo(() => {
-    if (isLoading) return [];
-
-    // 1. Tìm chỉ số dòng thực tế cuối cùng có dữ liệu (actualRows) trên cả 50 Tập
-    let actualRows = 0;
+  // 1. Tìm chỉ số dòng thực tế cuối cùng có dữ liệu (actualRows) trên cả 50 Tập
+  const actualRows = useMemo(() => {
+    if (isLoading) return 0;
+    let maxRow = 0;
     for (let i = ROWS - 1; i >= 0; i--) {
       let hasData =
         dateValues[i] !== "" &&
@@ -256,11 +254,26 @@ function ColorReportPage({ accessWarningContent = null }) {
         }
       }
       if (hasData) {
-        actualRows = i + 1;
+        maxRow = i + 1;
         break;
       }
     }
+    return maxRow;
+  }, [isLoading, dateValues, allQData]);
 
+  const activeRowCount = useMemo(() => {
+    let count = 0;
+    for (let r = 0; r < actualRows; r++) {
+      if (!deletedRows[r]) {
+        count++;
+      }
+    }
+    return count;
+  }, [actualRows, deletedRows]);
+
+  // Tính toán dữ liệu báo màu tổng hợp chung cho toàn bộ NUM_QS Q
+  const reportRows = useMemo(() => {
+    if (isLoading) return [];
     if (actualRows === 0) return [];
 
     // 2. Tính toán sẵn toàn bộ giá trị bảng T1 và T2 cho 50 Tập (100 bảng T)
@@ -504,6 +517,7 @@ function ColorReportPage({ accessWarningContent = null }) {
     return rows;
   }, [
     isLoading,
+    actualRows,
     dateValues,
     allQData,
     getLimitForCount,
@@ -642,6 +656,25 @@ function ColorReportPage({ accessWarningContent = null }) {
                 }}
               >
                 🔍 Về chọn dòng thông
+              </button>
+              <button
+                className="toolbar-btn"
+                disabled
+                style={{
+                  fontSize: "30px",
+                  padding: "6px 12px",
+                  backgroundColor: "#17a2b8",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "default",
+                  marginLeft: "5px",
+                  marginRight: "5px",
+                  fontWeight: "bold",
+                  opacity: 1,
+                }}
+              >
+                📊 Số dòng hiện tại: {activeRowCount}
               </button>
 
               {/* Ô Nhập Số & Nút Xem */}
