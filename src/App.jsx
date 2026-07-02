@@ -1733,7 +1733,7 @@ function App() {
       if (isPurple && nextY >= 16 && nextY <= 95 && globalTIndex) {
         const zVal = warningZMap[`${globalTIndex}-${col}-${rowIdx}`];
         if (zVal) {
-          cellVal = `${col}-${nextY}/${zVal}`;
+          cellVal = `${zVal}/${col}-${nextY}`;
         }
       }
 
