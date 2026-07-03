@@ -42,6 +42,8 @@ export const savePageData = async (
   allQData = undefined,
   pageLabel = "",
   tapsData = undefined,
+  colorReportRangeFrom = 0,
+  colorReportRangeTo = 0,
 ) => {
   try {
     const realId = getRealPageId(pageId);
@@ -61,6 +63,8 @@ export const savePageData = async (
         sourceSTTValues,
         purpleRangeFrom,
         purpleRangeTo,
+        colorReportRangeFrom,
+        colorReportRangeTo,
         keepLastNRows,
         allQData,
         pageLabel,

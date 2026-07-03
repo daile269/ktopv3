@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import "./App.css";
 import "./InputPage.css";
-import { loadPageData } from "./dataService";
+import { loadPageData, savePageData } from "./dataService";
 
 const ROWS = 5000;
 const TOTAL_TABLES = 2;
@@ -32,6 +32,13 @@ function ColorReportPage({ accessWarningContent = null }) {
   const [searchCount, setSearchCount] = useState("");
   const [highlightedRows, setHighlightedRows] = useState({});
   const [highlightedCols, setHighlightedCols] = useState({});
+
+  const [colorReportRangeFrom, setColorReportRangeFrom] = useState(0);
+  const [colorReportRangeTo, setColorReportRangeTo] = useState(0);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [tempRangeFrom, setTempRangeFrom] = useState("");
+  const [tempRangeTo, setTempRangeTo] = useState("");
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   const handleScrollToCount = useCallback(() => {
     const num = parseInt(searchCount, 10);
@@ -81,6 +88,10 @@ function ColorReportPage({ accessWarningContent = null }) {
         setAllQData(loadedAllQData);
         setPurpleRangeFrom(result.data.purpleRangeFrom || 0);
         setPurpleRangeTo(result.data.purpleRangeTo || 0);
+        setColorReportRangeFrom(result.data.colorReportRangeFrom || 0);
+        setColorReportRangeTo(result.data.colorReportRangeTo || 0);
+        setTempRangeFrom(result.data.colorReportRangeFrom || "");
+        setTempRangeTo(result.data.colorReportRangeTo || "");
       }
     } catch (err) {
       console.error("Error loading data:", err);
@@ -89,6 +100,64 @@ function ColorReportPage({ accessWarningContent = null }) {
       setIsLoading(false);
     }
   }, []);
+
+  const handleSaveSettings = useCallback(async () => {
+    setIsSavingSettings(true);
+    try {
+      const fromVal = tempRangeFrom === "" ? 0 : parseInt(tempRangeFrom, 10);
+      const toVal = tempRangeTo === "" ? 0 : parseInt(tempRangeTo, 10);
+      if (isNaN(fromVal) || isNaN(toVal) || fromVal < 0 || toVal < 0) {
+        alert("Vui lòng nhập khoảng giá trị số hợp lệ!");
+        setIsSavingSettings(false);
+        return;
+      }
+      if (fromVal > 0 && toVal > 0 && fromVal > toVal) {
+        alert("Giá trị 'Từ' không được lớn hơn 'Đến'!");
+        setIsSavingSettings(false);
+        return;
+      }
+
+      const result = await savePageData(
+        "q_all",
+        null,
+        null,
+        null,
+        dateValues,
+        deletedRows,
+        [],
+        purpleRangeFrom,
+        purpleRangeTo,
+        1000,
+        allQData,
+        "",
+        undefined,
+        fromVal,
+        toVal,
+      );
+
+      if (result.success) {
+        setColorReportRangeFrom(fromVal);
+        setColorReportRangeTo(toVal);
+        setIsSettingsOpen(false);
+        alert("Lưu cài đặt báo màu thành công!");
+      } else {
+        alert("Lỗi khi lưu cài đặt: " + result.error);
+      }
+    } catch (err) {
+      console.error("Error saving settings:", err);
+      alert("Lỗi khi lưu cài đặt: " + err.message);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  }, [
+    tempRangeFrom,
+    tempRangeTo,
+    dateValues,
+    deletedRows,
+    purpleRangeFrom,
+    purpleRangeTo,
+    allQData,
+  ]);
 
   useEffect(() => {
     loadData();
@@ -718,6 +787,27 @@ function ColorReportPage({ accessWarningContent = null }) {
               >
                 🔄 X màu d.c
               </button>
+              <button
+                className="toolbar-btn"
+                onClick={() => {
+                  setTempRangeFrom(colorReportRangeFrom || "");
+                  setTempRangeTo(colorReportRangeTo || "");
+                  setIsSettingsOpen(true);
+                }}
+                style={{
+                  fontSize: "30px",
+                  padding: "6px 12px",
+                  background: "#6f42c1",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  marginLeft: "5px",
+                  marginRight: "5px",
+                  fontWeight: "bold",
+                }}
+              >
+                ⚙️ Cài đặt báo màu
+              </button>
 
               {/* Ô Nhập Số & Nút Xem */}
               <input
@@ -967,6 +1057,20 @@ function ColorReportPage({ accessWarningContent = null }) {
                               cell.gVal === orangeCell.gVal &&
                               c === orangeCell.c &&
                               (orangeCell.row === undefined || orangeCell.row === null || String(row.rowIdx) === String(orangeCell.row));
+
+                            const inColorReportRange =
+                              hasValue &&
+                              colorReportRangeFrom > 0 &&
+                              colorReportRangeTo > 0 &&
+                              (() => {
+                                const parts = cell.value.split("/");
+                                if (parts.length === 3) {
+                                  const zNum = parseInt(parts[2], 10);
+                                  return !isNaN(zNum) && zNum >= colorReportRangeFrom && zNum <= colorReportRangeTo;
+                                }
+                                return false;
+                              })();
+
                             const isColHL = !!highlightedCols[`${c}-${k}`];
 
                             cellsArr.push(
@@ -999,11 +1103,13 @@ function ColorReportPage({ accessWarningContent = null }) {
                                     ? cell.isRedCell
                                       ? "#cf3535"
                                       : "#91d5ff"
-                                    : isColHL
-                                      ? "#ebf7ff"
-                                      : isRowHL
-                                        ? "#fcf8e3"
-                                        : "transparent",
+                                    : inColorReportRange
+                                      ? "#fff3cd"
+                                      : isColHL
+                                        ? "#ebf7ff"
+                                        : isRowHL
+                                          ? "#fcf8e3"
+                                          : "transparent",
                                   backgroundClip: "padding-box",
                                   color: isOrange
                                     ? cell.isRedCell
@@ -1051,6 +1157,148 @@ function ColorReportPage({ accessWarningContent = null }) {
           )}
         </div>
       </div>
+
+      {/* Modal Cài đặt khoảng báo màu cho Bảng báo màu */}
+      {isSettingsOpen && (
+        <div
+          className="modal-overlay"
+          onClick={() => setIsSettingsOpen(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "white",
+              padding: "30px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+              maxWidth: "500px",
+              width: "90%",
+            }}
+          >
+            <div className="modal-header" style={{ marginBottom: "20px" }}>
+              <h3 style={{ fontSize: "35px", margin: 0, fontWeight: "bold", color: "#333" }}>
+                ⚙️ Cài đặt khoảng báo màu Z
+              </h3>
+            </div>
+
+            <div className="modal-body">
+              <div className="form-group" style={{ marginBottom: "15px" }}>
+                <label
+                  style={{
+                    fontSize: "30px",
+                    fontWeight: "bold",
+                    marginBottom: "8px",
+                    display: "block",
+                  }}
+                >
+                  Từ:
+                </label>
+                <input
+                  type="number"
+                  value={tempRangeFrom}
+                  onChange={(e) => setTempRangeFrom(e.target.value)}
+                  placeholder="Nhập giá trị từ"
+                  min="0"
+                  disabled={isSavingSettings}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    fontSize: "30px",
+                    border: "2px solid #6f42c1",
+                    borderRadius: "6px",
+                    textAlign: "center",
+                  }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: "25px" }}>
+                <label
+                  style={{
+                    fontSize: "30px",
+                    fontWeight: "bold",
+                    marginBottom: "8px",
+                    display: "block",
+                  }}
+                >
+                  Đến:
+                </label>
+                <input
+                  type="number"
+                  value={tempRangeTo}
+                  onChange={(e) => setTempRangeTo(e.target.value)}
+                  placeholder="Nhập giá trị đến"
+                  min="0"
+                  disabled={isSavingSettings}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    fontSize: "30px",
+                    border: "2px solid #6f42c1",
+                    borderRadius: "6px",
+                    textAlign: "center",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div
+              className="modal-footer"
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+              }}
+            >
+              <button
+                className="btn-cancel"
+                onClick={() => setIsSettingsOpen(false)}
+                disabled={isSavingSettings}
+                style={{
+                  padding: "10px 20px",
+                  fontSize: "25px",
+                  fontWeight: "bold",
+                  border: "2px solid #ccc",
+                  backgroundColor: "#f5f5f5",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn-save"
+                onClick={handleSaveSettings}
+                disabled={isSavingSettings}
+                style={{
+                  padding: "10px 20px",
+                  fontSize: "25px",
+                  fontWeight: "bold",
+                  color: "white",
+                  backgroundColor: "#28a745",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                }}
+              >
+                {isSavingSettings ? "Đang lưu..." : "Lưu"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Styles inline fallback / local definition */}
       <style>{`

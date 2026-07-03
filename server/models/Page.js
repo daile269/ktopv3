@@ -58,6 +58,14 @@ const pageSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    colorReportRangeFrom: {
+      type: Number,
+      default: 0,
+    },
+    colorReportRangeTo: {
+      type: Number,
+      default: 0,
+    },
     keepLastNRows: {
       type: Number,
       default: 1000,
