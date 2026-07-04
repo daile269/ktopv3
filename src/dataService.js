@@ -185,6 +185,8 @@ export const loadPageData = async (pageId) => {
           sourceSTTValues: sourceSTTs,
           purpleRangeFrom: data.purpleRangeFrom || 0,
           purpleRangeTo: data.purpleRangeTo || 0,
+          colorReportRangeFrom: data.colorReportRangeFrom || 0,
+          colorReportRangeTo: data.colorReportRangeTo || 0,
           keepLastNRows: data.keepLastNRows || 1000,
           allQData: allQData,
           pageLabel: data.pageLabel || "",
