@@ -61,7 +61,7 @@ async function importData() {
     console.log('\n==================================================');
     console.log('✅ ĐÃ NẠP THÀNH CÔNG TOÀN BỘ DỮ LIỆU VÀO DATABASE!');
     console.log('==================================================\n');
-    console.log('Bây giờ anh có thể mở ứng dụng mới lên kiểm tra dữ liệu Tập 1 ở Q1-Q5 rồi ạ!');
+    console.log('Bây giờ anh có thể mở ứng dụng mới lên kiểm tra dữ liệu Tập 1 ở Q1-Q4 rồi ạ!');
 
   } catch (error) {
     console.error('❌ Lỗi trong quá trình nạp dữ liệu:', error);
