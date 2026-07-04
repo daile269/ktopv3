@@ -1123,7 +1123,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                       ? "#cf3535"
                                       : "#91d5ff"
                                     : inColorReportRange
-                                      ? "#fff3cd"
+                                      ? "#f8c507bd"
                                       : isColHL
                                         ? "#ebf7ff"
                                         : isRowHL
