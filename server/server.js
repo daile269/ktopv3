@@ -136,6 +136,7 @@ app.get("/api/pages/:pageId", async (req, res) => {
         purpleRangeTo: page.purpleRangeTo || 0,
         colorReportRangeFrom: page.colorReportRangeFrom || 0,
         colorReportRangeTo: page.colorReportRangeTo || 0,
+        colorReportRanges: page.colorReportRanges || {},
         keepLastNRows: typeof page.keepLastNRows === "number" ? page.keepLastNRows : 1000,
         allQData,
         pageLabel: page.pageLabel || "",
@@ -171,6 +172,7 @@ app.post("/api/pages/:pageId", async (req, res) => {
       purpleRangeTo,
       colorReportRangeFrom,
       colorReportRangeTo,
+      colorReportRanges,
       keepLastNRows,
       allQData,
       pageLabel,
@@ -307,6 +309,7 @@ app.post("/api/pages/:pageId", async (req, res) => {
     if (req.body.purpleRangeTo !== undefined) updateData.purpleRangeTo = purpleRangeTo || 0;
     if (req.body.colorReportRangeFrom !== undefined) updateData.colorReportRangeFrom = colorReportRangeFrom || 0;
     if (req.body.colorReportRangeTo !== undefined) updateData.colorReportRangeTo = colorReportRangeTo || 0;
+    if (req.body.colorReportRanges !== undefined) updateData.colorReportRanges = colorReportRanges || {};
     if (req.body.keepLastNRows !== undefined) updateData.keepLastNRows = typeof keepLastNRows === "number" ? keepLastNRows : 1000;
     if (req.body.allQData !== undefined) updateData.allQData = trimmedAllQData;
     if (req.body.pageLabel !== undefined) updateData.pageLabel = pageLabel || "";

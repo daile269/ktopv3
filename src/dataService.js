@@ -187,6 +187,7 @@ export const loadPageData = async (pageId) => {
           purpleRangeTo: data.purpleRangeTo || 0,
           colorReportRangeFrom: data.colorReportRangeFrom || 0,
           colorReportRangeTo: data.colorReportRangeTo || 0,
+          colorReportRanges: data.colorReportRanges || {},
           keepLastNRows: data.keepLastNRows || 1000,
           allQData: allQData,
           pageLabel: data.pageLabel || "",
@@ -229,10 +230,9 @@ export const deletePageData = async (pageId) => {
 /**
  * Lưu cài đặt báo màu Z cho Bảng báo màu
  * @param {string} pageId - ID trang (vd: 'q_all')
- * @param {number} colorReportRangeFrom - Giá trị từ
- * @param {number} colorReportRangeTo - Giá trị đến
+ * @param {Object} colorReportRanges - Bản đồ khoảng báo màu theo từng số đếm
  */
-export const saveColorReportSettings = async (pageId, colorReportRangeFrom, colorReportRangeTo) => {
+export const saveColorReportSettings = async (pageId, colorReportRanges) => {
   try {
     const realId = getRealPageId(pageId);
     console.log(`💾 Saving Color Report Settings for REAL ID: ${realId}`);
@@ -242,8 +242,7 @@ export const saveColorReportSettings = async (pageId, colorReportRangeFrom, colo
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        colorReportRangeFrom,
-        colorReportRangeTo,
+        colorReportRanges,
       }),
     });
 

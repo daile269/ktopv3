@@ -33,8 +33,8 @@ function ColorReportPage({ accessWarningContent = null }) {
   const [highlightedRows, setHighlightedRows] = useState({});
   const [highlightedCols, setHighlightedCols] = useState({});
 
-  const [colorReportRangeFrom, setColorReportRangeFrom] = useState(0);
-  const [colorReportRangeTo, setColorReportRangeTo] = useState(0);
+  const [colorReportRanges, setColorReportRanges] = useState({});
+  const [selectedCountNum, setSelectedCountNum] = useState(16);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [tempRangeFrom, setTempRangeFrom] = useState("");
   const [tempRangeTo, setTempRangeTo] = useState("");
@@ -88,10 +88,7 @@ function ColorReportPage({ accessWarningContent = null }) {
         setAllQData(loadedAllQData);
         setPurpleRangeFrom(result.data.purpleRangeFrom || 0);
         setPurpleRangeTo(result.data.purpleRangeTo || 0);
-        setColorReportRangeFrom(result.data.colorReportRangeFrom || 0);
-        setColorReportRangeTo(result.data.colorReportRangeTo || 0);
-        setTempRangeFrom(result.data.colorReportRangeFrom || "");
-        setTempRangeTo(result.data.colorReportRangeTo || "");
+        setColorReportRanges(result.data.colorReportRanges || {});
       }
     } catch (err) {
       console.error("Error loading data:", err);
@@ -117,17 +114,20 @@ function ColorReportPage({ accessWarningContent = null }) {
         return;
       }
 
+      const updatedRanges = {
+        ...colorReportRanges,
+        [selectedCountNum]: { from: fromVal, to: toVal },
+      };
+
       const result = await saveColorReportSettings(
         "q_all",
-        fromVal,
-        toVal,
+        updatedRanges,
       );
 
       if (result.success) {
-        setColorReportRangeFrom(fromVal);
-        setColorReportRangeTo(toVal);
+        setColorReportRanges(updatedRanges);
         setIsSettingsOpen(false);
-        alert("Lưu cài đặt báo màu thành công!");
+        alert(`Lưu cài đặt báo màu cho số đếm ${selectedCountNum} thành công!`);
       } else {
         alert("Lỗi khi lưu cài đặt: " + result.error);
       }
@@ -140,11 +140,8 @@ function ColorReportPage({ accessWarningContent = null }) {
   }, [
     tempRangeFrom,
     tempRangeTo,
-    dateValues,
-    deletedRows,
-    purpleRangeFrom,
-    purpleRangeTo,
-    allQData,
+    colorReportRanges,
+    selectedCountNum,
   ]);
 
   useEffect(() => {
@@ -606,6 +603,7 @@ function ColorReportPage({ accessWarningContent = null }) {
     getLayoutLimitForCount,
     formatDate,
     deletedRows,
+    colorReportRanges,
   ]);
 
   return (
@@ -775,58 +773,7 @@ function ColorReportPage({ accessWarningContent = null }) {
               >
                 🔄 X màu d.c
               </button>
-              <div
-                className="toolbar-group"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  border: "3px solid #007bff",
-                  borderRadius: "8px",
-                  padding: "10px 12px",
-                  backgroundColor: "#e7f3ff",
-                  marginLeft: "5px",
-                  marginRight: "5px",
-                }}
-              >
-                <label style={{ fontSize: "25px", fontWeight: "bold" }}>
-                  Báo màu:
-                </label>
-                <span
-                  style={{
-                    fontSize: "25px",
-                    fontWeight: "600",
-                    color: "#333",
-                    padding: "6px 12px",
-                    backgroundColor: "#fff",
-                    border: "2px solid #ffc107",
-                    borderRadius: "4px",
-                    minWidth: "120px",
-                    textAlign: "center",
-                  }}
-                >
-                  {colorReportRangeFrom || 0} - {colorReportRangeTo || 0}
-                </span>
-                <button
-                  onClick={() => {
-                    setTempRangeFrom(colorReportRangeFrom || "");
-                    setTempRangeTo(colorReportRangeTo || "");
-                    setIsSettingsOpen(true);
-                  }}
-                  className="toolbar-button"
-                  style={{
-                    fontSize: "25px",
-                    padding: "6px 12px",
-                    backgroundColor: "#6c757d",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                >
-                  ⚙️
-                </button>
-              </div>
+
 
               {/* Ô Nhập Số & Nút Xem */}
               <input
@@ -971,9 +918,12 @@ function ColorReportPage({ accessWarningContent = null }) {
                           id={`col-count-${c}`}
                           key={c}
                           colSpan={limit}
-                          onClick={() => handleMainColClick(c)}
+                          onClick={() => {
+                            handleMainColClick(c);
+                            setSelectedCountNum(c);
+                          }}
                           style={{
-                            padding: "12px",
+                            padding: "8px 12px",
                             border: "2px solid #333",
                             borderRight: "6px solid #fd7e14",
                             minWidth: `${limit * 250}px`,
@@ -981,7 +931,65 @@ function ColorReportPage({ accessWarningContent = null }) {
                             cursor: "pointer",
                           }}
                         >
-                          {c}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "10px",
+                            }}
+                          >
+                            <span style={{ fontSize: "35px", fontWeight: "bold" }}>{c}</span>
+                            {c <= 75 && (
+                              <div
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  padding: "2px 6px",
+                                  backgroundColor: "#fff",
+                                  border: "1px solid #ffc107",
+                                  borderRadius: "4px",
+                                  color: "#333",
+                                  fontSize: "20px",
+                                  fontWeight: "normal",
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span>
+                                  Báo màu: {colorReportRanges[c]
+                                    ? `${colorReportRanges[c].from}-${colorReportRanges[c].to}`
+                                    : "0-0"}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedCountNum(c);
+                                    const currentRange = colorReportRanges[c] || { from: 0, to: 0 };
+                                    setTempRangeFrom(currentRange.from === 0 ? "" : String(currentRange.from));
+                                    setTempRangeTo(currentRange.to === 0 ? "" : String(currentRange.to));
+                                    setIsSettingsOpen(true);
+                                  }}
+                                  className="toolbar-button"
+                                  style={{
+                                    fontSize: "18px",
+                                    padding: "2px 4px",
+                                    backgroundColor: "#6c757d",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    cursor: "pointer",
+                                    marginLeft: "2px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  ⚙️
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </th>
                       );
                     })}
@@ -1004,7 +1012,10 @@ function ColorReportPage({ accessWarningContent = null }) {
                         subHeaders.push(
                           <th
                             key={`${c}-${k}`}
-                            onClick={() => handleColClick(c, k - 1)}
+                            onClick={() => {
+                               handleColClick(c, k - 1);
+                               setSelectedCountNum(c);
+                             }}
                             style={{
                               padding: "8px 6px",
                               border: "2px solid #333",
@@ -1077,15 +1088,16 @@ function ColorReportPage({ accessWarningContent = null }) {
                               c === orangeCell.c &&
                               (orangeCell.row === undefined || orangeCell.row === null || String(row.rowIdx) === String(orangeCell.row));
 
+                            const rangeForCol = colorReportRanges[c] || { from: 0, to: 0 };
                             const inColorReportRange =
                               hasValue &&
-                              colorReportRangeFrom > 0 &&
-                              colorReportRangeTo > 0 &&
+                              rangeForCol.from > 0 &&
+                              rangeForCol.to > 0 &&
                               (() => {
                                 const parts = cell.value.split("/");
                                 if (parts.length === 3) {
                                   const zNum = parseInt(parts[2], 10);
-                                  return !isNaN(zNum) && zNum >= colorReportRangeFrom && zNum <= colorReportRangeTo;
+                                  return !isNaN(zNum) && zNum >= rangeForCol.from && zNum <= rangeForCol.to;
                                 }
                                 return false;
                               })();
@@ -1213,7 +1225,7 @@ function ColorReportPage({ accessWarningContent = null }) {
           >
             <div className="modal-header" style={{ marginBottom: "20px" }}>
               <h3 style={{ fontSize: "35px", margin: 0, fontWeight: "bold", color: "#333" }}>
-                ⚙️ Cài đặt khoảng báo màu Z
+                ⚙️ Cài đặt báo màu Z cho số {selectedCountNum}
               </h3>
             </div>
 
