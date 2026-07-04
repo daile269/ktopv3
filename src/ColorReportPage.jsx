@@ -1099,8 +1099,12 @@ function ColorReportPage({ accessWarningContent = null }) {
                                 className={
                                   hasValue
                                     ? cell.isRedCell
-                                      ? "cell-new cell-red-warning"
-                                      : "cell-new"
+                                      ? inColorReportRange
+                                        ? "cell-new cell-red-warning cell-warning-yellow"
+                                        : "cell-new cell-red-warning"
+                                      : inColorReportRange
+                                        ? "cell-new cell-warning-yellow"
+                                        : "cell-new"
                                     : ""
                                 }
                                 style={{
@@ -1349,9 +1353,17 @@ function ColorReportPage({ accessWarningContent = null }) {
           background-color: #f8c507 !important;
           color: #333 !important;
         }
+        .cell-new.cell-warning-yellow:hover {
+          background-color: #ccbc7a !important;
+          color: #333 !important;
+        }
         .cell-new.cell-red-warning:hover {
           background-color: #cf3535 !important;
           color: white !important;
+        }
+        .cell-new.cell-red-warning.cell-warning-yellow:hover {
+          background-color: #ccbc7a !important;
+          color: #cf3535 !important;
         }
       `}</style>
     </div>
