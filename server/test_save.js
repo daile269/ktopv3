@@ -27,7 +27,7 @@ async function run() {
 
     const selectedIndices = [50, 40];
     const transferDate = '2025-11-25';
-    const NUM_QS = 6;
+    const NUM_QS = 4;
     const ROWS = 5000;
 
     let activeAllQData = JSON.parse(JSON.stringify(calcPage.allQData || []));

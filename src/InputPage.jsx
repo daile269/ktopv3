@@ -172,7 +172,7 @@ const TaskRow = memo(
 const MIN_ROWS = 5000;
 const ROWS = MIN_ROWS;
 
-const NUM_QS = 6;
+const NUM_QS = 4;
 const qOffset = import.meta.env.VITE_SITE_ID === "site_b" ? NUM_QS : 0;
 
 function InputPage({ accessWarningContent = null }) {

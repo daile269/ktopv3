@@ -14,7 +14,7 @@ import InputPage from "./InputPage";
 import SelectRowsPage from "./SelectRowsPage";
 import ColorReportPage from "./ColorReportPage";
 
-const NUM_QS = 6;
+const NUM_QS = 4;
 
 const TapSection = memo(
   ({

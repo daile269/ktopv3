@@ -6,7 +6,7 @@ import { loadPageData, saveColorReportSettings } from "./dataService";
 const ROWS = 5000;
 const TOTAL_TABLES = 2;
 
-const NUM_QS = 6;
+const NUM_QS = 4;
 
 function ColorReportPage({ accessWarningContent = null }) {
   const [dateValues, setDateValues] = useState(Array(ROWS).fill(""));
