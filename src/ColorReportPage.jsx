@@ -787,27 +787,58 @@ function ColorReportPage({ accessWarningContent = null }) {
               >
                 🔄 X màu d.c
               </button>
-              <button
-                className="toolbar-btn"
-                onClick={() => {
-                  setTempRangeFrom(colorReportRangeFrom || "");
-                  setTempRangeTo(colorReportRangeTo || "");
-                  setIsSettingsOpen(true);
-                }}
+              <div
+                className="toolbar-group"
                 style={{
-                  fontSize: "30px",
-                  padding: "6px 12px",
-                  background: "#6f42c1",
-                  color: "white",
-                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  border: "3px solid #ff9800",
                   borderRadius: "8px",
+                  padding: "10px 12px",
+                  backgroundColor: "#fff7ed",
                   marginLeft: "5px",
                   marginRight: "5px",
-                  fontWeight: "bold",
                 }}
               >
-                ⚙️ Cài đặt báo màu
-              </button>
+                <label style={{ fontSize: "25px", fontWeight: "bold", color: "#c2410c" }}>
+                  Báo màu:
+                </label>
+                <span
+                  style={{
+                    fontSize: "25px",
+                    fontWeight: "700",
+                    color: "#333",
+                    padding: "6px 12px",
+                    backgroundColor: "#fec80a",
+                    border: "2px solid #ea580c",
+                    borderRadius: "4px",
+                    minWidth: "120px",
+                    textAlign: "center",
+                  }}
+                >
+                  {colorReportRangeFrom || 0} - {colorReportRangeTo || 0}
+                </span>
+                <button
+                  onClick={() => {
+                    setTempRangeFrom(colorReportRangeFrom || "");
+                    setTempRangeTo(colorReportRangeTo || "");
+                    setIsSettingsOpen(true);
+                  }}
+                  className="toolbar-button"
+                  style={{
+                    fontSize: "25px",
+                    padding: "6px 12px",
+                    backgroundColor: "#6c757d",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                >
+                  ⚙️
+                </button>
+              </div>
 
               {/* Ô Nhập Số & Nút Xem */}
               <input
