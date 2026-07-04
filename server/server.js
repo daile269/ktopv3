@@ -294,26 +294,29 @@ app.post("/api/pages/:pageId", async (req, res) => {
           })
         : undefined;
 
+    // Build update object dynamically to support partial updates
+    const updateData = {};
+    if (req.body.aValues !== undefined) updateData.aValues = trimmedA;
+    if (req.body.bValues !== undefined) updateData.bValues = trimmedB;
+    if (req.body.tapsData !== undefined) updateData.tapsData = trimmedTaps;
+    if (req.body.zValues !== undefined) updateData.zValues = trimmedZ;
+    if (req.body.dateValues !== undefined) updateData.dateValues = trimmedDates;
+    if (req.body.deletedRows !== undefined) updateData.deletedRows = trimmedDeleted;
+    if (req.body.sourceSTTValues !== undefined) updateData.sourceSTTValues = trimmedSourceSTT;
+    if (req.body.purpleRangeFrom !== undefined) updateData.purpleRangeFrom = purpleRangeFrom || 0;
+    if (req.body.purpleRangeTo !== undefined) updateData.purpleRangeTo = purpleRangeTo || 0;
+    if (req.body.colorReportRangeFrom !== undefined) updateData.colorReportRangeFrom = colorReportRangeFrom || 0;
+    if (req.body.colorReportRangeTo !== undefined) updateData.colorReportRangeTo = colorReportRangeTo || 0;
+    if (req.body.keepLastNRows !== undefined) updateData.keepLastNRows = typeof keepLastNRows === "number" ? keepLastNRows : 1000;
+    if (req.body.allQData !== undefined) updateData.allQData = trimmedAllQData;
+    if (req.body.pageLabel !== undefined) updateData.pageLabel = pageLabel || "";
+    updateData.updatedAt = new Date();
+
     // Update or create page
     const page = await Page.findOneAndUpdate(
       { pageId },
       {
-        pageId,
-        aValues: trimmedA,
-        bValues: trimmedB,
-        tapsData: trimmedTaps,
-        zValues: trimmedZ,
-        dateValues: trimmedDates,
-        deletedRows: trimmedDeleted,
-        sourceSTTValues: trimmedSourceSTT,
-        purpleRangeFrom: purpleRangeFrom || 0,
-        purpleRangeTo: purpleRangeTo || 0,
-        colorReportRangeFrom: colorReportRangeFrom || 0,
-        colorReportRangeTo: colorReportRangeTo || 0,
-        keepLastNRows: typeof keepLastNRows === "number" ? keepLastNRows : 1000,
-        allQData: trimmedAllQData,
-        pageLabel: pageLabel || "",
-        updatedAt: new Date(),
+        $set: updateData
       },
       {
         upsert: true,

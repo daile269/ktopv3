@@ -223,3 +223,37 @@ export const deletePageData = async (pageId) => {
     return { success: false, error: error.message };
   }
 };
+
+/**
+ * Lưu cài đặt báo màu Z cho Bảng báo màu
+ * @param {string} pageId - ID trang (vd: 'q_all')
+ * @param {number} colorReportRangeFrom - Giá trị từ
+ * @param {number} colorReportRangeTo - Giá trị đến
+ */
+export const saveColorReportSettings = async (pageId, colorReportRangeFrom, colorReportRangeTo) => {
+  try {
+    const realId = getRealPageId(pageId);
+    console.log(`💾 Saving Color Report Settings for REAL ID: ${realId}`);
+    const response = await fetch(`${API_URL}/api/pages/${realId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        colorReportRangeFrom,
+        colorReportRangeTo,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to save settings");
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Lỗi khi lưu cài đặt báo màu:", error);
+    return { success: false, error: error.message };
+  }
+};

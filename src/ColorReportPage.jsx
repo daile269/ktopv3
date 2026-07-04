@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import "./App.css";
 import "./InputPage.css";
-import { loadPageData, savePageData } from "./dataService";
+import { loadPageData, saveColorReportSettings } from "./dataService";
 
 const ROWS = 5000;
 const TOTAL_TABLES = 2;
@@ -117,20 +117,8 @@ function ColorReportPage({ accessWarningContent = null }) {
         return;
       }
 
-      const result = await savePageData(
+      const result = await saveColorReportSettings(
         "q_all",
-        null,
-        null,
-        null,
-        dateValues,
-        deletedRows,
-        [],
-        purpleRangeFrom,
-        purpleRangeTo,
-        1000,
-        allQData,
-        "",
-        undefined,
         fromVal,
         toVal,
       );
@@ -793,25 +781,25 @@ function ColorReportPage({ accessWarningContent = null }) {
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
-                  border: "3px solid #ff9800",
+                  border: "3px solid #007bff",
                   borderRadius: "8px",
                   padding: "10px 12px",
-                  backgroundColor: "#fff7ed",
+                  backgroundColor: "#e7f3ff",
                   marginLeft: "5px",
                   marginRight: "5px",
                 }}
               >
-                <label style={{ fontSize: "25px", fontWeight: "bold", color: "#c2410c" }}>
+                <label style={{ fontSize: "25px", fontWeight: "bold" }}>
                   Báo màu:
                 </label>
                 <span
                   style={{
                     fontSize: "25px",
-                    fontWeight: "700",
+                    fontWeight: "600",
                     color: "#333",
                     padding: "6px 12px",
-                    backgroundColor: "#fec80a",
-                    border: "2px solid #ea580c",
+                    backgroundColor: "#fff",
+                    border: "2px solid #ffc107",
                     borderRadius: "4px",
                     minWidth: "120px",
                     textAlign: "center",
@@ -1248,7 +1236,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                     width: "100%",
                     padding: "12px",
                     fontSize: "30px",
-                    border: "2px solid #6f42c1",
+                    border: "2px solid #ffc107",
                     borderRadius: "6px",
                     textAlign: "center",
                   }}
@@ -1277,11 +1265,25 @@ function ColorReportPage({ accessWarningContent = null }) {
                     width: "100%",
                     padding: "12px",
                     fontSize: "30px",
-                    border: "2px solid #6f42c1",
+                    border: "2px solid #ffc107",
                     borderRadius: "6px",
                     textAlign: "center",
                   }}
                 />
+              </div>
+
+              <div
+                style={{
+                  marginTop: "20px",
+                  padding: "12px",
+                  backgroundColor: "#fff3cd",
+                  border: "1px solid #ffc107",
+                  borderRadius: "6px",
+                  fontSize: "25px",
+                  color: "#856404",
+                }}
+              >
+                💡 <strong>Lưu ý:</strong> Các ô có giá trị Z trong khoảng này sẽ được tô màu vàng báo hiệu.
               </div>
             </div>
 
