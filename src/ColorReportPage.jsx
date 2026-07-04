@@ -1044,7 +1044,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                         key={row.rowIdx}
                         style={{
                           backgroundColor: isRowHL
-                            ? "#ffe082"
+                            ? "#ffe0b2"
                             : index % 2 === 0 ? "#ffffff" : "#fcfcff",
                           borderBottom: "2px solid #333",
                           textAlign: "center",
@@ -1143,7 +1143,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                       : isColHL
                                         ? "#b3d7ff"
                                         : isRowHL
-                                          ? "#ffe082"
+                                          ? "#ffe0b2"
                                           : "transparent",
                                   backgroundClip: "padding-box",
                                   color: isOrange
