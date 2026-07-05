@@ -606,6 +606,45 @@ function ColorReportPage({ accessWarningContent = null }) {
     colorReportRanges,
   ]);
 
+  // Quét dòng tương lai để xem số đếm nào có ô báo màu vàng
+  const futureWarningCols = useMemo(() => {
+    const warningSet = new Set();
+    const fRow = reportRows.find((r) => r.isFuture);
+    if (!fRow) return warningSet;
+
+    for (let c = 16; c <= 75; c++) {
+      const rangeForCol = colorReportRanges[c];
+      if (!rangeForCol || rangeForCol.from <= 0 || rangeForCol.to <= 0) continue;
+
+      const limit = getLayoutLimitForCount(c);
+      for (let k = 0; k < limit; k++) {
+        const cell = fRow.cells[`${c}-${k}`];
+        if (cell && !cell.isPlaceholder && cell.value && cell.value !== "||" && cell.value !== "") {
+          const parts = cell.value.split("/");
+          if (parts.length === 3) {
+            const zNum = parseInt(parts[2], 10);
+            if (!isNaN(zNum) && zNum >= rangeForCol.from && zNum <= rangeForCol.to) {
+              warningSet.add(c);
+              break; // chỉ cần 1 ô trong cột c báo vàng là đủ
+            }
+          }
+        }
+      }
+    }
+    return warningSet;
+  }, [reportRows, colorReportRanges, getLayoutLimitForCount]);
+
+  const handleScrollToCol = useCallback((c) => {
+    const el = document.getElementById(`col-count-${c}`);
+    if (el) {
+      el.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+    }
+  }, []);
+
   return (
     <div
       style={{
@@ -856,18 +895,65 @@ function ColorReportPage({ accessWarningContent = null }) {
               {error}
             </div>
           ) : (
-            <div
-              id="report-table-container"
-              style={{
-                flex: 1,
-                border: "2px solid #6f42c1",
-                borderRadius: "8px",
-                overflowX: "auto",
-                overflowY: "auto",
-                boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
-                backgroundColor: "white",
-              }}
-            >
+            <>
+              {/* Hàng nút cuộn nhanh từ 16 đến 95 */}
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  marginBottom: "15px",
+                  padding: "12px",
+                  backgroundColor: "#f3f0f7",
+                  borderRadius: "8px",
+                  border: "2px solid #6f42c1",
+                  maxHeight: "150px",
+                  overflowY: "auto",
+                  boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
+                }}
+              >
+                {cols.map((c) => {
+                  const isWarning = futureWarningCols.has(c);
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => handleScrollToCol(c)}
+                      style={{
+                        minWidth: "48px",
+                        height: "44px",
+                        fontSize: "20px",
+                        fontWeight: "bold",
+                        border: isWarning ? "2px solid #ff9800" : "1.5px solid #ccc",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        backgroundColor: isWarning ? "#f8c507bd" : "#ffffff",
+                        color: "#333",
+                        transition: "all 0.15s ease",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                      }}
+                      title={isWarning ? `Số đếm ${c} có cảnh báo vàng ở dòng tương lai` : `Cuộn tới cột số đếm ${c}`}
+                    >
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                id="report-table-container"
+                style={{
+                  flex: 1,
+                  border: "2px solid #6f42c1",
+                  borderRadius: "8px",
+                  overflowX: "auto",
+                  overflowY: "auto",
+                  boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
+                  backgroundColor: "white",
+                }}
+              >
               <table
                 style={{
                   borderCollapse: "collapse",
@@ -1194,7 +1280,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                 </tbody>
               </table>
             </div>
-          )}
+          </>
+        )}
         </div>
       </div>
 
