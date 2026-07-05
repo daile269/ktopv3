@@ -589,6 +589,7 @@ body {
   box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.4) !important;
 }
 
+
 /* XÓA tất cả các rule thay đổi background cũ */
 /* Giữ màu gốc cho tất cả các ô khi highlight */
 
@@ -1040,4 +1041,26 @@ body {
 .tap-section.volume-odd .data-cell.highlighted-cell,
 .tap-section.volume-even .data-cell.highlighted-cell {
   background-color: #fff59d !important;
+}
+
+/* Đảm bảo dòng tương lai trong cả Tập lẻ (volume-odd) và Tập chẵn (volume-even) đều có màu hồng nhạt */
+.tap-section.volume-odd .future-row td.future-cell,
+.tap-section.volume-even .future-row td.future-cell,
+.future-row td.future-cell {
+  background-color: #ffe3e8 !important;
+}
+
+/* Đảm bảo ô vàng cảnh báo vẫn hiển thị đè lên nền hồng của dòng tương lai */
+.tap-section.volume-odd .future-row td.future-cell.purple,
+.tap-section.volume-even .future-row td.future-cell.purple,
+.future-row td.future-cell.purple,
+.tap-section.volume-odd .future-row td.future-cell.purple-red,
+.tap-section.volume-even .future-row td.future-cell.purple-red,
+.future-row td.future-cell.purple-red {
+  background-color: #f8c507bd !important;
+}
+
+/* Làm trong suốt phần nền của input bên trong dòng tương lai */
+.future-row .grid-input {
+  background-color: transparent !important;
 }

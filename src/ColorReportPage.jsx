@@ -1045,7 +1045,9 @@ function ColorReportPage({ accessWarningContent = null }) {
                         style={{
                           backgroundColor: isRowHL
                             ? "#ffe0b2"
-                            : index % 2 === 0 ? "#ffffff" : "#fcfcff",
+                            : row.isFuture
+                              ? "#ffe3e8"
+                              : index % 2 === 0 ? "#ffffff" : "#fcfcff",
                           borderBottom: "2px solid #333",
                           textAlign: "center",
                         }}
@@ -1060,6 +1062,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                             color: "#6f42c1",
                             fontSize: "35px",
                             cursor: "pointer",
+                            fontStyle: row.isFuture ? "italic" : "normal",
                           }}
                         >
                           {row.date}
@@ -1144,7 +1147,9 @@ function ColorReportPage({ accessWarningContent = null }) {
                                         ? "#b3d7ff"
                                         : isRowHL
                                           ? "#ffe0b2"
-                                          : "transparent",
+                                          : row.isFuture
+                                            ? "#ffe3e8"
+                                            : "transparent",
                                   backgroundClip: "padding-box",
                                   color: isOrange
                                     ? cell.isRedCell
