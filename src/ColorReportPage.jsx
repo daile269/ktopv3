@@ -42,8 +42,8 @@ function ColorReportPage({ accessWarningContent = null }) {
 
   const handleScrollToCount = useCallback(() => {
     const num = parseInt(searchCount, 10);
-    if (isNaN(num) || num < 16 || num > 95) {
-      alert("Vui lòng nhập số đếm từ 16 đến 95!");
+    if (isNaN(num) || num < 16 || num > 55) {
+      alert("Vui lòng nhập số đếm từ 16 đến 55!");
       return;
     }
     const element = document.getElementById(`col-count-${num}`);
@@ -57,7 +57,7 @@ function ColorReportPage({ accessWarningContent = null }) {
       element.style.transition = "background-color 0.3s ease";
       element.style.backgroundColor = "#fd7e14";
       setTimeout(() => {
-        element.style.backgroundColor = "#6f42c1";
+        element.style.backgroundColor = "#3f51b5";
       }, 1000);
     } else {
       alert(`Không tìm thấy cột số đếm ${num}`);
@@ -160,7 +160,7 @@ function ColorReportPage({ accessWarningContent = null }) {
 
       if (scrollToCount) {
         const num = parseInt(scrollToCount, 10);
-        if (!isNaN(num) && num >= 16 && num <= 95) {
+        if (!isNaN(num) && num >= 16 && num <= 55) {
           let attempts = 0;
           const maxAttempts = 30; // 1.5 seconds maximum
 
@@ -216,7 +216,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                 element.style.transition = "background-color 0.3s ease";
                 element.style.backgroundColor = "#91d5ff";
                 setTimeout(() => {
-                  element.style.backgroundColor = "#6f42c1";
+                  element.style.backgroundColor = "#3f51b5";
                 }, 1000);
                 scrolled = true;
               }
@@ -246,10 +246,10 @@ function ColorReportPage({ accessWarningContent = null }) {
     }
   }, [isLoading]);
 
-  // Mảng các cột số đếm luôn hiển thị từ 16 đến 95
+  // Mảng các cột số đếm luôn hiển thị từ 16 đến 55
   const cols = useMemo(() => {
     const arr = [];
-    for (let c = 16; c <= 95; c++) {
+    for (let c = 16; c <= 55; c++) {
       arr.push(c);
     }
     return arr;
@@ -842,7 +842,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                     handleScrollToCount();
                   }
                 }}
-                placeholder="16-95"
+                placeholder="16-55"
                 style={{
                   width: "140px",
                   fontSize: "30px",
