@@ -119,10 +119,7 @@ function ColorReportPage({ accessWarningContent = null }) {
         [selectedCountNum]: { from: fromVal, to: toVal },
       };
 
-      const result = await saveColorReportSettings(
-        "q_all",
-        updatedRanges,
-      );
+      const result = await saveColorReportSettings("q_all", updatedRanges);
 
       if (result.success) {
         setColorReportRanges(updatedRanges);
@@ -137,12 +134,7 @@ function ColorReportPage({ accessWarningContent = null }) {
     } finally {
       setIsSavingSettings(false);
     }
-  }, [
-    tempRangeFrom,
-    tempRangeTo,
-    colorReportRanges,
-    selectedCountNum,
-  ]);
+  }, [tempRangeFrom, tempRangeTo, colorReportRanges, selectedCountNum]);
 
   useEffect(() => {
     loadData();
@@ -163,33 +155,39 @@ function ColorReportPage({ accessWarningContent = null }) {
       const yVal = params.get("y");
       const gVal = params.get("g");
       const rowVal = params.get("row");
- 
+
       const container = document.getElementById("report-table-container");
- 
+
       if (scrollToCount) {
         const num = parseInt(scrollToCount, 10);
         if (!isNaN(num) && num >= 16 && num <= 95) {
           let attempts = 0;
           const maxAttempts = 30; // 1.5 seconds maximum
- 
+
           const tryScroll = () => {
             let scrolled = false;
- 
-            console.log(`[SCROLL CHECK] Attempt ${attempts}: qVal=${qVal}, xVal=${xVal}, yVal=${yVal}, gVal=${gVal}, count=${num}, rowVal=${rowVal}`);
- 
+
+            console.log(
+              `[SCROLL CHECK] Attempt ${attempts}: qVal=${qVal}, xVal=${xVal}, yVal=${yVal}, gVal=${gVal}, count=${num}, rowVal=${rowVal}`,
+            );
+
             if (qVal && xVal && yVal && gVal) {
-              const selector = rowVal !== null
-                ? `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-${num}-"][id$="-${rowVal}"]`
-                : `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-${num}-"]`;
+              const selector =
+                rowVal !== null
+                  ? `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-${num}-"][id$="-${rowVal}"]`
+                  : `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-${num}-"]`;
               const cellElement = document.querySelector(selector);
-              console.log(`[SCROLL CHECK] Cell selector: "${selector}", Found:`, !!cellElement);
+              console.log(
+                `[SCROLL CHECK] Cell selector: "${selector}", Found:`,
+                !!cellElement,
+              );
               if (cellElement) {
                 cellElement.scrollIntoView({
                   behavior: "smooth",
                   block: "center",
                   inline: "center",
                 });
- 
+
                 setOrangeCell({
                   qVal,
                   xVal,
@@ -205,7 +203,10 @@ function ColorReportPage({ accessWarningContent = null }) {
             if (!scrolled) {
               const headerId = `col-count-${num}`;
               const element = document.getElementById(headerId);
-              console.log(`[SCROLL CHECK] Header ID: "${headerId}", Found:`, !!element);
+              console.log(
+                `[SCROLL CHECK] Header ID: "${headerId}", Found:`,
+                !!element,
+              );
               if (element) {
                 element.scrollIntoView({
                   behavior: "smooth",
@@ -229,7 +230,9 @@ function ColorReportPage({ accessWarningContent = null }) {
               attempts++;
               setTimeout(tryScroll, 50);
             } else {
-              console.log("[SCROLL CHECK] Reached max attempts, scrolling failed.");
+              console.log(
+                "[SCROLL CHECK] Reached max attempts, scrolling failed.",
+              );
             }
           };
 
@@ -291,23 +294,26 @@ function ColorReportPage({ accessWarningContent = null }) {
     }));
   }, []);
 
-  const handleMainColClick = useCallback((c) => {
-    const limit = getLayoutLimitForCount(c);
-    setHighlightedCols((prev) => {
-      const next = { ...prev };
-      let anyHighlighted = false;
-      for (let k = 0; k < limit; k++) {
-        if (prev[`${c}-${k}`]) {
-          anyHighlighted = true;
-          break;
+  const handleMainColClick = useCallback(
+    (c) => {
+      const limit = getLayoutLimitForCount(c);
+      setHighlightedCols((prev) => {
+        const next = { ...prev };
+        let anyHighlighted = false;
+        for (let k = 0; k < limit; k++) {
+          if (prev[`${c}-${k}`]) {
+            anyHighlighted = true;
+            break;
+          }
         }
-      }
-      for (let k = 0; k < limit; k++) {
-        next[`${c}-${k}`] = !anyHighlighted;
-      }
-      return next;
-    });
-  }, [getLayoutLimitForCount]);
+        for (let k = 0; k < limit; k++) {
+          next[`${c}-${k}`] = !anyHighlighted;
+        }
+        return next;
+      });
+    },
+    [getLayoutLimitForCount],
+  );
 
   const clearHighlights = useCallback(() => {
     setHighlightedRows({});
@@ -445,53 +451,53 @@ function ColorReportPage({ accessWarningContent = null }) {
           .map(() => Array(10).fill(1)),
       );
 
-     const countsHistory = [];
- 
-     // 4. Quét qua từng dòng R từ 0 đến actualRows để tìm kết quả mới (R = actualRows đại diện cho dòng tương lai)
-     for (let R = 0; R <= actualRows; R++) {
-       // Lưu lại trạng thái số đếm tại dòng R từ lịch sử
-       const currentCounts = historyCounts.map((taps) =>
-         taps.map((tables) => [...tables]),
-       );
-       countsHistory.push(currentCounts);
- 
-       // a. Kiểm tra xem ở dòng R, có bảng T nào đạt số đếm báo màu c
-       for (let c = 16; c <= 95; c++) {
-         const limit = getLimitForCount(c);
- 
-         if (matchesData[R][c].length < limit) {
-           // Quét từ trái qua phải trên toàn bộ 50 Tập (100 bảng T)
-           for (
-             let tapGlobalIdx = 0;
-             tapGlobalIdx < NUM_QS * 10;
-             tapGlobalIdx++
-           ) {
-             for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
-               const counts = historyCounts[tapGlobalIdx][tableIdx];
-               for (let col = 0; col < 10; col++) {
-                 if (counts[col] === c) {
-                   if (matchesData[R][c].length < limit) {
-                     const q = Math.floor(tapGlobalIdx / 10) + 1; // Q (1-5)
-                     const x = (tapGlobalIdx % 10) + 1; // Tập trong Q (1-10)
-                     const y = tableIdx + 1; // Thông (1-2)
-                     const g = col; // Tham số (0-9)
-                     const globalTIndex = tapGlobalIdx * 2 + tableIdx + 1;
- 
-                     matchesData[R][c].push({
-                       row: R,
-                       q,
-                       x,
-                       y,
-                       g,
-                       globalTIndex,
-                     });
-                   }
-                 }
-               }
-             }
-           }
-         }
-       }
+    const countsHistory = [];
+
+    // 4. Quét qua từng dòng R từ 0 đến actualRows để tìm kết quả mới (R = actualRows đại diện cho dòng tương lai)
+    for (let R = 0; R <= actualRows; R++) {
+      // Lưu lại trạng thái số đếm tại dòng R từ lịch sử
+      const currentCounts = historyCounts.map((taps) =>
+        taps.map((tables) => [...tables]),
+      );
+      countsHistory.push(currentCounts);
+
+      // a. Kiểm tra xem ở dòng R, có bảng T nào đạt số đếm báo màu c
+      for (let c = 16; c <= 95; c++) {
+        const limit = getLimitForCount(c);
+
+        if (matchesData[R][c].length < limit) {
+          // Quét từ trái qua phải trên toàn bộ 50 Tập (100 bảng T)
+          for (
+            let tapGlobalIdx = 0;
+            tapGlobalIdx < NUM_QS * 10;
+            tapGlobalIdx++
+          ) {
+            for (let tableIdx = 0; tableIdx < TOTAL_TABLES; tableIdx++) {
+              const counts = historyCounts[tapGlobalIdx][tableIdx];
+              for (let col = 0; col < 10; col++) {
+                if (counts[col] === c) {
+                  if (matchesData[R][c].length < limit) {
+                    const q = Math.floor(tapGlobalIdx / 10) + 1; // Q (1-5)
+                    const x = (tapGlobalIdx % 10) + 1; // Tập trong Q (1-10)
+                    const y = tableIdx + 1; // Thông (1-2)
+                    const g = col; // Tham số (0-9)
+                    const globalTIndex = tapGlobalIdx * 2 + tableIdx + 1;
+
+                    matchesData[R][c].push({
+                      row: R,
+                      q,
+                      x,
+                      y,
+                      g,
+                      globalTIndex,
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
 
       // b. Cập nhật số đếm tương lai của tất cả bảng T tại dòng R (cho dòng R + 1)
       if (R < actualRows) {
@@ -548,10 +554,12 @@ function ColorReportPage({ accessWarningContent = null }) {
             for (let r = 0; r <= R; r++) {
               if (matchesData[r]?.[c]?.[k]) {
                 const matchAtR = matchesData[r][c][k];
-                const tapGlobalIdxAtR = (matchAtR.q - 1) * 10 + (matchAtR.x - 1);
+                const tapGlobalIdxAtR =
+                  (matchAtR.q - 1) * 10 + (matchAtR.x - 1);
                 const tableIdxAtR = matchAtR.y - 1;
                 const colAtR = matchAtR.g;
-                const tValAtR = tapsTValues[tapGlobalIdxAtR]?.[tableIdxAtR]?.[r];
+                const tValAtR =
+                  tapsTValues[tapGlobalIdxAtR]?.[tableIdxAtR]?.[r];
                 const isRedCellAtRow =
                   tValAtR !== undefined && tValAtR !== "" && tValAtR !== null
                     ? colAtR === parseInt(tValAtR, 10)
@@ -614,16 +622,27 @@ function ColorReportPage({ accessWarningContent = null }) {
 
     for (let c = 16; c <= 75; c++) {
       const rangeForCol = colorReportRanges[c];
-      if (!rangeForCol || rangeForCol.from <= 0 || rangeForCol.to <= 0) continue;
+      if (!rangeForCol || rangeForCol.from <= 0 || rangeForCol.to <= 0)
+        continue;
 
       const limit = getLayoutLimitForCount(c);
       for (let k = 0; k < limit; k++) {
         const cell = fRow.cells[`${c}-${k}`];
-        if (cell && !cell.isPlaceholder && cell.value && cell.value !== "||" && cell.value !== "") {
+        if (
+          cell &&
+          !cell.isPlaceholder &&
+          cell.value &&
+          cell.value !== "||" &&
+          cell.value !== ""
+        ) {
           const parts = cell.value.split("/");
           if (parts.length === 3) {
             const zNum = parseInt(parts[2], 10);
-            if (!isNaN(zNum) && zNum >= rangeForCol.from && zNum <= rangeForCol.to) {
+            if (
+              !isNaN(zNum) &&
+              zNum >= rangeForCol.from &&
+              zNum <= rangeForCol.to
+            ) {
               warningSet.add(c);
               break; // chỉ cần 1 ô trong cột c báo vàng là đủ
             }
@@ -813,7 +832,6 @@ function ColorReportPage({ accessWarningContent = null }) {
                 🔄 X màu d.c
               </button>
 
-
               {/* Ô Nhập Số & Nút Xem */}
               <input
                 type="number"
@@ -923,7 +941,9 @@ function ColorReportPage({ accessWarningContent = null }) {
                         height: "66px",
                         fontSize: "30px",
                         fontWeight: "bold",
-                        border: isWarning ? "2px solid #ff9800" : "1.5px solid #ccc",
+                        border: isWarning
+                          ? "2px solid #ff9800"
+                          : "1.5px solid #ccc",
                         borderRadius: "8px",
                         cursor: "pointer",
                         backgroundColor: isWarning ? "#f8c507bd" : "#ffffff",
@@ -934,7 +954,11 @@ function ColorReportPage({ accessWarningContent = null }) {
                         justifyContent: "center",
                         boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                       }}
-                      title={isWarning ? `Số đếm ${c} có cảnh báo vàng ở dòng tương lai` : `Cuộn tới cột số đếm ${c}`}
+                      title={
+                        isWarning
+                          ? `Số đếm ${c} có cảnh báo vàng ở dòng tương lai`
+                          : `Cuộn tới cột số đếm ${c}`
+                      }
                     >
                       {c}
                     </button>
@@ -954,334 +978,363 @@ function ColorReportPage({ accessWarningContent = null }) {
                   backgroundColor: "white",
                 }}
               >
-              <table
-                style={{
-                  borderCollapse: "collapse",
-                  width: "max-content",
-                  minWidth: "100%",
-                  fontSize: "35px",
-                }}
-              >
-                <thead>
-                  <tr
-                    style={{
-                      backgroundColor: "#6f42c1",
-                      color: "white",
-                      position: "sticky",
-                      top: 0,
-                      zIndex: 3,
-                      fontSize: "35px",
-                    }}
-                  >
-                    <th
+                <table
+                  style={{
+                    borderCollapse: "collapse",
+                    width: "max-content",
+                    minWidth: "100%",
+                    fontSize: "35px",
+                  }}
+                >
+                  <thead>
+                    <tr
                       style={{
-                        padding: "12px",
-                        border: "2px solid #333",
-                        borderRight: "6px solid #fd7e14",
-                        width: "240px",
-                        backgroundColor: "#6f42c1",
+                        backgroundColor: "#3f51b5",
+                        color: "white",
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 3,
+                        fontSize: "35px",
                       }}
-                      rowSpan="2"
                     >
-                      N.T
-                    </th>
+                      <th
+                        style={{
+                          padding: "12px",
+                          border: "2px solid #333",
+                          borderRight: "6px solid #fd7e14",
+                          width: "240px",
+                          backgroundColor: "#3f51b5",
+                        }}
+                        rowSpan="2"
+                      >
+                        N.T
+                      </th>
 
-                    {/* Headers cho các cột số đếm */}
-                    {cols.map((c) => {
-                      const limit = getLayoutLimitForCount(c);
-                      const isMainHL = (() => {
-                        let allHL = true;
-                        for (let subK = 0; subK < limit; subK++) {
-                          if (!highlightedCols[`${c}-${subK}`]) {
-                            allHL = false;
-                            break;
+                      {/* Headers cho các cột số đếm */}
+                      {cols.map((c) => {
+                        const limit = getLayoutLimitForCount(c);
+                        const isMainHL = (() => {
+                          let allHL = true;
+                          for (let subK = 0; subK < limit; subK++) {
+                            if (!highlightedCols[`${c}-${subK}`]) {
+                              allHL = false;
+                              break;
+                            }
                           }
-                        }
-                        return allHL;
-                      })();
-                      return (
-                        <th
-                          id={`col-count-${c}`}
-                          key={c}
-                          colSpan={limit}
-                          onClick={() => {
-                            handleMainColClick(c);
-                            setSelectedCountNum(c);
-                          }}
-                          style={{
-                            padding: "8px 12px",
-                            border: "2px solid #333",
-                            borderRight: "6px solid #fd7e14",
-                            minWidth: `${limit * 250}px`,
-                            backgroundColor: isMainHL ? "#4a2491" : "#6f42c1",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <div
+                          return allHL;
+                        })();
+                        return (
+                          <th
+                            id={`col-count-${c}`}
+                            key={c}
+                            colSpan={limit}
                             style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "10px",
+                              padding: "8px 12px",
+                              border: "2px solid #333",
+                              borderRight: "6px solid #fd7e14",
+                              minWidth: `${limit * 250}px`,
+                              backgroundColor: "#3f51b5",
+                              cursor: "default",
                             }}
                           >
-                            <span style={{ fontSize: "35px", fontWeight: "bold" }}>{c}</span>
-                            {c <= 75 && (
-                              <div
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "4px",
-                                  padding: "2px 6px",
-                                  backgroundColor: "#fff",
-                                  border: "1px solid #ffc107",
-                                  borderRadius: "4px",
-                                  color: "#333",
-                                  fontSize: "20px",
-                                  fontWeight: "normal",
-                                }}
-                                onClick={(e) => e.stopPropagation()}
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "10px",
+                              }}
+                            >
+                              <span
+                                style={{ fontSize: "35px", fontWeight: "bold" }}
                               >
-                                <span>
-                                  Báo màu: {colorReportRanges[c]
-                                    ? `${colorReportRanges[c].from}-${colorReportRanges[c].to}`
-                                    : "0-0"}
-                                </span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedCountNum(c);
-                                    const currentRange = colorReportRanges[c] || { from: 0, to: 0 };
-                                    setTempRangeFrom(currentRange.from === 0 ? "" : String(currentRange.from));
-                                    setTempRangeTo(currentRange.to === 0 ? "" : String(currentRange.to));
-                                    setIsSettingsOpen(true);
-                                  }}
-                                  className="toolbar-button"
+                                {c}
+                              </span>
+                              {c <= 75 && (
+                                <div
                                   style={{
-                                    fontSize: "18px",
-                                    padding: "2px 4px",
-                                    backgroundColor: "#6c757d",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: "4px",
-                                    cursor: "pointer",
-                                    marginLeft: "2px",
-                                    display: "flex",
+                                    display: "inline-flex",
                                     alignItems: "center",
-                                    justifyContent: "center",
+                                    gap: "4px",
+                                    padding: "2px 6px",
+                                    backgroundColor: "#fff",
+                                    border: "1px solid #ffc107",
+                                    borderRadius: "4px",
+                                    color: "#333",
+                                    fontSize: "20px",
+                                    fontWeight: "normal",
                                   }}
+                                  onClick={(e) => e.stopPropagation()}
                                 >
-                                  ⚙️
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </th>
+                                  <span>
+                                    Báo màu:{" "}
+                                    {colorReportRanges[c]
+                                      ? `${colorReportRanges[c].from}-${colorReportRanges[c].to}`
+                                      : "0-0"}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedCountNum(c);
+                                      const currentRange = colorReportRanges[
+                                        c
+                                      ] || { from: 0, to: 0 };
+                                      setTempRangeFrom(
+                                        currentRange.from === 0
+                                          ? ""
+                                          : String(currentRange.from),
+                                      );
+                                      setTempRangeTo(
+                                        currentRange.to === 0
+                                          ? ""
+                                          : String(currentRange.to),
+                                      );
+                                      setIsSettingsOpen(true);
+                                    }}
+                                    className="toolbar-button"
+                                    style={{
+                                      fontSize: "18px",
+                                      padding: "2px 4px",
+                                      backgroundColor: "#6c757d",
+                                      color: "white",
+                                      border: "none",
+                                      borderRadius: "4px",
+                                      cursor: "pointer",
+                                      marginLeft: "2px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                  >
+                                    ⚙️
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </th>
+                        );
+                      })}
+                    </tr>
+                    <tr
+                      style={{
+                        backgroundColor: "#f2edf8",
+                        fontSize: "30px",
+                        position: "sticky",
+                        top: "60px",
+                        zIndex: 3,
+                      }}
+                    >
+                      {/* Subheaders chạy từ (1) đến (N) tương ứng với giới hạn kết quả */}
+                      {cols.flatMap((c) => {
+                        const limit = getLayoutLimitForCount(c);
+                        const subHeaders = [];
+                        for (let k = 1; k <= limit; k++) {
+                          const isSubHL = !!highlightedCols[`${c}-${k - 1}`];
+                          subHeaders.push(
+                            <th
+                              key={`${c}-${k}`}
+                              onClick={() => {
+                                handleColClick(c, k - 1);
+                                setSelectedCountNum(c);
+                              }}
+                              style={{
+                                padding: "8px 6px",
+                                border: "2px solid #333",
+                                borderRight:
+                                  k === limit
+                                    ? "6px solid #fd7e14"
+                                    : "2px solid #333",
+                                width: "250px",
+                                backgroundColor: isSubHL
+                                  ? "#d3f0ff"
+                                  : "#f2edf8",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ({k}/{c})
+                            </th>,
+                          );
+                        }
+                        return subHeaders;
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportRows.map((row, index) => {
+                      const isRowHL = !!highlightedRows[row.rowIdx];
+                      return (
+                        <tr
+                          key={row.rowIdx}
+                          style={{
+                            backgroundColor: isRowHL
+                              ? "#ffe0b2"
+                              : row.isFuture
+                                ? "#ffe3e8"
+                                : index % 2 === 0
+                                  ? "#ffffff"
+                                  : "#fcfcff",
+                            borderBottom: "2px solid #333",
+                            textAlign: "center",
+                          }}
+                        >
+                          <td
+                            onClick={() => handleRowClick(row.rowIdx)}
+                            style={{
+                              padding: "10px",
+                              border: "2px solid #333",
+                              borderRight: "6px solid #fd7e14",
+                              fontWeight: "bold",
+                              color: "#6f42c1",
+                              fontSize: "35px",
+                              cursor: "pointer",
+                              fontStyle: row.isFuture ? "italic" : "normal",
+                            }}
+                          >
+                            {row.date}
+                          </td>
+
+                          {cols.flatMap((c) => {
+                            const limit = getLayoutLimitForCount(c);
+                            const cellsArr = [];
+                            for (let k = 0; k < limit; k++) {
+                              const cell = row.cells[`${c}-${k}`] || {
+                                value: "",
+                              };
+                              const isNew = cell.isNew;
+                              const hasValue =
+                                !cell.isPlaceholder &&
+                                cell.value &&
+                                cell.value !== "||" &&
+                                cell.value !== "";
+                              const isOrange =
+                                orangeCell &&
+                                hasValue &&
+                                cell.qVal === orangeCell.qVal &&
+                                cell.xVal === orangeCell.xVal &&
+                                cell.yVal === orangeCell.yVal &&
+                                cell.gVal === orangeCell.gVal &&
+                                c === orangeCell.c &&
+                                (orangeCell.row === undefined ||
+                                  orangeCell.row === null ||
+                                  String(row.rowIdx) ===
+                                    String(orangeCell.row));
+
+                              const rangeForCol = colorReportRanges[c] || {
+                                from: 0,
+                                to: 0,
+                              };
+                              const inColorReportRange =
+                                hasValue &&
+                                rangeForCol.from > 0 &&
+                                rangeForCol.to > 0 &&
+                                (() => {
+                                  const parts = cell.value.split("/");
+                                  if (parts.length === 3) {
+                                    const zNum = parseInt(parts[2], 10);
+                                    return (
+                                      !isNaN(zNum) &&
+                                      zNum >= rangeForCol.from &&
+                                      zNum <= rangeForCol.to
+                                    );
+                                  }
+                                  return false;
+                                })();
+
+                              const isColHL = !!highlightedCols[`${c}-${k}`];
+
+                              cellsArr.push(
+                                <td
+                                  key={`${c}-${k}`}
+                                  id={isNew ? cell.cellId : undefined}
+                                  className={
+                                    hasValue
+                                      ? cell.isRedCell
+                                        ? inColorReportRange
+                                          ? "cell-new cell-red-warning cell-warning-yellow"
+                                          : "cell-new cell-red-warning"
+                                        : inColorReportRange
+                                          ? "cell-new cell-warning-yellow"
+                                          : "cell-new"
+                                      : ""
+                                  }
+                                  style={{
+                                    padding: "8px",
+                                    border: "2px solid #333",
+                                    borderRight:
+                                      k === limit - 1
+                                        ? "6px solid #fd7e14"
+                                        : "2px solid #333",
+                                    fontWeight: isOrange
+                                      ? "bold"
+                                      : cell.isRedCell
+                                        ? "700"
+                                        : hasValue
+                                          ? "600"
+                                          : "500",
+                                    fontStyle: row.isFuture
+                                      ? "italic"
+                                      : "normal",
+                                    backgroundColor: isOrange
+                                      ? cell.isRedCell
+                                        ? "#cf3535"
+                                        : "#91d5ff"
+                                      : inColorReportRange
+                                        ? "#f8c507bd"
+                                        : isColHL
+                                          ? "#b3d7ff"
+                                          : isRowHL
+                                            ? "#ffe0b2"
+                                            : row.isFuture
+                                              ? "#ffe3e8"
+                                              : "transparent",
+                                    backgroundClip: "padding-box",
+                                    color: isOrange
+                                      ? cell.isRedCell
+                                        ? "white"
+                                        : "#333"
+                                      : cell.isRedCell
+                                        ? "#cf3535"
+                                        : row.isFuture
+                                          ? hasValue
+                                            ? "#333"
+                                            : "#888"
+                                          : "#333",
+                                    cursor: hasValue ? "pointer" : "default",
+                                    fontSize: "35px",
+                                    minWidth: "250px",
+                                    whiteSpace: "nowrap",
+                                    transition: "all 0.15s ease",
+                                  }}
+                                  onClick={() => {
+                                    if (hasValue && cell.globalTIndex) {
+                                      window.location.href = `/?scrollToT=${cell.globalTIndex}&row=${cell.row}&col=${cell.col}`;
+                                    }
+                                  }}
+                                  onDoubleClick={() => {
+                                    if (hasValue && cell.globalTIndex) {
+                                      window.location.href = `/?scrollToT=${cell.globalTIndex}&row=${cell.row}&col=${cell.col}`;
+                                    }
+                                  }}
+                                  title={
+                                    hasValue
+                                      ? "Click để cuộn xem bảng tính"
+                                      : ""
+                                  }
+                                >
+                                  {cell.value}
+                                </td>,
+                              );
+                            }
+                            return cellsArr;
+                          })}
+                        </tr>
                       );
                     })}
-                  </tr>
-                  <tr
-                    style={{
-                      backgroundColor: "#f2edf8",
-                      fontSize: "30px",
-                      position: "sticky",
-                      top: "60px",
-                      zIndex: 3,
-                    }}
-                  >
-                    {/* Subheaders chạy từ (1) đến (N) tương ứng với giới hạn kết quả */}
-                    {cols.flatMap((c) => {
-                      const limit = getLayoutLimitForCount(c);
-                      const subHeaders = [];
-                      for (let k = 1; k <= limit; k++) {
-                        const isSubHL = !!highlightedCols[`${c}-${k - 1}`];
-                        subHeaders.push(
-                          <th
-                            key={`${c}-${k}`}
-                            onClick={() => {
-                               handleColClick(c, k - 1);
-                               setSelectedCountNum(c);
-                             }}
-                            style={{
-                              padding: "8px 6px",
-                              border: "2px solid #333",
-                              borderRight:
-                                k === limit
-                                  ? "6px solid #fd7e14"
-                                  : "2px solid #333",
-                              width: "250px",
-                              backgroundColor: isSubHL ? "#d3f0ff" : "#f2edf8",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ({k}/{c})
-                          </th>,
-                        );
-                      }
-                      return subHeaders;
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportRows.map((row, index) => {
-                    const isRowHL = !!highlightedRows[row.rowIdx];
-                    return (
-                      <tr
-                        key={row.rowIdx}
-                        style={{
-                          backgroundColor: isRowHL
-                            ? "#ffe0b2"
-                            : row.isFuture
-                              ? "#ffe3e8"
-                              : index % 2 === 0 ? "#ffffff" : "#fcfcff",
-                          borderBottom: "2px solid #333",
-                          textAlign: "center",
-                        }}
-                      >
-                        <td
-                          onClick={() => handleRowClick(row.rowIdx)}
-                          style={{
-                            padding: "10px",
-                            border: "2px solid #333",
-                            borderRight: "6px solid #fd7e14",
-                            fontWeight: "bold",
-                            color: "#6f42c1",
-                            fontSize: "35px",
-                            cursor: "pointer",
-                            fontStyle: row.isFuture ? "italic" : "normal",
-                          }}
-                        >
-                          {row.date}
-                        </td>
-
-                        {cols.flatMap((c) => {
-                          const limit = getLayoutLimitForCount(c);
-                          const cellsArr = [];
-                          for (let k = 0; k < limit; k++) {
-                            const cell = row.cells[`${c}-${k}`] || {
-                              value: "",
-                            };
-                            const isNew = cell.isNew;
-                            const hasValue =
-                              !cell.isPlaceholder &&
-                              cell.value &&
-                              cell.value !== "||" &&
-                              cell.value !== "";
-                            const isOrange =
-                              orangeCell &&
-                              hasValue &&
-                              cell.qVal === orangeCell.qVal &&
-                              cell.xVal === orangeCell.xVal &&
-                              cell.yVal === orangeCell.yVal &&
-                              cell.gVal === orangeCell.gVal &&
-                              c === orangeCell.c &&
-                              (orangeCell.row === undefined || orangeCell.row === null || String(row.rowIdx) === String(orangeCell.row));
-
-                            const rangeForCol = colorReportRanges[c] || { from: 0, to: 0 };
-                            const inColorReportRange =
-                              hasValue &&
-                              rangeForCol.from > 0 &&
-                              rangeForCol.to > 0 &&
-                              (() => {
-                                const parts = cell.value.split("/");
-                                if (parts.length === 3) {
-                                  const zNum = parseInt(parts[2], 10);
-                                  return !isNaN(zNum) && zNum >= rangeForCol.from && zNum <= rangeForCol.to;
-                                }
-                                return false;
-                              })();
-
-                            const isColHL = !!highlightedCols[`${c}-${k}`];
-
-                            cellsArr.push(
-                              <td
-                                key={`${c}-${k}`}
-                                id={isNew ? cell.cellId : undefined}
-                                className={
-                                  hasValue
-                                    ? cell.isRedCell
-                                      ? inColorReportRange
-                                        ? "cell-new cell-red-warning cell-warning-yellow"
-                                        : "cell-new cell-red-warning"
-                                      : inColorReportRange
-                                        ? "cell-new cell-warning-yellow"
-                                        : "cell-new"
-                                    : ""
-                                }
-                                style={{
-                                  padding: "8px",
-                                  border: "2px solid #333",
-                                  borderRight:
-                                    k === limit - 1
-                                      ? "6px solid #fd7e14"
-                                      : "2px solid #333",
-                                  fontWeight: isOrange
-                                    ? "bold"
-                                    : cell.isRedCell
-                                      ? "700"
-                                      : hasValue
-                                        ? "600"
-                                        : "500",
-                                  fontStyle: row.isFuture ? "italic" : "normal",
-                                  backgroundColor: isOrange
-                                    ? cell.isRedCell
-                                      ? "#cf3535"
-                                      : "#91d5ff"
-                                    : inColorReportRange
-                                      ? "#f8c507bd"
-                                      : isColHL
-                                        ? "#b3d7ff"
-                                        : isRowHL
-                                          ? "#ffe0b2"
-                                          : row.isFuture
-                                            ? "#ffe3e8"
-                                            : "transparent",
-                                  backgroundClip: "padding-box",
-                                  color: isOrange
-                                    ? cell.isRedCell
-                                      ? "white"
-                                      : "#333"
-                                    : cell.isRedCell
-                                      ? "#cf3535"
-                                      : row.isFuture
-                                        ? hasValue
-                                          ? "#333"
-                                          : "#888"
-                                        : "#333",
-                                  cursor: hasValue ? "pointer" : "default",
-                                  fontSize: "35px",
-                                  minWidth: "250px",
-                                  whiteSpace: "nowrap",
-                                  transition: "all 0.15s ease",
-                                }}
-                                onClick={() => {
-                                  if (hasValue && cell.globalTIndex) {
-                                    window.location.href = `/?scrollToT=${cell.globalTIndex}&row=${cell.row}&col=${cell.col}`;
-                                  }
-                                }}
-                                onDoubleClick={() => {
-                                  if (hasValue && cell.globalTIndex) {
-                                    window.location.href = `/?scrollToT=${cell.globalTIndex}&row=${cell.row}&col=${cell.col}`;
-                                  }
-                                }}
-                                title={
-                                  hasValue ? "Click để cuộn xem bảng tính" : ""
-                                }
-                              >
-                                {cell.value}
-                              </td>,
-                            );
-                          }
-                          return cellsArr;
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -1316,7 +1369,14 @@ function ColorReportPage({ accessWarningContent = null }) {
             }}
           >
             <div className="modal-header" style={{ marginBottom: "20px" }}>
-              <h3 style={{ fontSize: "35px", margin: 0, fontWeight: "bold", color: "#333" }}>
+              <h3
+                style={{
+                  fontSize: "35px",
+                  margin: 0,
+                  fontWeight: "bold",
+                  color: "#333",
+                }}
+              >
                 ⚙️ Cài đặt báo màu Z cho số {selectedCountNum}
               </h3>
             </div>
@@ -1391,7 +1451,8 @@ function ColorReportPage({ accessWarningContent = null }) {
                   color: "#856404",
                 }}
               >
-                💡 <strong>Lưu ý:</strong> Các ô có giá trị Z trong khoảng này sẽ được tô màu vàng báo hiệu.
+                💡 <strong>Lưu ý:</strong> Các ô có giá trị Z trong khoảng này
+                sẽ được tô màu vàng báo hiệu.
               </div>
             </div>
 
