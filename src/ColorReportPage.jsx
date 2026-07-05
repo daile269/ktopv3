@@ -259,8 +259,8 @@ function ColorReportPage({ accessWarningContent = null }) {
   const getLayoutLimitForCount = useCallback((c) => {
     if (c >= 16 && c <= 22) return 16;
     if (c >= 23 && c <= 30) return 15;
-    if (c >= 31 && c <= 40) return 14;
-    if (c >= 41 && c <= 55) return 12;
+    if (c >= 31 && c <= 40) return 12;
+    if (c >= 41 && c <= 55) return 8;
     if (c >= 56 && c <= 75) return 8;
     if (c >= 76 && c <= 85) return 4;
     if (c >= 86 && c <= 95) return 3;
