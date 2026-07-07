@@ -466,31 +466,47 @@ const TapSection = memo(
                             });
                           })()}
 
-                          {tableData.length > 0 && (
+                           {tableData.length > 0 && (
                             <tr className="future-row">
                               <td
-                                className="data-cell fixed future-cell"
+                                className={`data-cell fixed future-cell ${
+                                  highlightedRows[tableData.length]
+                                    ? "highlighted-row"
+                                    : ""
+                                }`}
+                                onClick={() => handleRowClick(tableData.length)}
                                 style={{
                                   opacity: 0.5,
                                   fontStyle: "italic",
                                   height: "50px",
                                   fontWeight: "300",
+                                  cursor: "pointer",
                                 }}
                               >
                                 &nbsp;
                               </td>
                               <td
-                                className="data-cell fixed future-cell"
+                                className={`data-cell fixed future-cell ${
+                                  highlightedRows[tableData.length]
+                                    ? "highlighted-row"
+                                    : ""
+                                }`}
+                                onClick={() => handleRowClick(tableData.length)}
                                 style={{
                                   opacity: 0.5,
                                   fontStyle: "italic",
                                   fontWeight: "300",
+                                  cursor: "pointer",
                                 }}
                               >
                                 &nbsp;
                               </td>
                               <td
-                                className="data-cell fixed future-cell"
+                                className={`data-cell fixed future-cell ${
+                                  highlightedRows[tableData.length]
+                                    ? "highlighted-row"
+                                    : ""
+                                }`}
                                 style={{
                                   fontStyle: "italic",
                                   fontWeight: 600,
@@ -501,7 +517,13 @@ const TapSection = memo(
                               {tableIndex === 0 && (
                                 <>
                                   <td
-                                    className="data-cell fixed future-cell"
+                                    className={`data-cell fixed future-cell value-col ${
+                                      highlightedAColumn
+                                        ? "col-highlighted"
+                                        : highlightedRows[tableData.length]
+                                          ? "highlighted-row"
+                                          : ""
+                                    }`}
                                     style={{
                                       fontStyle: "italic",
                                       fontWeight: 600,
@@ -510,7 +532,13 @@ const TapSection = memo(
                                     &nbsp;
                                   </td>
                                   <td
-                                    className="data-cell fixed future-cell"
+                                    className={`data-cell fixed future-cell value-col ${
+                                      highlightedBColumn
+                                        ? "col-highlighted"
+                                        : highlightedRows[tableData.length]
+                                          ? "highlighted-row"
+                                          : ""
+                                    }`}
                                     style={{
                                       fontStyle: "italic",
                                       fontWeight: 600,
@@ -521,7 +549,13 @@ const TapSection = memo(
                                 </>
                               )}
                               <td
-                                className="data-cell fixed future-cell"
+                                className={`data-cell fixed future-cell value-col ${
+                                  highlightedTColumns[tableIndex]
+                                    ? "col-highlighted"
+                                    : highlightedRows[tableData.length]
+                                      ? "highlighted-row"
+                                      : ""
+                                }`}
                                 style={{
                                   fontStyle: "italic",
                                   fontWeight: 600,
@@ -548,7 +582,13 @@ const TapSection = memo(
                                         tableData.length
                                       ]?.[colIdx]
                                         ? "highlighted-cell"
-                                        : ""
+                                        : highlightedDataColumns[
+                                              tableIndex
+                                            ]?.[colIdx]
+                                          ? "col-highlighted"
+                                          : highlightedRows[tableData.length]
+                                            ? "highlighted-row"
+                                            : ""
                                     } ${
                                       orangeCell &&
                                       orangeCell.tableIndex === globalTIndex &&

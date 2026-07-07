@@ -507,19 +507,19 @@ body {
 
 /* Highlight hàng */
 .data-cell.highlighted-row {
-  border-top: 2px solid #ffa500 !important;
-  border-bottom: 2px solid #ffa500 !important;
-  box-shadow: inset 0 0 0 2000px rgba(255, 165, 0, 0.3) !important;
-  /* Lớp phủ cam nhạt */
+  border-top: 2px solid #a9b3ff !important;
+  border-bottom: 2px solid #a9b3ff !important;
+  box-shadow: inset 0 0 0 2000px #d1d7ff !important;
+  /* Lớp phủ chàm nhạt */
   font-weight: 600;
 }
 
 /* Highlight cột */
 .data-cell.highlighted-column {
-  border-left: 2px solid #fbc02d !important;
-  border-right: 2px solid #fbc02d !important;
-  box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.4) !important;
-  /* Lớp phủ vàng nhạt */
+  border-left: 2px solid #90caf9 !important;
+  border-right: 2px solid #90caf9 !important;
+  box-shadow: inset 0 0 0 2000px #b3d7ff !important;
+  /* Lớp phủ xanh nhạt */
 }
 
 /* Highlight ô T lẻ (Màu cam) */
@@ -537,8 +537,8 @@ body {
 
 /* Highlight cả cột A / B / T khi click vào ô bất kỳ trong cột */
 .data-cell.col-highlighted {
-  background-color: orange !important;
-  /* Cam nhạt (nền) */
+  background-color: #b3d7ff !important;
+  /* Xanh nhạt (nền) */
   /* border-top: 2px solid #ffd08a !important;
   border-bottom: 2px solid #ffd08a !important; */
   /* box-shadow: inset 0 0 0 2000px rgba(255, 224, 178, 0.85) !important; */
@@ -563,10 +563,10 @@ body {
 
 /* Màu cho tiêu đề khi cột đang được highlight */
 .col-header-highlighted {
-  background-color: #ffcc80 !important;
-  /* Cam nhạt cho tiêu đề */
+  background-color: #90caf9 !important;
+  /* Xanh nhạt cho tiêu đề */
   color: #333 !important;
-  border-bottom: 2px solid #ffb74d !important;
+  border-bottom: 2px solid #64b5f6 !important;
   font-weight: 700;
 }
 
@@ -580,13 +580,13 @@ body {
 
 /* Override cho fixed cells khi highlight */
 .data-cell.fixed.highlighted-column {
-  border: 2px solid #fbc02d !important;
-  box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.4) !important;
+  border: 2px solid #90caf9 !important;
+  box-shadow: inset 0 0 0 2000px #b3d7ff !important;
 }
 
 .data-cell.fixed.highlighted-row {
-  border: 2px solid #fbc02d !important;
-  box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.4) !important;
+  border: 2px solid #a9b3ff !important;
+  box-shadow: inset 0 0 0 2000px #d1d7ff !important;
 }
 
 
@@ -1000,7 +1000,7 @@ body {
 /* Đảm bảo trạng thái highlight hoạt động đè lên màu nền xen kẽ của các Tập lẻ/chẵn */
 .tap-section.volume-odd .data-cell.col-highlighted,
 .tap-section.volume-even .data-cell.col-highlighted {
-  background-color: orange !important;
+  background-color: #b3d7ff !important;
 }
 
 .tap-section.volume-odd .data-cell.highlighted-t-cell,
