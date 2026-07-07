@@ -1002,19 +1002,6 @@ function ColorReportPage({ accessWarningContent = null }) {
                         fontSize: "35px",
                       }}
                     >
-                      <th
-                        style={{
-                          padding: "12px",
-                          border: "2px solid #333",
-                          borderRight: "6px solid #fd7e14",
-                          width: "240px",
-                          backgroundColor: "#3f51b5",
-                        }}
-                        rowSpan="2"
-                      >
-                        N.T
-                      </th>
-
                       {/* Headers cho các cột số đếm */}
                       {cols.map((c) => {
                         const limit = getLayoutLimitForCount(c);
@@ -1138,15 +1125,28 @@ function ColorReportPage({ accessWarningContent = null }) {
                         subHeaders.push(
                           <th
                             key={`${c}-date`}
+                            onClick={() => {
+                              const isAnyHL = Array.from({ length: limit }, (_, idx) => highlightedCols[`${c}-${idx}`]).some(Boolean);
+                              setHighlightedCols((prev) => {
+                                const newHL = { ...prev };
+                                for (let idx = 0; idx < limit; idx++) {
+                                  const key = `${c}-${idx}`;
+                                  if (isAnyHL) {
+                                    delete newHL[key];
+                                  } else {
+                                    newHL[key] = true;
+                                  }
+                                }
+                                return newHL;
+                              });
+                            }}
                             style={{
                               padding: "8px 6px",
                               border: "2px solid #333",
                               borderRight: "2px solid #333",
                               width: "150px",
-                              backgroundColor: isAnySubHL
-                                ? "#d3f0ff"
-                                : "#e2ddf0",
-                              cursor: "default",
+                              backgroundColor: "#e2ddf0",
+                              cursor: "pointer",
                               fontSize: "30px",
                               color: "#555",
                             }}
@@ -1204,27 +1204,10 @@ function ColorReportPage({ accessWarningContent = null }) {
                             textAlign: "center",
                           }}
                         >
-                          <td
-                            onClick={() => handleRowClick(row.rowIdx)}
-                            style={{
-                              padding: "10px",
-                              border: "2px solid #333",
-                              borderRight: "6px solid #fd7e14",
-                              fontWeight: "bold",
-                              color: "#6f42c1",
-                              fontSize: "35px",
-                              cursor: "pointer",
-                              fontStyle: row.isFuture ? "italic" : "normal",
-                            }}
-                          >
-                            {row.date}
-                          </td>
-
                           {cols.flatMap((c) => {
                             const limit = getLayoutLimitForCount(c);
                             const cellsArr = [];
-                            // 1. Calculate group date and click cell info
-                            let groupDate = "";
+                            const groupDate = row.isFuture ? "" : formatDate(dateValues[row.rowIdx]) || `Dòng ${row.rowIdx + 1}`;
                             let groupCellForClick = null;
                             let hasActiveWarning = false;
                             let isGroupRedCell = false;
@@ -1233,7 +1216,6 @@ function ColorReportPage({ accessWarningContent = null }) {
                             for (let k = 0; k < limit; k++) {
                               const cell = row.cells[`${c}-${k}`];
                               if (cell && cell.value && cell.value !== "||" && cell.value !== "") {
-                                groupDate = cell.matchDate;
                                 groupCellForClick = cell;
                                 hasActiveWarning = true;
                                 if (cell.isRedCell) isGroupRedCell = true;
@@ -1258,65 +1240,27 @@ function ColorReportPage({ accessWarningContent = null }) {
                             cellsArr.push(
                               <td
                                 key={`${c}-date`}
-                                className={
-                                  hasActiveWarning
-                                    ? isGroupRedCell
-                                      ? isGroupWarningYellow
-                                        ? "cell-new cell-red-warning cell-warning-yellow"
-                                        : "cell-new cell-red-warning"
-                                      : isGroupWarningYellow
-                                        ? "cell-new cell-warning-yellow"
-                                        : "cell-new"
-                                    : ""
-                                }
                                 style={{
                                   padding: "8px",
                                   border: "2px solid #333",
                                   borderRight: "2px solid #333", // normal border right since warning cells follow
                                   fontWeight: "bold",
                                   fontStyle: row.isFuture ? "italic" : "normal",
-                                  backgroundColor: isGroupOrange
-                                    ? isGroupRedCell
-                                      ? "#cf3535"
-                                      : "#91d5ff"
-                                    : isGroupWarningYellow
-                                      ? "#f8c507bd"
-                                      : isAnySubHL
-                                        ? "#b3d7ff"
-                                        : isRowHL
-                                          ? "#ffe0b2"
-                                          : row.isFuture
-                                            ? "#ffe3e8"
-                                            : "transparent",
+                                  backgroundColor: isRowHL
+                                    ? "#ffe0b2"
+                                    : row.isFuture
+                                      ? "#ffe3e8"
+                                      : "transparent",
                                   backgroundClip: "padding-box",
-                                  color: isGroupOrange
-                                    ? isGroupRedCell
-                                      ? "white"
-                                      : "#6f42c1"
-                                    : isGroupRedCell
-                                      ? "#cf3535"
-                                      : "#6f42c1", // identical color to N.T column
-                                  cursor: hasActiveWarning ? "pointer" : "default",
+                                  color: row.isFuture ? "#888" : "#6f42c1", // identical color to N.T column
+                                  cursor: "pointer",
                                   fontSize: "35px", // identical size to N.T column
                                   minWidth: "150px",
                                   whiteSpace: "nowrap",
                                   transition: "all 0.15s ease",
                                 }}
-                                onClick={() => {
-                                  if (hasActiveWarning && groupCellForClick && groupCellForClick.globalTIndex) {
-                                    window.location.href = `/?scrollToT=${groupCellForClick.globalTIndex}&row=${groupCellForClick.row}&col=${groupCellForClick.col}`;
-                                  }
-                                }}
-                                onDoubleClick={() => {
-                                  if (hasActiveWarning && groupCellForClick && groupCellForClick.globalTIndex) {
-                                    window.location.href = `/?scrollToT=${groupCellForClick.globalTIndex}&row=${groupCellForClick.row}&col=${groupCellForClick.col}`;
-                                  }
-                                }}
-                                title={
-                                  hasActiveWarning
-                                    ? "Click để cuộn xem bảng tính"
-                                    : ""
-                                }
+                                onClick={() => handleRowClick(row.rowIdx)}
+                                title="Click để bôi hàng"
                               >
                                 {groupDate || ""}
                               </td>,
