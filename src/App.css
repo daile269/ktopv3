@@ -1066,6 +1066,8 @@ body {
 }
 
 /* Đảm bảo ô được click bôi xanh (highlight) đè lên tất cả nền của dòng tương lai */
+.tap-section.volume-odd .future-row td.future-cell.orange-highlighted-cell,
+.tap-section.volume-even .future-row td.future-cell.orange-highlighted-cell,
 .future-row td.future-cell.orange-highlighted-cell {
   background-color: #91d5ff !important;
   font-weight: bold !important;
