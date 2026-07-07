@@ -595,6 +595,7 @@ function ColorReportPage({ accessWarningContent = null }) {
               yVal: String(match.y),
               gVal: String(match.g),
               cellId: `cell-report-${match.q}-${match.x}-${match.y}-${match.g}-${c}-${k}-${match.row}`,
+              matchDate: formatDate(dateValues[match.row]),
             };
           }
         }
@@ -1031,12 +1032,12 @@ function ColorReportPage({ accessWarningContent = null }) {
                           <th
                             id={`col-count-${c}`}
                             key={c}
-                            colSpan={limit}
+                            colSpan={limit + 1}
                             style={{
                               padding: "8px 12px",
                               border: "2px solid #333",
                               borderRight: "6px solid #fd7e14",
-                              minWidth: `${limit * 250}px`,
+                              minWidth: `${limit * 250 + 150}px`,
                               backgroundColor: "#3f51b5",
                               cursor: "default",
                             }}
@@ -1132,6 +1133,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                       {cols.flatMap((c) => {
                         const limit = getLayoutLimitForCount(c);
                         const subHeaders = [];
+                        const isAnySubHL = Array.from({ length: limit }, (_, idx) => highlightedCols[`${c}-${idx}`]).some(Boolean);
                         for (let k = 1; k <= limit; k++) {
                           const isSubHL = !!highlightedCols[`${c}-${k - 1}`];
                           subHeaders.push(
@@ -1144,10 +1146,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                               style={{
                                 padding: "8px 6px",
                                 border: "2px solid #333",
-                                borderRight:
-                                  k === limit
-                                    ? "6px solid #fd7e14"
-                                    : "2px solid #333",
+                                borderRight: "2px solid #333",
                                 width: "250px",
                                 backgroundColor: isSubHL
                                   ? "#d3f0ff"
@@ -1159,6 +1158,25 @@ function ColorReportPage({ accessWarningContent = null }) {
                             </th>,
                           );
                         }
+                        subHeaders.push(
+                          <th
+                            key={`${c}-date`}
+                            style={{
+                              padding: "8px 6px",
+                              border: "2px solid #333",
+                              borderRight: "6px solid #fd7e14",
+                              width: "150px",
+                              backgroundColor: isAnySubHL
+                                ? "#d3f0ff"
+                                : "#e2ddf0",
+                              cursor: "default",
+                              fontSize: "25px",
+                              color: "#555",
+                            }}
+                          >
+                            Ngày
+                          </th>
+                        );
                         return subHeaders;
                       })}
                     </tr>
@@ -1264,10 +1282,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                   style={{
                                     padding: "8px",
                                     border: "2px solid #333",
-                                    borderRight:
-                                      k === limit - 1
-                                        ? "6px solid #fd7e14"
-                                        : "2px solid #333",
+                                    borderRight: "2px solid #333",
                                     fontWeight: isOrange
                                       ? "bold"
                                       : cell.isRedCell
@@ -1329,6 +1344,105 @@ function ColorReportPage({ accessWarningContent = null }) {
                                 </td>,
                               );
                             }
+
+                            // 2. Render a single Date cell for group c
+                            let groupDate = "";
+                            let groupCellForClick = null;
+                            let hasActiveWarning = false;
+                            let isGroupRedCell = false;
+                            let isGroupWarningYellow = false;
+
+                            for (let k = 0; k < limit; k++) {
+                              const cell = row.cells[`${c}-${k}`];
+                              if (cell && cell.value && cell.value !== "||" && cell.value !== "") {
+                                groupDate = cell.matchDate;
+                                groupCellForClick = cell;
+                                hasActiveWarning = true;
+                                if (cell.isRedCell) isGroupRedCell = true;
+
+                                const rangeForCol = colorReportRanges[c] || { from: 0, to: 0 };
+                                const parts = cell.value.split("/");
+                                if (parts.length === 3) {
+                                  const zNum = parseInt(parts[2], 10);
+                                  if (!isNaN(zNum) && zNum >= rangeForCol.from && zNum <= rangeForCol.to) {
+                                    isGroupWarningYellow = true;
+                                  }
+                                }
+                              }
+                            }
+
+                            const isGroupOrange = orangeCell && orangeCell.c === c &&
+                              (orangeCell.row === undefined || orangeCell.row === null || String(row.rowIdx) === String(orangeCell.row));
+
+                            const isAnySubHL = Array.from({ length: limit }, (_, idx) => highlightedCols[`${c}-${idx}`]).some(Boolean);
+
+                            cellsArr.push(
+                              <td
+                                key={`${c}-date`}
+                                className={
+                                  hasActiveWarning
+                                    ? isGroupRedCell
+                                      ? isGroupWarningYellow
+                                        ? "cell-new cell-red-warning cell-warning-yellow"
+                                        : "cell-new cell-red-warning"
+                                      : isGroupWarningYellow
+                                        ? "cell-new cell-warning-yellow"
+                                        : "cell-new"
+                                    : ""
+                                }
+                                style={{
+                                  padding: "8px",
+                                  border: "2px solid #333",
+                                  borderRight: "6px solid #fd7e14", // thick orange border separating groups
+                                  fontWeight: "bold",
+                                  fontStyle: row.isFuture ? "italic" : "normal",
+                                  backgroundColor: isGroupOrange
+                                    ? isGroupRedCell
+                                      ? "#cf3535"
+                                      : "#91d5ff"
+                                    : isGroupWarningYellow
+                                      ? "#f8c507bd"
+                                      : isAnySubHL
+                                        ? "#b3d7ff"
+                                        : isRowHL
+                                          ? "#ffe0b2"
+                                          : row.isFuture
+                                            ? "#ffe3e8"
+                                            : "transparent",
+                                  backgroundClip: "padding-box",
+                                  color: isGroupOrange
+                                    ? isGroupRedCell
+                                      ? "white"
+                                      : "#6f42c1"
+                                    : isGroupRedCell
+                                      ? "#cf3535"
+                                      : "#6f42c1", // purple/blue text like main date column!
+                                  cursor: hasActiveWarning ? "pointer" : "default",
+                                  fontSize: "30px",
+                                  minWidth: "150px",
+                                  whiteSpace: "nowrap",
+                                  transition: "all 0.15s ease",
+                                }}
+                                onClick={() => {
+                                  if (hasActiveWarning && groupCellForClick && groupCellForClick.globalTIndex) {
+                                    window.location.href = `/?scrollToT=${groupCellForClick.globalTIndex}&row=${groupCellForClick.row}&col=${groupCellForClick.col}`;
+                                  }
+                                }}
+                                onDoubleClick={() => {
+                                  if (hasActiveWarning && groupCellForClick && groupCellForClick.globalTIndex) {
+                                    window.location.href = `/?scrollToT=${groupCellForClick.globalTIndex}&row=${groupCellForClick.row}&col=${groupCellForClick.col}`;
+                                  }
+                                }}
+                                title={
+                                  hasActiveWarning
+                                    ? "Click để cuộn xem bảng tính"
+                                    : ""
+                                }
+                              >
+                                {groupDate || ""}
+                              </td>,
+                            );
+
                             return cellsArr;
                           })}
                         </tr>
