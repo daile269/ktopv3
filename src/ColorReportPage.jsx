@@ -919,13 +919,13 @@ function ColorReportPage({ accessWarningContent = null }) {
                 style={{
                   display: "flex",
                   flexWrap: "wrap",
-                  gap: "12px",
+                  gap: "14px",
                   marginBottom: "15px",
                   padding: "12px",
                   backgroundColor: "#f3f0f7",
                   borderRadius: "8px",
-                  border: "2px solid #6f42c1",
-                  maxHeight: "220px",
+                  border: "2px solid #3f51b5",
+                  maxHeight: "260px",
                   overflowY: "auto",
                   boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
                 }}
@@ -937,14 +937,14 @@ function ColorReportPage({ accessWarningContent = null }) {
                       key={c}
                       onClick={() => handleScrollToCol(c)}
                       style={{
-                        minWidth: "72px",
-                        height: "66px",
-                        fontSize: "30px",
+                        minWidth: "85px",
+                        height: "78px",
+                        fontSize: "36px",
                         fontWeight: "bold",
                         border: isWarning
                           ? "2px solid #ff9800"
                           : "1.5px solid #ccc",
-                        borderRadius: "8px",
+                        borderRadius: "10px",
                         cursor: "pointer",
                         backgroundColor: isWarning ? "#f8c507bd" : "#ffffff",
                         color: "#333",
