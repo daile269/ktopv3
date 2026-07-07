@@ -549,6 +549,13 @@ const TapSection = memo(
                                       ]?.[colIdx]
                                         ? "highlighted-cell"
                                         : ""
+                                    } ${
+                                      orangeCell &&
+                                      orangeCell.tableIndex === globalTIndex &&
+                                      orangeCell.rowIndex === tableData.length &&
+                                      orangeCell.colIndex === colIdx
+                                        ? "orange-highlighted-cell"
+                                        : ""
                                     }`}
                                     style={{
                                       height: "50px",
