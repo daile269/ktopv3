@@ -586,7 +586,7 @@ function ColorReportPage({ accessWarningContent = null }) {
             rowData.cells[`${c}-${k}`] = {
               value: displayValue,
               globalTIndex: match.globalTIndex,
-              row: match.row, // click quay lại dòng đạt mốc c
+              row: R, // click quay lại dòng đạt mốc c
               col: match.g,
               isNew: true,
               isRedCell: isRedCellAtR,
