@@ -1072,3 +1072,28 @@ body {
   background-color: #91d5ff !important;
   font-weight: bold !important;
 }
+
+/* Đảm bảo ô bôi màu xanh cột đè lên nền dòng tương lai */
+.tap-section.volume-odd .future-row td.future-cell.col-highlighted,
+.tap-section.volume-even .future-row td.future-cell.col-highlighted,
+.future-row td.future-cell.col-highlighted {
+  background-color: #b3d7ff !important;
+}
+
+/* Đảm bảo ô bôi màu chàm dòng đè lên nền dòng tương lai */
+.tap-section.volume-odd .future-row td.future-cell.highlighted-row,
+.tap-section.volume-even .future-row td.future-cell.highlighted-row,
+.future-row td.future-cell.highlighted-row {
+  background-color: #d1d7ff !important;
+  border-top: 2px solid #a9b3ff !important;
+  border-bottom: 2px solid #a9b3ff !important;
+  font-weight: 600;
+}
+
+/* Đảm bảo ô bôi màu vàng cell đè lên nền dòng tương lai */
+.tap-section.volume-odd .future-row td.future-cell.highlighted-cell,
+.tap-section.volume-even .future-row td.future-cell.highlighted-cell,
+.future-row td.future-cell.highlighted-cell {
+  background-color: #fff59d !important;
+  border: 4px solid #fdd835 !important;
+}
