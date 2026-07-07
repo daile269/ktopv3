@@ -455,6 +455,10 @@ function ColorReportPage({ accessWarningContent = null }) {
 
     // 4. Quét qua từng dòng R từ 0 đến actualRows để tìm kết quả mới (R = actualRows đại diện cho dòng tương lai)
     for (let R = 0; R <= actualRows; R++) {
+      if (R < actualRows && deletedRows[R]) {
+        continue;
+      }
+
       // Lưu lại trạng thái số đếm tại dòng R từ lịch sử
       const currentCounts = historyCounts.map((taps) =>
         taps.map((tables) => [...tables]),

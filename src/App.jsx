@@ -1098,6 +1098,10 @@ function App() {
     const map = {};
 
     for (let R = 0; R <= actualRows; R++) {
+      if (R < actualRows && deletedRows[R]) {
+        continue;
+      }
+
       for (let c = 16; c <= 95; c++) {
         const limit = getLimitForCount(c);
 
@@ -1148,7 +1152,7 @@ function App() {
     }
 
     return map;
-  }, [allQData, dateValues, getLimitForCount]);
+  }, [allQData, dateValues, deletedRows, getLimitForCount]);
 
   const generateTableDataArr = useCallback(
     (tValues, skipColor = false, globalTIndex) => {
@@ -1166,6 +1170,11 @@ function App() {
       for (let col = 0; col < 10; col++) {
         let y = 1;
         for (let row = 0; row < actualRows; row++) {
+          if (deletedRows[row]) {
+            table[row][col] = { value: "", color: "white" };
+            continue;
+          }
+
           if (
             tValues[row] === "" ||
             tValues[row] === null ||
@@ -1210,7 +1219,7 @@ function App() {
       }
       return table;
     },
-    [dateValues, purpleRangeFrom, purpleRangeTo, warningZMap],
+    [dateValues, deletedRows, purpleRangeFrom, purpleRangeTo, warningZMap],
   );
 
   const getPurpleTablesForData = useCallback(
