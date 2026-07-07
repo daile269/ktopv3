@@ -1155,14 +1155,8 @@ function App() {
   }, [allQData, dateValues, deletedRows, getLimitForCount]);
 
   const generateTableDataArr = useCallback(
-    (tValues, skipColor = false, globalTIndex) => {
-      let actualRows = 0;
-      for (let i = dateValues.length - 1; i >= 0; i--) {
-        if (dateValues[i] || tValues[i]) {
-          actualRows = i + 1;
-          break;
-        }
-      }
+    (tValues, skipColor = false, globalTIndex, globalActualRows) => {
+      const actualRows = globalActualRows;
       if (actualRows === 0) return [];
       const table = Array(actualRows)
         .fill(null)
@@ -1538,7 +1532,7 @@ function App() {
           }
           const globalTIndex = (qIdx * 10 + tapIdx) * 2 + i + 1;
           newTableDataArr.push(
-            generateTableDataArr(newTValuesArr[i], false, globalTIndex),
+            generateTableDataArr(newTValuesArr[i], false, globalTIndex, actualRows),
           );
         }
 
