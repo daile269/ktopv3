@@ -1143,7 +1143,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                             style={{
                               padding: "8px 6px",
                               border: "2px solid #333",
-                              borderRight: "2px solid #333",
+                              borderRight: "12px solid red",
                               width: "150px",
                               backgroundColor: "#e2ddf0",
                               cursor: "pointer",
@@ -1169,7 +1169,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                 border: "2px solid #333",
                                 borderRight:
                                   k === limit
-                                    ? "6px solid #fd7e14"
+                                    ? "12px solid red"
                                     : "2px solid #333",
                                 width: "250px",
                                 backgroundColor: isSubHL
@@ -1243,7 +1243,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                 style={{
                                   padding: "8px",
                                   border: "2px solid #333",
-                                  borderRight: "2px solid #333", // normal border right since warning cells follow
+                                  borderRight: "12px solid red", // thick border separating from warning cells
                                   fontWeight: "bold",
                                   fontStyle: row.isFuture ? "italic" : "normal",
                                   backgroundColor: isRowHL
@@ -1333,7 +1333,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                     border: "2px solid #333",
                                     borderRight:
                                       k === limit - 1
-                                        ? "6px solid #fd7e14" // thick orange border separating groups
+                                        ? "12px solid red"
                                         : "2px solid #333",
                                     fontWeight: isOrange
                                       ? "bold"
