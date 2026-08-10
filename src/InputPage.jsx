@@ -8,7 +8,45 @@ const ROWS = MIN_ROWS;
 const NUM_QS = 4;
 const DRAFT_ROW_HEIGHT = 52;
 const DRAFT_OVERSCAN = 6;
-const DRAFT_TABLE_COLSPAN = 85;
+const DRAFT_DATA_COL_COUNT = NUM_QS * 10 * 2;
+
+const DraftTableColgroup = () => (
+  <colgroup>
+    <col className="draft-col-sticky-1" />
+    <col className="draft-col-sticky-2" />
+    <col className="draft-col-sticky-3" />
+    {Array.from({ length: DRAFT_DATA_COL_COUNT }).map((_, i) => (
+      <col key={i} className="draft-col-data" />
+    ))}
+    <col className="draft-col-trailing" />
+    <col className="draft-col-trailing" />
+  </colgroup>
+);
+
+const DraftVirtualSpacerRow = ({ height }) => {
+  if (height <= 0) return null;
+
+  const cellStyle = {
+    height,
+    padding: 0,
+    border: "none",
+    lineHeight: 0,
+    fontSize: 0,
+  };
+
+  return (
+    <tr aria-hidden="true" className="draft-virtual-spacer">
+      <td className="draft-sticky-left-1" style={cellStyle} />
+      <td className="draft-sticky-left-2" style={cellStyle} />
+      <td className="draft-sticky-left-3" style={cellStyle} />
+      {Array.from({ length: DRAFT_DATA_COL_COUNT }).map((_, i) => (
+        <td key={i} style={cellStyle} />
+      ))}
+      <td style={cellStyle} />
+      <td style={cellStyle} />
+    </tr>
+  );
+};
 
 const padToRows = (arr, fill = "", maxLen = ROWS) => {
   const src = Array.isArray(arr) ? arr : [];
@@ -92,7 +130,7 @@ const hasAllQDataContent = (allQData) => {
 const normalizeAllQData = (raw, pageData = null) => {
   let source = raw;
 
-  if (!hasAllQDataContent(source) && pageData?.tapsData?.length) {
+  if (!hasAllQDataContent(source) && (raw == null || raw === undefined) && pageData?.tapsData?.length) {
     source = [
       {
         aValues: pageData.aValues || [],
@@ -128,6 +166,26 @@ const normalizeAllQData = (raw, pageData = null) => {
   }
 
   return loadedAllQData;
+};
+
+const hasDraftRowData = (pageData, allQData) => {
+  if (pageData?.dateValues?.some((v) => v !== "" && v != null)) return true;
+  if (pageData?.zValues?.some((v) => v !== "" && v != null)) return true;
+  return hasAllQDataContent(allQData);
+};
+
+const resetDeletedRowsIfEmptyDraft = (deletedRowsArr, pageData, allQData) => {
+  const padded = padToRows(deletedRowsArr, false);
+  const rowLimit = Math.max(Number(pageData?.keepLastNRows) || 1000, 1000);
+  const visibleFlags = padded.slice(0, rowLimit);
+  const allVisibleDeleted =
+    visibleFlags.length > 0 && visibleFlags.every(Boolean);
+
+  if (allVisibleDeleted && !hasDraftRowData(pageData, allQData)) {
+    return padToRows([], false);
+  }
+
+  return padded;
 };
 
 const cloneAllQData = (data) => JSON.parse(JSON.stringify(data));
@@ -180,7 +238,8 @@ const DraftABCell = memo(function DraftABCell({
       style={{
         borderRight,
         cursor: "text",
-        minWidth: "60px",
+        minWidth: "90px",
+        width: "90px",
       }}
     >
       <input
@@ -291,7 +350,7 @@ const TaskRow = memo(
 
         {/* Render NUM_QS Qs, each has 10 Taps, each Tap has A and B */}
         {Array.from({ length: NUM_QS }).map((_, qIndex) => {
-          const qData = allQDataRef.current[qIndex];
+          const qData = allQDataRef.current?.[qIndex];
 
           return Array.from({ length: 10 }).map((__, tapIndex) => {
             const tap = qData?.tapsData?.[tapIndex];
@@ -449,7 +508,9 @@ function InputPage({ accessWarningContent = null }) {
         assignAllQData(loadedAllQData);
         setDateValues(padToRows(d.dateValues, ""));
         setZValues(padToRows(d.zValues, ""));
-        setDeletedRows(padToRows(d.deletedRows, false));
+        setDeletedRows(
+          resetDeletedRowsIfEmptyDraft(d.deletedRows, d, loadedAllQData),
+        );
         setKeepLastNRows(d.keepLastNRows || 1000);
         setPurpleRangeFrom(d.purpleRangeFrom || 0);
         setPurpleRangeTo(d.purpleRangeTo || 0);
@@ -708,6 +769,7 @@ function InputPage({ accessWarningContent = null }) {
   const handleZChange = useCallback((rIdx, val) => {
     if (val.length <= 10) {
       setZValues((prev) => {
+        if (!prev) return prev;
         const next = [...prev];
         next[rIdx] = val;
         return next;
@@ -716,11 +778,15 @@ function InputPage({ accessWarningContent = null }) {
   }, []);
 
   const handleAChange = useCallback((qIdx, tapIdx, rIdx, val) => {
-    allQDataRef.current[qIdx].tapsData[tapIdx].aValues[rIdx] = val;
+    const tap = allQDataRef.current?.[qIdx]?.tapsData?.[tapIdx];
+    if (!tap?.aValues) return;
+    tap.aValues[rIdx] = val;
   }, []);
 
   const handleBChange = useCallback((qIdx, tapIdx, rIdx, val) => {
-    allQDataRef.current[qIdx].tapsData[tapIdx].bValues[rIdx] = val;
+    const tap = allQDataRef.current?.[qIdx]?.tapsData?.[tapIdx];
+    if (!tap?.bValues) return;
+    tap.bValues[rIdx] = val;
   }, []);
 
   const handleDeleteFirstRow = async () => {
@@ -840,39 +906,33 @@ function InputPage({ accessWarningContent = null }) {
   };
 
   const confirmDeleteAll = async () => {
-    const newDeletedRows = Array(dateValues.length).fill(true);
+    const newDeletedRows = padToRows([], false);
     setDeletedRows(newDeletedRows);
 
-    const emptyAllQData = Array(NUM_QS)
-      .fill(null)
-      .map(() => ({
-        tapsData: Array(10)
-          .fill(null)
-          .map(() => ({
-            aValues: Array(dateValues.length).fill(""),
-            bValues: Array(dateValues.length).fill(""),
-          })),
-      }));
+    const emptyAllQData = createEmptyAllQData();
 
     const result = await savePageData(
       "master_draft",
-      null,
-      null,
-      Array(dateValues.length).fill(""),
-      Array(dateValues.length).fill(""),
+      [],
+      [],
+      [],
+      [],
       newDeletedRows,
-      null,
+      [],
       purpleRangeFrom,
       purpleRangeTo,
       keepLastNRows,
-      emptyAllQData,
+      [],
+      "",
+      [],
     );
 
     setShowDeleteAllModal(false);
     if (result && result.success) {
       assignAllQData(emptyAllQData);
-      setZValues(Array(dateValues.length).fill(""));
-      setDateValues(Array(dateValues.length).fill(""));
+      setZValues(padToRows([], ""));
+      setDateValues(padToRows([], ""));
+      setDeletedRows(newDeletedRows);
       alert("✅ Đã xóa tất cả dữ liệu Bảng thông!");
     } else {
       alert("⚠️ Lỗi khi xóa tất cả dữ liệu: " + (result?.error || "Không xác định"));
@@ -1325,7 +1385,7 @@ function InputPage({ accessWarningContent = null }) {
     rebuildHighlightCaches,
   ]);
 
-  if (isLoading) {
+  if (isLoading || !allQData || !dateValues || !zValues || !deletedRows) {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
         <div className="spinner"></div>
@@ -1335,18 +1395,8 @@ function InputPage({ accessWarningContent = null }) {
   }
 
   return (
-    <>
-      <div
-        style={{
-          position: "sticky",
-          top: 0,
-          width: "100%",
-          textAlign: "center",
-          backgroundColor: "#f8f9fa",
-          borderBottom: "2px solid #dee2e6",
-          zIndex: 100,
-        }}
-      >
+    <div className="draft-input-root">
+      <div className="draft-input-header">
         <h1
           style={{
             fontSize: "32px",
@@ -1374,17 +1424,9 @@ function InputPage({ accessWarningContent = null }) {
           </span>
         </h1>
       </div>
-      <div className="app-container">
-        <div style={{ width: "100%", padding: "20px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              marginBottom: "20px",
-              marginTop: "65px",
-            }}
-          >
+      <div className="draft-input-page">
+        <div className="draft-input-content">
+          <div className="draft-input-toolbar">
             <div
               style={{
                 display: "flex",
@@ -1662,30 +1704,20 @@ function InputPage({ accessWarningContent = null }) {
             </div>
           )}
 
-          {/* Giao diện lưới nhập liệu với cuộn ngang */}
+          {/* Giao diện lưới nhập liệu — scroll ngang/dọc trong viewport */}
           <div
             ref={scrollContainerRef}
-            style={{
-              overflowX: "auto",
-              overflowY: "auto",
-              maxHeight: "calc(100vh - 200px)",
-              border: "1px solid #ddd",
-            }}
+            className="draft-table-scroll"
           >
-            <table className="schedule-table">
+            <div className="draft-table-inner">
+            <table className="draft-schedule-table">
+              <DraftTableColgroup />
               <thead>
                 <tr>
-                  <th
-                    rowSpan="3"
-                    className="draft-sticky-left-1"
-                    style={{
-                      fontSize: "20px",
-                      fontWeight: "bold",
-                    }}
-                  >
+                  <th rowSpan="3" className="draft-sticky-left-1">
                     Chọn
                   </th>
-                  <th rowSpan="3" className="draft-sticky-left-2" style={{ padding: "8px 4px" }}>
+                  <th rowSpan="3" className="draft-sticky-left-2">
                     STT
                   </th>
                   <th rowSpan="3" className="draft-sticky-left-3">
@@ -1737,7 +1769,6 @@ function InputPage({ accessWarningContent = null }) {
                           borderLeft: tapIndex === 0 ? "3px solid red" : "1px solid #999",
                           borderRight: "1px solid #999",
                           borderBottom: "1px solid black",
-                          fontSize: "14px",
                           whiteSpace: "nowrap",
                         }}
                       >
@@ -1756,14 +1787,12 @@ function InputPage({ accessWarningContent = null }) {
                           <th
                             data-col-key={colKeyA}
                             onClick={() => handleColClick(colKeyA)}
-                            className={getTapHeaderClass(tapIndex)}
+                            className={`${getTapHeaderClass(tapIndex)} draft-ab-header`}
                             style={{
                               borderLeft: "1px solid #999",
                               borderRight: "1px solid #ccc",
-                              minWidth: "60px",
                               cursor: "pointer",
                               userSelect: "none",
-                              fontSize: "12px",
                             }}
                           >
                             A
@@ -1771,13 +1800,11 @@ function InputPage({ accessWarningContent = null }) {
                           <th
                             data-col-key={colKeyB}
                             onClick={() => handleColClick(colKeyB)}
-                            className={getTapHeaderClass(tapIndex)}
+                            className={`${getTapHeaderClass(tapIndex)} draft-ab-header`}
                             style={{
                               borderRight: tapIndex === 9 ? "3px double red" : "1px solid #999",
-                              minWidth: "60px",
                               cursor: "pointer",
                               userSelect: "none",
-                              fontSize: "12px",
                             }}
                           >
                             B
@@ -1789,18 +1816,7 @@ function InputPage({ accessWarningContent = null }) {
                 </tr>
               </thead>
               <tbody>
-                {topSpacerHeight > 0 && (
-                  <tr aria-hidden="true" className="draft-virtual-spacer">
-                    <td
-                      colSpan={DRAFT_TABLE_COLSPAN}
-                      style={{
-                        height: topSpacerHeight,
-                        padding: 0,
-                        border: "none",
-                      }}
-                    />
-                  </tr>
-                )}
+                <DraftVirtualSpacerRow height={topSpacerHeight} />
                 {visibleIndices.map((rowIndex, localIdx) => (
                   <TaskRow
                     key={rowIndex}
@@ -1822,20 +1838,10 @@ function InputPage({ accessWarningContent = null }) {
                     onBChange={handleBChange}
                   />
                 ))}
-                {bottomSpacerHeight > 0 && (
-                  <tr aria-hidden="true" className="draft-virtual-spacer">
-                    <td
-                      colSpan={DRAFT_TABLE_COLSPAN}
-                      style={{
-                        height: bottomSpacerHeight,
-                        padding: 0,
-                        border: "none",
-                      }}
-                    />
-                  </tr>
-                )}
+                <DraftVirtualSpacerRow height={bottomSpacerHeight} />
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </div>
@@ -2269,7 +2275,7 @@ function InputPage({ accessWarningContent = null }) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 

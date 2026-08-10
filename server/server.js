@@ -293,34 +293,52 @@ app.post("/api/pages/:pageId", async (req, res) => {
     const trimmedSourceSTT =
       lastIndex >= 0 && sourceSTTValues ? sourceSTTValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [];
 
-    // Trim tapsData
-    const trimmedTaps =
-      lastIndex >= 0 && tapsData && Array.isArray(tapsData)
-        ? tapsData.slice(0, 10).map((tap) => ({
-            aValues: tap.aValues ? tap.aValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
-            bValues: tap.bValues ? tap.bValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
-          }))
-        : undefined;
+    // Trim tapsData — lastIndex < 0 + client gửi tapsData => xóa sạch ([])
+    let trimmedTaps;
+    if (tapsData && Array.isArray(tapsData)) {
+      trimmedTaps =
+        lastIndex >= 0
+          ? tapsData.slice(0, 10).map((tap) => ({
+              aValues: tap.aValues
+                ? tap.aValues.slice(0, Math.min(lastIndex + 1, ROWS))
+                : [],
+              bValues: tap.bValues
+                ? tap.bValues.slice(0, Math.min(lastIndex + 1, ROWS))
+                : [],
+            }))
+          : [];
+    }
 
-    // Trim allQData
-    const trimmedAllQData =
-      lastIndex >= 0 && allQData && Array.isArray(allQData)
-        ? allQData.slice(0, 6).map((qItem) => {
-            let qTaps = qItem.tapsData;
-            let trimmedQTaps = undefined;
-            if (qTaps && Array.isArray(qTaps)) {
-              trimmedQTaps = qTaps.slice(0, 10).map((tap) => ({
-                aValues: tap.aValues ? tap.aValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
-                bValues: tap.bValues ? tap.bValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
-              }));
-            }
-            return {
-              aValues: qItem.aValues ? qItem.aValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
-              bValues: qItem.bValues ? qItem.bValues.slice(0, Math.min(lastIndex + 1, ROWS)) : [],
-              tapsData: trimmedQTaps,
-            };
-          })
-        : undefined;
+    // Trim allQData — lastIndex < 0 + client gửi allQData => xóa sạch ([])
+    let trimmedAllQData;
+    if (allQData && Array.isArray(allQData)) {
+      trimmedAllQData =
+        lastIndex >= 0
+          ? allQData.slice(0, 6).map((qItem) => {
+              let qTaps = qItem.tapsData;
+              let trimmedQTaps = undefined;
+              if (qTaps && Array.isArray(qTaps)) {
+                trimmedQTaps = qTaps.slice(0, 10).map((tap) => ({
+                  aValues: tap.aValues
+                    ? tap.aValues.slice(0, Math.min(lastIndex + 1, ROWS))
+                    : [],
+                  bValues: tap.bValues
+                    ? tap.bValues.slice(0, Math.min(lastIndex + 1, ROWS))
+                    : [],
+                }));
+              }
+              return {
+                aValues: qItem.aValues
+                  ? qItem.aValues.slice(0, Math.min(lastIndex + 1, ROWS))
+                  : [],
+                bValues: qItem.bValues
+                  ? qItem.bValues.slice(0, Math.min(lastIndex + 1, ROWS))
+                  : [],
+                tapsData: trimmedQTaps,
+              };
+            })
+          : [];
+    }
 
     // Build update object dynamically to support partial updates
     const updateData = {};

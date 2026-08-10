@@ -1,8 +1,94 @@
-/* InputPage - Large Font Styles */
+/* ===== Bảng thông — layout viewport (scroll ngang trong khung bảng) ===== */
 
-/* Table container */
-.schedule-table {
+.draft-input-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.draft-input-header {
+  flex-shrink: 0;
+  width: 100%;
+  text-align: center;
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  z-index: 100;
+}
+
+.draft-input-header h1 {
+  font-size: 32px;
+  font-weight: bold;
+  font-style: italic;
+  margin: 0;
+  color: #cf3535ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  padding: 8px 12px;
+}
+
+.draft-input-page {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.draft-input-content {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 20px 20px;
+  box-sizing: border-box;
+}
+
+.draft-input-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* Vùng cuộn bảng — bắt buộc min-width:0 để flex con không tràn ra ngoài viewport */
+.draft-table-scroll {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: auto;
+  border: 1px solid #ddd;
+  background: #fff;
+  -webkit-overflow-scrolling: touch;
+}
+
+.draft-table-inner {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+}
+
+/* Table — class riêng, tránh App.css .schedule-table { width:100% } */
+.draft-schedule-table {
+  --draft-data-col-width: 90px;
+  --draft-trailing-col-width: 80px;
+  --draft-table-width: 7740px;
+  width: var(--draft-table-width);
+  min-width: var(--draft-table-width);
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   --draft-sticky-col1-width: 100px;
@@ -10,7 +96,35 @@
   --draft-sticky-col3-width: 200px;
 }
 
-.schedule-table .draft-sticky-left-1 {
+.draft-schedule-table col.draft-col-sticky-1 {
+  width: var(--draft-sticky-col1-width);
+}
+
+.draft-schedule-table col.draft-col-sticky-2 {
+  width: var(--draft-sticky-col2-width);
+}
+
+.draft-schedule-table col.draft-col-sticky-3 {
+  width: var(--draft-sticky-col3-width);
+}
+
+.draft-schedule-table col.draft-col-data {
+  width: var(--draft-data-col-width);
+  min-width: var(--draft-data-col-width);
+}
+
+.draft-schedule-table td[data-col-key],
+.draft-schedule-table th[data-col-key] {
+  width: var(--draft-data-col-width);
+  min-width: var(--draft-data-col-width);
+  max-width: var(--draft-data-col-width);
+}
+
+.draft-schedule-table col.draft-col-trailing {
+  width: var(--draft-trailing-col-width);
+}
+
+.draft-schedule-table .draft-sticky-left-1 {
   position: sticky;
   left: 0;
   width: var(--draft-sticky-col1-width);
@@ -22,14 +136,15 @@
   white-space: nowrap;
   padding: 8px 4px !important;
   overflow: visible;
+  border: 1px solid #000 !important;
 }
 
-.schedule-table .draft-sticky-left-1 .cell-input,
-.schedule-table .draft-sticky-left-1 input[type="checkbox"] {
+.draft-schedule-table .draft-sticky-left-1 .cell-input,
+.draft-schedule-table .draft-sticky-left-1 input[type="checkbox"] {
   margin: 0 auto;
 }
 
-.schedule-table .draft-sticky-left-2 {
+.draft-schedule-table .draft-sticky-left-2 {
   position: sticky;
   left: var(--draft-sticky-col1-width);
   width: var(--draft-sticky-col2-width);
@@ -37,9 +152,10 @@
   max-width: var(--draft-sticky-col2-width);
   z-index: 6;
   background-color: #fff !important;
+  border: 1px solid #000 !important;
 }
 
-.schedule-table .draft-sticky-left-3 {
+.draft-schedule-table .draft-sticky-left-3 {
   position: sticky;
   left: calc(var(--draft-sticky-col1-width) + var(--draft-sticky-col2-width));
   width: var(--draft-sticky-col3-width);
@@ -47,42 +163,22 @@
   max-width: var(--draft-sticky-col3-width);
   z-index: 6;
   background-color: #fff !important;
+  border: 1px solid #000 !important;
   box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.12);
 }
 
-.schedule-table thead .draft-sticky-left-1,
-.schedule-table thead .draft-sticky-left-2,
-.schedule-table thead .draft-sticky-left-3 {
+.draft-schedule-table thead .draft-sticky-left-1,
+.draft-schedule-table thead .draft-sticky-left-2,
+.draft-schedule-table thead .draft-sticky-left-3 {
   top: 0;
   z-index: 25;
+  font-size: 30px !important;
+  font-weight: bold;
+  vertical-align: middle;
+  text-align: center;
 }
 
-.schedule-table tr.draft-row-highlighted > td.draft-sticky-left-1,
-.schedule-table tr.draft-row-highlighted > td.draft-sticky-left-2,
-.schedule-table tr.draft-row-highlighted > td.draft-sticky-left-3 {
-  background-color: rgba(255, 165, 0, 0.18) !important;
-}
-
-.schedule-table tr.draft-row-highlighted > td.draft-sticky-left-1 .cell-input,
-.schedule-table tr.draft-row-highlighted > td.draft-sticky-left-2 .cell-input,
-.schedule-table tr.draft-row-highlighted > td.draft-sticky-left-3 .cell-input {
-  background: transparent !important;
-}
-
-.schedule-table td.draft-sticky-left-3.draft-col-highlighted,
-.schedule-table td.draft-sticky-left-3.draft-cell-highlighted {
-  box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.12);
-}
-
-/* Sticky header - Hoạt động trong overflow container */
-.schedule-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-/* Row đầu tiên - Q1, Q2, Q3... */
-.schedule-table thead tr:first-child th {
+.draft-schedule-table thead tr:first-child th:not(.draft-sticky-left-1):not(.draft-sticky-left-2):not(.draft-sticky-left-3) {
   position: sticky;
   top: 0;
   z-index: 12;
@@ -92,131 +188,199 @@
   border: 1px solid #ddd;
 }
 
-/* Row thứ hai - T1, T2 */
-.schedule-table thead tr:nth-child(2) th {
+.draft-schedule-table thead tr:nth-child(2) th {
   position: sticky;
-  top: 54px; /* Chiều cao của row đầu */
-  z-index: 11;
+  top: 54px;
+  z-index: 8;
   background: white;
-  font-size: 30px !important;
-  padding: 12px !important;
+  font-size: 24px !important;
+  font-weight: bold;
+  padding: 10px 8px !important;
   border: 1px solid #ddd;
-  border-bottom: 1px solid #333 !important; /* Border đậm để ngăn cách */
+  border-bottom: 1px solid #333 !important;
+  white-space: nowrap;
 }
 
-/* Table cells */
-.schedule-table td {
+.draft-schedule-table thead tr:nth-child(2) th[colspan="2"] {
+  min-width: calc(var(--draft-data-col-width) * 2);
+}
+
+.draft-schedule-table thead tr:nth-child(3) th.draft-ab-header {
+  position: sticky;
+  top: 108px;
+  z-index: 7;
+  background: white;
+  font-size: 26px !important;
+  font-weight: bold;
+  padding: 10px 4px !important;
+  text-align: center;
+  overflow: visible !important;
+  white-space: nowrap;
+  width: var(--draft-data-col-width) !important;
+  min-width: var(--draft-data-col-width) !important;
+  max-width: var(--draft-data-col-width) !important;
+}
+
+.draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-1,
+.draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-2,
+.draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-3 {
+  background-color: rgba(255, 165, 0, 0.18) !important;
+}
+
+.draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-1 .cell-input,
+.draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-2 .cell-input,
+.draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-3 .cell-input {
+  background: transparent !important;
+}
+
+.draft-schedule-table td.draft-sticky-left-3.draft-col-highlighted,
+.draft-schedule-table td.draft-sticky-left-3.draft-cell-highlighted {
+  box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.12);
+}
+
+.draft-schedule-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.draft-schedule-table th {
+  overflow: visible;
+}
+
+.draft-schedule-table td {
   font-size: 30px !important;
   font-weight: 500;
   padding: 8px !important;
   border: black solid 1px !important;
   background: white;
+  overflow: hidden;
 }
 
-/* All inputs in table */
-.schedule-table .cell-input {
+.draft-schedule-table td[data-col-key] {
+  width: var(--draft-data-col-width) !important;
+  min-width: var(--draft-data-col-width) !important;
+  max-width: var(--draft-data-col-width) !important;
+}
+
+.draft-schedule-table .cell-input {
   font-size: 35px !important;
   font-weight: 500 !important;
   color: #222 !important;
   padding: 8px !important;
   min-height: 48px;
   text-align: center;
+  box-sizing: border-box;
 }
 
-.schedule-table .cell-input.small {
+.draft-schedule-table .cell-input.small {
   font-size: 35px !important;
   font-weight: 500 !important;
   color: #222 !important;
   padding: 8px !important;
   min-height: 48px;
   text-align: center;
+  width: 100%;
+  max-width: 100%;
 }
 
-/* Hiệu ứng nổi màu xanh nhạt khi click vào ô để nhập liệu */
-.schedule-table .cell-input:focus {
+.draft-schedule-table .cell-input:focus {
   background-color: #f0f8ff !important;
   outline: 2px solid #4a90e2 !important;
   box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.25) !important;
 }
 
-/* ===== NỀN TẬP CHẴN / LẺ (Bảng thông) ===== */
-.schedule-table td.draft-tap-odd:not(.draft-cell-highlighted):not(.draft-col-highlighted) {
+.draft-schedule-table td.draft-tap-odd:not(.draft-cell-highlighted):not(.draft-col-highlighted) {
   background-color: #f2f4f8 !important;
 }
 
-.schedule-table td.draft-tap-even:not(.draft-cell-highlighted):not(.draft-col-highlighted) {
+.draft-schedule-table td.draft-tap-even:not(.draft-cell-highlighted):not(.draft-col-highlighted) {
   background-color: #ffffff !important;
 }
 
-.schedule-table td.draft-tap-odd:not(.draft-cell-highlighted):not(.draft-col-highlighted) .cell-input {
+.draft-schedule-table td.draft-tap-odd:not(.draft-cell-highlighted):not(.draft-col-highlighted) .cell-input {
   background-color: #f2f4f8 !important;
 }
 
-.schedule-table td.draft-tap-even:not(.draft-cell-highlighted):not(.draft-col-highlighted) .cell-input {
+.draft-schedule-table td.draft-tap-even:not(.draft-cell-highlighted):not(.draft-col-highlighted) .cell-input {
   background-color: #ffffff !important;
 }
 
-.schedule-table th.draft-tap-header-odd {
+.draft-schedule-table th.draft-tap-header-odd {
   background-color: #e5e9f0 !important;
 }
 
-.schedule-table th.draft-tap-header-even {
+.draft-schedule-table th.draft-tap-header-even {
   background-color: #f8f9fb !important;
 }
 
-/* ===== HIGHLIGHT CỘT Q (Bảng thông) ===== */
-
-/* Ô data (td) khi cột đang active */
-.schedule-table td.draft-col-highlighted {
+.draft-schedule-table td.draft-col-highlighted {
   background-color: #fff59d !important;
   border-top: 1.5px solid #fbc02d !important;
   border-bottom: 1.5px solid #fbc02d !important;
 }
 
-/* Input bên trong ô highlight — giữ trong suốt để màu nền lộ ra */
-.schedule-table td.draft-col-highlighted .cell-input {
+.draft-schedule-table td.draft-col-highlighted .cell-input {
   background: transparent !important;
 }
 
-/* Header (th) khi cột đang active */
-.schedule-table th.draft-col-header-highlighted {
+.draft-schedule-table th.draft-col-header-highlighted {
   background-color: #fdd835 !important;
   color: #333 !important;
 }
 
-/* ===== HIGHLIGHT HÀNG (Bảng thông) ===== */
-.schedule-table tr.draft-row-highlighted > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) {
+.draft-schedule-table tr.draft-row-highlighted > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) {
   border-top: 2px solid #ffa500 !important;
   border-bottom: 2px solid #ffa500 !important;
   background-color: rgba(255, 165, 0, 0.18) !important;
 }
 
-.schedule-table tr.draft-row-highlighted > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) .cell-input {
+.draft-schedule-table tr.draft-row-highlighted > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) .cell-input {
   background: transparent !important;
 }
 
-/* ===== HIGHLIGHT Ô ĐƠN (Bảng thông - Màu cam giống cột A, B) ===== */
-.schedule-table td.draft-cell-highlighted {
-  background-color: #ff9800 !important; /* Màu cam */
+.draft-schedule-table td.draft-cell-highlighted {
+  background-color: #ff9800 !important;
   border: 3px solid #e65100 !important;
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* Input bên trong ô highlight — giữ trong suốt để màu nền lộ ra */
-.schedule-table td.draft-col-highlighted .cell-input,
-.schedule-table tr.draft-row-highlighted > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) .cell-input {
+.draft-schedule-table td.draft-col-highlighted .cell-input,
+.draft-schedule-table tr.draft-row-highlighted > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) .cell-input {
   background: transparent !important;
 }
 
-.schedule-table td.draft-cell-highlighted .cell-input {
+.draft-schedule-table td.draft-cell-highlighted .cell-input {
   background: transparent !important;
-  color: white !important; /* Chữ trắng khi ô nền cam */
+  color: white !important;
 }
 
-.schedule-table tr.draft-virtual-spacer td {
+.draft-schedule-table tr.draft-virtual-spacer td {
   padding: 0 !important;
   border: none !important;
   background: transparent !important;
   line-height: 0;
 }
 
+.draft-table-scroll::-webkit-scrollbar {
+  height: 16px;
+  width: 16px;
+}
+
+.draft-table-scroll::-webkit-scrollbar-track {
+  background: #e8e8e8;
+}
+
+.draft-table-scroll::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 8px;
+  border: 3px solid #e8e8e8;
+}
+
+.draft-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.draft-table-scroll::-webkit-scrollbar-corner {
+  background: #e8e8e8;
+}
