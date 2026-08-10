@@ -48,27 +48,29 @@ export const savePageData = async (
   try {
     const realId = getRealPageId(pageId);
     console.log(`💾 Saving data for REAL ID: ${realId}`);
+    const payload = {
+      zValues,
+      dateValues,
+      deletedRows,
+      sourceSTTValues,
+      purpleRangeFrom,
+      purpleRangeTo,
+      colorReportRangeFrom,
+      colorReportRangeTo,
+      keepLastNRows,
+      pageLabel,
+    };
+    if (aValues != null) payload.aValues = aValues;
+    if (bValues != null) payload.bValues = bValues;
+    if (tapsData != null) payload.tapsData = tapsData;
+    if (allQData != null) payload.allQData = allQData;
+
     const response = await fetch(`${API_URL}/api/pages/${realId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        aValues,
-        bValues,
-        tapsData,
-        zValues,
-        dateValues,
-        deletedRows,
-        sourceSTTValues,
-        purpleRangeFrom,
-        purpleRangeTo,
-        colorReportRangeFrom,
-        colorReportRangeTo,
-        keepLastNRows,
-        allQData,
-        pageLabel,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
@@ -87,12 +89,17 @@ export const savePageData = async (
 /**
  * Tải dữ liệu trang từ MongoDB qua Backend API
  * @param {string} pageId - ID của trang
+ * @param {{ compact?: boolean }} [options] - compact: bỏ pad client (dùng cho master_draft)
  */
-export const loadPageData = async (pageId) => {
+export const loadPageData = async (pageId, options = {}) => {
+  const { compact = false } = options;
   try {
     const realId = getRealPageId(pageId);
     console.log(`📖 Loading data for REAL ID: ${realId}`);
-    const response = await fetch(`${API_URL}/api/pages/${realId}?t=${Date.now()}`, {
+    const compactQuery = compact ? "&compact=1" : "";
+    const response = await fetch(
+      `${API_URL}/api/pages/${realId}?t=${Date.now()}${compactQuery}`,
+      {
       headers: {
         "Cache-Control": "no-cache, no-store, must-revalidate",
         "Pragma": "no-cache",
@@ -107,6 +114,29 @@ export const loadPageData = async (pageId) => {
 
     if (result.success && result.data) {
       const data = result.data;
+
+      if (compact) {
+        return {
+          success: true,
+          data: {
+            aValues: data.aValues,
+            bValues: data.bValues,
+            tapsData: data.tapsData,
+            zValues: data.zValues,
+            dateValues: data.dateValues,
+            deletedRows: data.deletedRows,
+            sourceSTTValues: data.sourceSTTValues,
+            purpleRangeFrom: data.purpleRangeFrom || 0,
+            purpleRangeTo: data.purpleRangeTo || 0,
+            colorReportRangeFrom: data.colorReportRangeFrom || 0,
+            colorReportRangeTo: data.colorReportRangeTo || 0,
+            colorReportRanges: data.colorReportRanges || {},
+            keepLastNRows: data.keepLastNRows || 1000,
+            allQData: data.allQData,
+            pageLabel: data.pageLabel || "",
+          },
+        };
+      }
 
       // Pad data về 5000 rows (match với App.jsx)
       const ROWS = 5000;

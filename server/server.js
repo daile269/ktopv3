@@ -64,7 +64,33 @@ app.get("/api/pages/:pageId", async (req, res) => {
       });
     }
 
-    // Pad arrays to 110 rows
+    // Compact mode: trả raw data cho bảng thông (InputPage tự pad 1 lần ở client)
+    if (req.query.compact === "1" && pageId === "master_draft") {
+      const lean = page.toObject ? page.toObject() : page;
+      return res.json({
+        success: true,
+        data: {
+          aValues: lean.aValues,
+          bValues: lean.bValues,
+          tapsData: lean.tapsData,
+          zValues: lean.zValues,
+          dateValues: lean.dateValues,
+          deletedRows: lean.deletedRows,
+          sourceSTTValues: lean.sourceSTTValues,
+          purpleRangeFrom: lean.purpleRangeFrom || 0,
+          purpleRangeTo: lean.purpleRangeTo || 0,
+          colorReportRangeFrom: lean.colorReportRangeFrom || 0,
+          colorReportRangeTo: lean.colorReportRangeTo || 0,
+          colorReportRanges: lean.colorReportRanges || {},
+          keepLastNRows:
+            typeof lean.keepLastNRows === "number" ? lean.keepLastNRows : 1000,
+          allQData: lean.allQData,
+          pageLabel: lean.pageLabel || "",
+        },
+      });
+    }
+
+    // Pad arrays to 5000 rows (bảng tính và các trang khác)
     const ROWS = 5000;
     const aValues = [...page.aValues].slice(0, ROWS);
     const bValues = [...page.bValues].slice(0, ROWS);
@@ -298,9 +324,9 @@ app.post("/api/pages/:pageId", async (req, res) => {
 
     // Build update object dynamically to support partial updates
     const updateData = {};
-    if (req.body.aValues !== undefined) updateData.aValues = trimmedA;
-    if (req.body.bValues !== undefined) updateData.bValues = trimmedB;
-    if (req.body.tapsData !== undefined) updateData.tapsData = trimmedTaps;
+    if (req.body.aValues != null) updateData.aValues = trimmedA;
+    if (req.body.bValues != null) updateData.bValues = trimmedB;
+    if (req.body.tapsData != null) updateData.tapsData = trimmedTaps;
     if (req.body.zValues !== undefined) updateData.zValues = trimmedZ;
     if (req.body.dateValues !== undefined) updateData.dateValues = trimmedDates;
     if (req.body.deletedRows !== undefined) updateData.deletedRows = trimmedDeleted;
@@ -311,7 +337,7 @@ app.post("/api/pages/:pageId", async (req, res) => {
     if (req.body.colorReportRangeTo !== undefined) updateData.colorReportRangeTo = colorReportRangeTo || 0;
     if (req.body.colorReportRanges !== undefined) updateData.colorReportRanges = colorReportRanges || {};
     if (req.body.keepLastNRows !== undefined) updateData.keepLastNRows = typeof keepLastNRows === "number" ? keepLastNRows : 1000;
-    if (req.body.allQData !== undefined) updateData.allQData = trimmedAllQData;
+    if (req.body.allQData != null) updateData.allQData = trimmedAllQData;
     if (req.body.pageLabel !== undefined) updateData.pageLabel = pageLabel || "";
     updateData.updatedAt = new Date();
 

@@ -1,7 +1,229 @@
-import { useState, useEffect, useMemo, memo, useCallback, Fragment } from "react";
+import { useState, useEffect, useMemo, memo, useCallback, useRef, Fragment, startTransition } from "react";
 import "./App.css";
 import "./InputPage.css";
 import { savePageData, loadPageData } from "./dataService";
+
+const MIN_ROWS = 5000;
+const ROWS = MIN_ROWS;
+const NUM_QS = 4;
+const DRAFT_ROW_HEIGHT = 52;
+const DRAFT_OVERSCAN = 6;
+const DRAFT_TABLE_COLSPAN = 85;
+
+const padToRows = (arr, fill = "", maxLen = ROWS) => {
+  const src = Array.isArray(arr) ? arr : [];
+  if (src.length >= maxLen) {
+    return src.slice(0, maxLen);
+  }
+  const out = src.slice();
+  while (out.length < maxLen) {
+    out.push(fill);
+  }
+  return out;
+};
+
+const toggleRowHighlightDom = (rowIndex, isActive, rowTrCache) => {
+  const tr =
+    rowTrCache.get(rowIndex) ??
+    document.querySelector(`tr[data-row-index="${rowIndex}"]`);
+  if (tr) {
+    tr.classList.toggle("draft-row-highlighted", isActive);
+  }
+};
+
+const toggleColHighlightDom = (colKey, isActive, cellCache, headerCache) => {
+  const cells = cellCache.get(colKey);
+  if (cells) {
+    for (let i = 0; i < cells.length; i++) {
+      cells[i].classList.toggle("draft-col-highlighted", isActive);
+    }
+  } else {
+    document.querySelectorAll(`td[data-col-key="${colKey}"]`).forEach((td) => {
+      td.classList.toggle("draft-col-highlighted", isActive);
+    });
+  }
+
+  const th = headerCache.get(colKey);
+  if (th) {
+    th.classList.toggle("draft-col-header-highlighted", isActive);
+  } else {
+    document
+      .querySelector(`th[data-col-key="${colKey}"]`)
+      ?.classList.toggle("draft-col-header-highlighted", isActive);
+  }
+};
+
+const createEmptyAllQData = () =>
+  Array(NUM_QS)
+    .fill(null)
+    .map(() => ({
+      tapsData: Array(10)
+        .fill(null)
+        .map(() => ({
+          aValues: Array(ROWS).fill(""),
+          bValues: Array(ROWS).fill(""),
+        })),
+    }));
+
+const hasAllQDataContent = (allQData) => {
+  if (!Array.isArray(allQData) || allQData.length === 0) return false;
+  for (let q = 0; q < allQData.length; q++) {
+    const taps = allQData[q]?.tapsData;
+    if (!Array.isArray(taps)) continue;
+    for (let t = 0; t < taps.length; t++) {
+      const tap = taps[t];
+      const a = tap?.aValues;
+      if (Array.isArray(a)) {
+        for (let i = 0; i < a.length; i++) {
+          if (a[i] !== "" && a[i] != null) return true;
+        }
+      }
+      const b = tap?.bValues;
+      if (Array.isArray(b)) {
+        for (let i = 0; i < b.length; i++) {
+          if (b[i] !== "" && b[i] != null) return true;
+        }
+      }
+    }
+  }
+  return false;
+};
+
+const normalizeAllQData = (raw, pageData = null) => {
+  let source = raw;
+
+  if (!hasAllQDataContent(source) && pageData?.tapsData?.length) {
+    source = [
+      {
+        aValues: pageData.aValues || [],
+        bValues: pageData.bValues || [],
+        tapsData: pageData.tapsData,
+      },
+    ];
+  }
+
+  if (!Array.isArray(source)) {
+    source = [];
+  }
+
+  const loadedAllQData = [];
+  for (let q = 0; q < NUM_QS; q++) {
+    const qItem = source[q] || {};
+    const qTaps = Array.isArray(qItem.tapsData) ? qItem.tapsData : [];
+    const tapsData = [];
+
+    for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
+      const tap = qTaps[tapIdx] || {};
+      tapsData.push({
+        aValues: padToRows(tap.aValues, ""),
+        bValues: padToRows(tap.bValues, ""),
+      });
+    }
+
+    loadedAllQData.push({
+      aValues: padToRows(qItem.aValues, ""),
+      bValues: padToRows(qItem.bValues, ""),
+      tapsData,
+    });
+  }
+
+  return loadedAllQData;
+};
+
+const cloneAllQData = (data) => JSON.parse(JSON.stringify(data));
+
+const getTapVolumeClass = (tapIndex) =>
+  tapIndex % 2 === 0 ? "draft-tap-odd" : "draft-tap-even";
+
+const getTapHeaderClass = (tapIndex) =>
+  tapIndex % 2 === 0 ? "draft-tap-header-odd" : "draft-tap-header-even";
+
+const DraftABCell = memo(function DraftABCell({
+  value,
+  disabled,
+  colKey,
+  tapVolumeClass,
+  tdClassName,
+  borderRight,
+  onCellHighlightToggle,
+  onValueChange,
+}) {
+  const [localValue, setLocalValue] = useState(value);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleFocusInput = useCallback(() => {
+    if (!disabled) {
+      inputRef.current?.focus();
+    }
+  }, [disabled]);
+
+  const handleToggleHighlight = useCallback(
+    (e) => {
+      e.preventDefault();
+      if (!disabled) {
+        onCellHighlightToggle();
+      }
+    },
+    [disabled, onCellHighlightToggle],
+  );
+
+  return (
+    <td
+      data-col-key={colKey}
+      onClick={handleFocusInput}
+      onDoubleClick={handleToggleHighlight}
+      className={[tapVolumeClass, tdClassName].filter(Boolean).join(" ")}
+      style={{
+        borderRight,
+        cursor: "text",
+        minWidth: "60px",
+      }}
+    >
+      <input
+        ref={inputRef}
+        type="text"
+        className="cell-input small"
+        value={disabled ? "" : localValue}
+        onChange={(e) => {
+          const next = e.target.value;
+          setLocalValue(next);
+          onValueChange(next);
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleFocusInput();
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          handleToggleHighlight(e);
+        }}
+        disabled={disabled}
+      />
+    </td>
+  );
+});
+
+const areTaskRowPropsEqual = (prev, next) =>
+  prev.highlightedQColsRef === next.highlightedQColsRef &&
+  prev.highlightedRowsRef === next.highlightedRowsRef &&
+  prev.allQDataRef === next.allQDataRef &&
+  prev.dataSyncKey === next.dataSyncKey &&
+  prev.rowIndex === next.rowIndex &&
+  prev.displayRowNumber === next.displayRowNumber &&
+  prev.isDeleted === next.isDeleted &&
+  prev.isSelected === next.isSelected &&
+  prev.zValue === next.zValue &&
+  prev.rowHighlightedCells === next.rowHighlightedCells &&
+  prev.onToggleSelect === next.onToggleSelect &&
+  prev.onZChange === next.onZChange &&
+  prev.onAChange === next.onAChange &&
+  prev.onBChange === next.onBChange &&
+  prev.onRowClick === next.onRowClick &&
+  prev.onCellHighlightToggle === next.onCellHighlightToggle;
 
 const TaskRow = memo(
   ({
@@ -10,27 +232,34 @@ const TaskRow = memo(
     isDeleted,
     isSelected,
     zValue,
-    allQData,
+    allQDataRef,
+    dataSyncKey,
     onToggleSelect,
     onZChange,
     onAChange,
     onBChange,
-    highlightedQCols,
-    highlightedRows,
-    highlightedCells,
+    rowHighlightedCells,
+    highlightedQColsRef,
+    highlightedRowsRef,
     onRowClick,
-    onCellClick,
+    onCellHighlightToggle,
   }) => {
-    const isRowHL = !!highlightedRows[rowIndex];
+    const colHighlights = highlightedQColsRef.current;
+    const isRowHL = !!highlightedRowsRef.current[rowIndex];
+    const rowClassName = [
+      isSelected ? "selected-draft-row" : "",
+      isRowHL ? "draft-row-highlighted" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
     return (
-      <tr className={isSelected ? "selected-draft-row" : ""}>
+      <tr data-row-index={rowIndex} className={rowClassName || undefined}>
         <td
-          className={isRowHL ? "draft-row-highlighted" : ""}
+          className="draft-sticky-left-1"
           style={{
             textAlign: "center",
-            width: "60px !important",
-            minWidth: "60px !important",
-            padding: 0,
+            padding: "8px 4px",
           }}
         >
           <input
@@ -42,16 +271,13 @@ const TaskRow = memo(
           />
         </td>
         <td
+          className="draft-sticky-left-2"
           onClick={() => onRowClick(rowIndex)}
-          className={isRowHL ? "draft-row-highlighted" : ""}
           style={{ textAlign: "center", fontSize: "35px", fontWeight: "bold", cursor: "pointer", userSelect: "none" }}
         >
           {String(displayRowNumber).padStart(2, "0")}
         </td>
-        <td
-          style={{ width: "200px", minWidth: "200px" }}
-          className={isRowHL ? "draft-row-highlighted" : ""}
-        >
+        <td className="draft-sticky-left-3">
           <input
             type="text"
             className="cell-input"
@@ -65,76 +291,59 @@ const TaskRow = memo(
 
         {/* Render NUM_QS Qs, each has 10 Taps, each Tap has A and B */}
         {Array.from({ length: NUM_QS }).map((_, qIndex) => {
-          const qData = allQData[qIndex];
-          const baseColor = qIndex % 2 === 0 ? "#fff" : "#f1f1f1";
+          const qData = allQDataRef.current[qIndex];
 
           return Array.from({ length: 10 }).map((__, tapIndex) => {
             const tap = qData?.tapsData?.[tapIndex];
             const aV = isDeleted ? "" : tap?.aValues?.[rowIndex] || "";
             const bV = isDeleted ? "" : tap?.bValues?.[rowIndex] || "";
+            const tapVolumeClass = getTapVolumeClass(tapIndex);
 
             const colKeyA = `${qIndex}-${tapIndex}-a`;
             const colKeyB = `${qIndex}-${tapIndex}-b`;
 
-            const isColAHL = !!highlightedQCols[colKeyA];
-            const isColBHL = !!highlightedQCols[colKeyB];
-
-            const isCellAHL = !!highlightedCells[rowIndex]?.[qIndex]?.[tapIndex]?.a;
-            const isCellBHL = !!highlightedCells[rowIndex]?.[qIndex]?.[tapIndex]?.b;
+            const isCellAHL = !!rowHighlightedCells?.[qIndex]?.[tapIndex]?.a;
+            const isCellBHL = !!rowHighlightedCells?.[qIndex]?.[tapIndex]?.b;
+            const isColAHL = !!colHighlights[colKeyA];
+            const isColBHL = !!colHighlights[colKeyB];
 
             const tdAClass = isCellAHL
               ? "draft-cell-highlighted"
               : isColAHL
-              ? "draft-col-highlighted"
-              : isRowHL
-              ? "draft-row-highlighted"
-              : "";
+                ? "draft-col-highlighted"
+                : "";
             const tdBClass = isCellBHL
               ? "draft-cell-highlighted"
               : isColBHL
-              ? "draft-col-highlighted"
-              : isRowHL
-              ? "draft-row-highlighted"
-              : "";
+                ? "draft-col-highlighted"
+                : "";
 
             return (
-              <Fragment key={`${qIndex}-${tapIndex}`}>
-                <td
-                  onClick={() => onCellClick(rowIndex, qIndex, tapIndex, "a")}
-                  className={tdAClass}
-                  style={{
-                    backgroundColor: tdAClass ? undefined : baseColor,
-                    borderRight: "2px solid #999",
-                    cursor: "pointer",
-                    minWidth: "60px",
-                  }}
-                >
-                  <input
-                    type="text"
-                    className="cell-input small"
-                    value={aV}
-                    onChange={(e) => onAChange(qIndex, tapIndex, rowIndex, e.target.value)}
-                    disabled={isDeleted}
-                  />
-                </td>
-                <td
-                  onClick={() => onCellClick(rowIndex, qIndex, tapIndex, "b")}
-                  className={tdBClass}
-                  style={{
-                    backgroundColor: tdBClass ? undefined : baseColor,
-                    borderRight: tapIndex === 9 ? "3px double red" : "2px solid red",
-                    cursor: "pointer",
-                    minWidth: "60px",
-                  }}
-                >
-                  <input
-                    type="text"
-                    className="cell-input small"
-                    value={bV}
-                    onChange={(e) => onBChange(qIndex, tapIndex, rowIndex, e.target.value)}
-                    disabled={isDeleted}
-                  />
-                </td>
+              <Fragment key={`${qIndex}-${tapIndex}-${dataSyncKey}`}>
+                <DraftABCell
+                  value={aV}
+                  disabled={isDeleted}
+                  colKey={colKeyA}
+                  tapVolumeClass={tapVolumeClass}
+                  tdClassName={tdAClass}
+                  borderRight="2px solid #999"
+                  onCellHighlightToggle={() =>
+                    onCellHighlightToggle(rowIndex, qIndex, tapIndex, "a")
+                  }
+                  onValueChange={(val) => onAChange(qIndex, tapIndex, rowIndex, val)}
+                />
+                <DraftABCell
+                  value={bV}
+                  disabled={isDeleted}
+                  colKey={colKeyB}
+                  tapVolumeClass={tapVolumeClass}
+                  tdClassName={tdBClass}
+                  borderRight={tapIndex === 9 ? "3px double red" : "2px solid red"}
+                  onCellHighlightToggle={() =>
+                    onCellHighlightToggle(rowIndex, qIndex, tapIndex, "b")
+                  }
+                  onValueChange={(val) => onBChange(qIndex, tapIndex, rowIndex, val)}
+                />
               </Fragment>
             );
           });
@@ -142,13 +351,11 @@ const TaskRow = memo(
 
         <td
           onClick={() => onRowClick(rowIndex)}
-          className={isRowHL ? "draft-row-highlighted" : ""}
           style={{ textAlign: "center", fontSize: "35px", fontWeight: "bold", cursor: "pointer", userSelect: "none" }}
         >
           {String(displayRowNumber).padStart(2, "0")}
         </td>
         <td
-          className={isRowHL ? "draft-row-highlighted" : ""}
           style={{
             textAlign: "center",
             width: "80px !important",
@@ -167,34 +374,35 @@ const TaskRow = memo(
       </tr>
     );
   },
+  areTaskRowPropsEqual,
 );
 
-const MIN_ROWS = 5000;
-const ROWS = MIN_ROWS;
-
-const NUM_QS = 4;
 const qOffset = import.meta.env.VITE_SITE_ID === "site_b" ? NUM_QS : 0;
 
 function InputPage({ accessWarningContent = null }) {
   const [keepLastNRows, setKeepLastNRows] = useState(1000);
 
-  // State cho NUM_QS Q, mỗi Q có 10 Tập (A, B)
-  const [allQData, setAllQData] = useState(
-    Array(NUM_QS)
-      .fill(null)
-      .map(() => ({
-        tapsData: Array(10)
-          .fill(null)
-          .map(() => ({
-            aValues: Array(ROWS).fill(""),
-            bValues: Array(ROWS).fill(""),
-          })),
-      })),
+  // State cho NUM_QS Q — khởi tạo lazy sau khi load (tránh cấp phát 400k ô rỗng lúc mount)
+  const [allQData, setAllQData] = useState(null);
+  const allQDataRef = useRef(null);
+  const [dataSyncKey, setDataSyncKey] = useState(0);
+  const scrollContainerRef = useRef(null);
+  const [virtualRange, setVirtualRange] = useState({ start: 0, end: 30 });
+
+  const assignAllQData = useCallback((nextAllQData) => {
+    allQDataRef.current = nextAllQData;
+    setAllQData(nextAllQData);
+    setDataSyncKey((k) => k + 1);
+  }, []);
+
+  const getAllQDataSnapshot = useCallback(
+    () => cloneAllQData(allQDataRef.current || createEmptyAllQData()),
+    [],
   );
 
-  const [dateValues, setDateValues] = useState(Array(ROWS).fill(""));
-  const [zValues, setZValues] = useState(Array(ROWS).fill(""));
-  const [deletedRows, setDeletedRows] = useState(Array(ROWS).fill(false));
+  const [dateValues, setDateValues] = useState(null);
+  const [zValues, setZValues] = useState(null);
+  const [deletedRows, setDeletedRows] = useState(null);
   const [purpleRangeFrom, setPurpleRangeFrom] = useState(0);
   const [purpleRangeTo, setPurpleRangeTo] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -202,8 +410,11 @@ function InputPage({ accessWarningContent = null }) {
   const [queue, setQueue] = useState([]);
   const MAX_PER_ROW = 4;
 
-  const [highlightedQCols, setHighlightedQCols] = useState({});
-  const [highlightedRows, setHighlightedRows] = useState({});
+  const highlightedQColsRef = useRef({});
+  const highlightedRowsRef = useRef({});
+  const colCellCacheRef = useRef(new Map());
+  const colHeaderCacheRef = useRef(new Map());
+  const rowTrCacheRef = useRef(new Map());
   const [highlightedCells, setHighlightedCells] = useState({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [isAddingToCalc, setIsAddingToCalc] = useState(false);
@@ -230,58 +441,29 @@ function InputPage({ accessWarningContent = null }) {
     const loadData = async () => {
       setIsLoading(true);
 
-      const result = await loadPageData("master_draft");
+      const result = await loadPageData("master_draft", { compact: true });
 
       if (result.success && result.data) {
         const d = result.data;
-        let loadedAllQData = d.allQData || [];
-        loadedAllQData = JSON.parse(JSON.stringify(loadedAllQData));
-        while (loadedAllQData.length < NUM_QS) {
-          loadedAllQData.push({
-            tapsData: Array(10).fill(null).map(() => ({
-              aValues: Array(ROWS).fill(""),
-              bValues: Array(ROWS).fill(""),
-            })),
-          });
-        }
-        for (let q = 0; q < NUM_QS; q++) {
-          if (!loadedAllQData[q]) {
-            loadedAllQData[q] = { tapsData: [] };
-          }
-          if (!loadedAllQData[q].tapsData) {
-            loadedAllQData[q].tapsData = [];
-          }
-          while (loadedAllQData[q].tapsData.length < 10) {
-            loadedAllQData[q].tapsData.push({
-              aValues: Array(ROWS).fill(""),
-              bValues: Array(ROWS).fill(""),
-            });
-          }
-        }
-        setAllQData(loadedAllQData);
-        setDateValues(d.dateValues || Array(ROWS).fill(""));
-        setZValues(d.zValues || Array(ROWS).fill(""));
-        setDeletedRows(d.deletedRows || Array(ROWS).fill(false));
+        const loadedAllQData = normalizeAllQData(d.allQData, d);
+        assignAllQData(loadedAllQData);
+        setDateValues(padToRows(d.dateValues, ""));
+        setZValues(padToRows(d.zValues, ""));
+        setDeletedRows(padToRows(d.deletedRows, false));
         setKeepLastNRows(d.keepLastNRows || 1000);
         setPurpleRangeFrom(d.purpleRangeFrom || 0);
         setPurpleRangeTo(d.purpleRangeTo || 0);
       } else {
-        const emptyAllQ = Array(NUM_QS).fill(null).map(() => ({
-          tapsData: Array(10).fill(null).map(() => ({
-            aValues: Array(ROWS).fill(""),
-            bValues: Array(ROWS).fill(""),
-          })),
-        }));
-        setAllQData(emptyAllQ);
-        setDateValues(Array(ROWS).fill(""));
-        setZValues(Array(ROWS).fill(""));
-        setDeletedRows(Array(ROWS).fill(false));
+        assignAllQData(createEmptyAllQData());
+        setDateValues(padToRows([], ""));
+        setZValues(padToRows([], ""));
+        setDeletedRows(padToRows([], false));
       }
       setIsLoading(false);
     };
 
     loadData();
-  }, []);
+  }, [assignAllQData]);
 
   const formatSttRanges = (sttArray) => {
     if (!sttArray || sttArray.length === 0) return "";
@@ -310,40 +492,6 @@ function InputPage({ accessWarningContent = null }) {
     );
     return "STT: " + ranges.join(", ");
   };
-
-  useEffect(() => {
-    if (!isLoading && dateValues.length > 0) {
-      const timer = setTimeout(() => {
-        let targetRowIndex =
-          dateValues.length >= 50 ? 49 : dateValues.length - 1;
-
-        let displayRowNumber = 0;
-        for (let i = 0; i <= targetRowIndex; i++) {
-          if (!deletedRows[i]) {
-            displayRowNumber++;
-          }
-        }
-
-        const rowElement = document.querySelector(
-          `tbody tr:nth-child(${displayRowNumber})`,
-        );
-
-        if (rowElement) {
-          rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
-        } else {
-          const tableContainer =
-            document.querySelector(".schedule-table")?.parentElement;
-          if (tableContainer) {
-            tableContainer.scrollTo({
-              top: tableContainer.scrollHeight * 0.4,
-              behavior: "smooth",
-            });
-          }
-        }
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, dateValues.length, deletedRows]);
 
   const [lastBatch, setLastBatch] = useState(() => {
     const saved = localStorage.getItem("lastBatchInfo");
@@ -377,7 +525,7 @@ function InputPage({ accessWarningContent = null }) {
 
         if (!hasData) {
           for (let qIndex = 0; qIndex < 10; qIndex++) {
-            const q = allQData[qIndex];
+            const q = allQDataRef.current[qIndex];
             if (q && q.tapsData) {
               for (let tap = 0; tap < 10; tap++) {
                 const a = q.tapsData[tap]?.aValues[i];
@@ -437,7 +585,7 @@ function InputPage({ accessWarningContent = null }) {
       purpleRangeFrom,
       purpleRangeTo,
       adjustedN,
-      allQData,
+      getAllQDataSnapshot(),
     );
     if (result && result.success) {
       setSaveStatus("✅ Đã giữ " + adjustedN + " dòng cuối!");
@@ -462,7 +610,7 @@ function InputPage({ accessWarningContent = null }) {
       purpleRangeFrom,
       purpleRangeTo,
       keepLastNRows,
-      allQData,
+      getAllQDataSnapshot(),
     );
 
     if (result.success) {
@@ -484,7 +632,8 @@ function InputPage({ accessWarningContent = null }) {
       }
       return [...prev, { rowIndex, displaySTT: rowIndex }];
     });
-    setHighlightedRows({ [rowIndex]: true });
+    highlightedRowsRef.current[rowIndex] = true;
+    toggleRowHighlightDom(rowIndex, true, rowTrCacheRef.current);
   }, []);
 
   const handleRemoveFromQueue = useCallback((queueIndex) => {
@@ -496,17 +645,23 @@ function InputPage({ accessWarningContent = null }) {
   }, []);
 
   const handleRowClick = useCallback((rowIndex) => {
-    setHighlightedRows((prev) => ({
-      ...prev,
-      [rowIndex]: !prev[rowIndex],
-    }));
+    const isActive = !highlightedRowsRef.current[rowIndex];
+    highlightedRowsRef.current[rowIndex] = isActive;
+    toggleRowHighlightDom(rowIndex, isActive, rowTrCacheRef.current);
   }, []);
 
   const handleColClick = useCallback((colKey) => {
-    setHighlightedQCols((prev) => ({ ...prev, [colKey]: !prev[colKey] }));
+    const isActive = !highlightedQColsRef.current[colKey];
+    highlightedQColsRef.current[colKey] = isActive;
+    toggleColHighlightDom(
+      colKey,
+      isActive,
+      colCellCacheRef.current,
+      colHeaderCacheRef.current,
+    );
   }, []);
 
-  const handleCellClick = useCallback((rowIndex, qIndex, tapIndex, ab) => {
+  const handleCellHighlightToggle = useCallback((rowIndex, qIndex, tapIndex, ab) => {
     setHighlightedCells((prev) => {
       const rowData = prev[rowIndex] || {};
       const qData = rowData[qIndex] || {};
@@ -526,9 +681,28 @@ function InputPage({ accessWarningContent = null }) {
   }, []);
 
   const clearHighlights = useCallback(() => {
-    setHighlightedQCols({});
-    setHighlightedRows({});
-    setHighlightedCells({});
+    Object.entries(highlightedQColsRef.current).forEach(([colKey, isActive]) => {
+      if (isActive) {
+        toggleColHighlightDom(
+          colKey,
+          false,
+          colCellCacheRef.current,
+          colHeaderCacheRef.current,
+        );
+      }
+    });
+    highlightedQColsRef.current = {};
+
+    Object.entries(highlightedRowsRef.current).forEach(([rowIndex, isActive]) => {
+      if (isActive) {
+        toggleRowHighlightDom(Number(rowIndex), false, rowTrCacheRef.current);
+      }
+    });
+    highlightedRowsRef.current = {};
+
+    startTransition(() => {
+      setHighlightedCells({});
+    });
   }, []);
 
   const handleZChange = useCallback((rIdx, val) => {
@@ -542,39 +716,11 @@ function InputPage({ accessWarningContent = null }) {
   }, []);
 
   const handleAChange = useCallback((qIdx, tapIdx, rIdx, val) => {
-    setAllQData((prev) => {
-      const next = [...prev];
-      const updatedQ = {
-        ...next[qIdx],
-        tapsData: [...next[qIdx].tapsData],
-      };
-      const updatedTap = {
-        ...updatedQ.tapsData[tapIdx],
-        aValues: [...updatedQ.tapsData[tapIdx].aValues],
-      };
-      updatedTap.aValues[rIdx] = val;
-      updatedQ.tapsData[tapIdx] = updatedTap;
-      next[qIdx] = updatedQ;
-      return next;
-    });
+    allQDataRef.current[qIdx].tapsData[tapIdx].aValues[rIdx] = val;
   }, []);
 
   const handleBChange = useCallback((qIdx, tapIdx, rIdx, val) => {
-    setAllQData((prev) => {
-      const next = [...prev];
-      const updatedQ = {
-        ...next[qIdx],
-        tapsData: [...next[qIdx].tapsData],
-      };
-      const updatedTap = {
-        ...updatedQ.tapsData[tapIdx],
-        bValues: [...updatedQ.tapsData[tapIdx].bValues],
-      };
-      updatedTap.bValues[rIdx] = val;
-      updatedQ.tapsData[tapIdx] = updatedTap;
-      next[qIdx] = updatedQ;
-      return next;
-    });
+    allQDataRef.current[qIdx].tapsData[tapIdx].bValues[rIdx] = val;
   }, []);
 
   const handleDeleteFirstRow = async () => {
@@ -584,7 +730,7 @@ function InputPage({ accessWarningContent = null }) {
         let hasData = dateValues[i] !== "" || zValues[i] !== "";
         if (!hasData) {
           for (let q = 0; q < 10; q++) {
-            const qData = allQData[q];
+            const qData = allQDataRef.current[q];
             if (qData && qData.tapsData) {
               for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
                 if (qData.tapsData[tapIdx]?.aValues[i] || qData.tapsData[tapIdx]?.bValues[i]) {
@@ -624,7 +770,7 @@ function InputPage({ accessWarningContent = null }) {
       purpleRangeFrom,
       purpleRangeTo,
       keepLastNRows,
-      allQData,
+      getAllQDataSnapshot(),
     );
 
     setShowDeleteFirstRowModal(false);
@@ -642,7 +788,7 @@ function InputPage({ accessWarningContent = null }) {
         let hasData = dateValues[i] !== "" || zValues[i] !== "";
         if (!hasData) {
           for (let q = 0; q < 10; q++) {
-            const qData = allQData[q];
+            const qData = allQDataRef.current[q];
             if (qData && qData.tapsData) {
               for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
                 if (qData.tapsData[tapIdx]?.aValues[i] || qData.tapsData[tapIdx]?.bValues[i]) {
@@ -682,7 +828,7 @@ function InputPage({ accessWarningContent = null }) {
       purpleRangeFrom,
       purpleRangeTo,
       keepLastNRows,
-      allQData,
+      getAllQDataSnapshot(),
     );
 
     setShowDeleteLastRowModal(false);
@@ -724,7 +870,7 @@ function InputPage({ accessWarningContent = null }) {
 
     setShowDeleteAllModal(false);
     if (result && result.success) {
-      setAllQData(emptyAllQData);
+      assignAllQData(emptyAllQData);
       setZValues(Array(dateValues.length).fill(""));
       setDateValues(Array(dateValues.length).fill(""));
       alert("✅ Đã xóa tất cả dữ liệu Bảng thông!");
@@ -768,7 +914,7 @@ function InputPage({ accessWarningContent = null }) {
       purpleRangeFrom,
       purpleRangeTo,
       keepLastNRows,
-      allQData,
+      getAllQDataSnapshot(),
     );
 
     setShowDeleteByRowsModal(false);
@@ -814,7 +960,7 @@ function InputPage({ accessWarningContent = null }) {
       for (const idx of [...new Set(selectedIndices)]) {
         let hasValueInAnyQ = false;
         for (let q = 0; q < NUM_QS; q++) {
-          const qData = allQData[q];
+          const qData = allQDataRef.current[q];
           if (qData && qData.tapsData) {
             for (let tap = 0; tap < 10; tap++) {
               const a = qData.tapsData[tap]?.aValues[idx];
@@ -948,7 +1094,7 @@ function InputPage({ accessWarningContent = null }) {
 
         for (let q = 0; q < NUM_QS; q++) {
           for (let tapIdx = 0; tapIdx < 10; tapIdx++) {
-            const draftTap = allQData[q]?.tapsData?.[tapIdx];
+            const draftTap = allQDataRef.current[q]?.tapsData?.[tapIdx];
             newAllQData[q].tapsData[tapIdx].aValues.push(draftTap?.aValues[idx] || "");
             newAllQData[q].tapsData[tapIdx].bValues.push(draftTap?.bValues[idx] || "");
           }
@@ -1024,6 +1170,8 @@ function InputPage({ accessWarningContent = null }) {
   };
 
   const sortedIndices = useMemo(() => {
+    if (!deletedRows) return [];
+
     return Array.from(
       { length: Math.max(Number(keepLastNRows) || 1000, 1000) },
       (_, i) => i,
@@ -1034,6 +1182,148 @@ function InputPage({ accessWarningContent = null }) {
       return aDeleted ? 1 : -1;
     });
   }, [keepLastNRows, deletedRows]);
+
+  const selectedRowSet = useMemo(
+    () => new Set(queue.map((item) => item.rowIndex)),
+    [queue],
+  );
+
+  const updateVirtualRange = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const total = sortedIndices.length;
+    const scrollTop = el.scrollTop;
+    const viewport = el.clientHeight;
+    const start = Math.max(
+      0,
+      Math.floor(scrollTop / DRAFT_ROW_HEIGHT) - DRAFT_OVERSCAN,
+    );
+    const count =
+      Math.ceil(viewport / DRAFT_ROW_HEIGHT) + DRAFT_OVERSCAN * 2;
+    const end = Math.min(total, start + count);
+
+    setVirtualRange((prev) =>
+      prev.start === start && prev.end === end ? prev : { start, end },
+    );
+  }, [sortedIndices.length]);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    updateVirtualRange();
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    el.addEventListener("scroll", updateVirtualRange, { passive: true });
+    window.addEventListener("resize", updateVirtualRange);
+
+    return () => {
+      el.removeEventListener("scroll", updateVirtualRange);
+      window.removeEventListener("resize", updateVirtualRange);
+    };
+  }, [isLoading, updateVirtualRange, sortedIndices.length]);
+
+  const visibleIndices = useMemo(
+    () => sortedIndices.slice(virtualRange.start, virtualRange.end),
+    [sortedIndices, virtualRange.start, virtualRange.end],
+  );
+
+  const topSpacerHeight = virtualRange.start * DRAFT_ROW_HEIGHT;
+  const bottomSpacerHeight =
+    (sortedIndices.length - virtualRange.end) * DRAFT_ROW_HEIGHT;
+
+  useEffect(() => {
+    if (isLoading || !dateValues?.length) return;
+
+    const timer = setTimeout(() => {
+      const targetRowIndex =
+        dateValues.length >= 50 ? 49 : dateValues.length - 1;
+      const displayIdx = sortedIndices.indexOf(targetRowIndex);
+      const container = scrollContainerRef.current;
+
+      if (displayIdx >= 0 && container) {
+        container.scrollTop = Math.max(
+          0,
+          displayIdx * DRAFT_ROW_HEIGHT - container.clientHeight * 0.4,
+        );
+        updateVirtualRange();
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [isLoading, dateValues, deletedRows, sortedIndices, updateVirtualRange]);
+
+  const rebuildHighlightCaches = useCallback(() => {
+    const headerCache = new Map();
+    for (let q = 0; q < NUM_QS; q++) {
+      for (let tap = 0; tap < 10; tap++) {
+        for (const ab of ["a", "b"]) {
+          const key = `${q}-${tap}-${ab}`;
+          const th = document.querySelector(`th[data-col-key="${key}"]`);
+          if (th) headerCache.set(key, th);
+        }
+      }
+    }
+    colHeaderCacheRef.current = headerCache;
+
+    const rowCache = new Map();
+    document.querySelectorAll("tr[data-row-index]").forEach((tr) => {
+      const idx = parseInt(tr.getAttribute("data-row-index"), 10);
+      if (!Number.isNaN(idx)) rowCache.set(idx, tr);
+    });
+    rowTrCacheRef.current = rowCache;
+
+    const cellCache = new Map();
+    for (const key of headerCache.keys()) {
+      cellCache.set(
+        key,
+        document.querySelectorAll(`td[data-col-key="${key}"]`),
+      );
+    }
+    colCellCacheRef.current = cellCache;
+
+    for (const [key, active] of Object.entries(highlightedQColsRef.current)) {
+      if (active) {
+        toggleColHighlightDom(key, true, cellCache, headerCache);
+      }
+    }
+    for (const [rowIndex, active] of Object.entries(
+      highlightedRowsRef.current,
+    )) {
+      if (active) {
+        toggleRowHighlightDom(Number(rowIndex), true, rowCache);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    let idleId;
+    let timeoutId;
+
+    if (typeof requestIdleCallback !== "undefined") {
+      idleId = requestIdleCallback(rebuildHighlightCaches, { timeout: 1500 });
+    } else {
+      timeoutId = setTimeout(rebuildHighlightCaches, 0);
+    }
+
+    return () => {
+      if (idleId != null && typeof cancelIdleCallback !== "undefined") {
+        cancelIdleCallback(idleId);
+      }
+      if (timeoutId != null) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [
+    isLoading,
+    virtualRange.start,
+    virtualRange.end,
+    keepLastNRows,
+    rebuildHighlightCaches,
+  ]);
 
   if (isLoading) {
     return (
@@ -1374,6 +1664,7 @@ function InputPage({ accessWarningContent = null }) {
 
           {/* Giao diện lưới nhập liệu với cuộn ngang */}
           <div
+            ref={scrollContainerRef}
             style={{
               overflowX: "auto",
               overflowY: "auto",
@@ -1386,19 +1677,18 @@ function InputPage({ accessWarningContent = null }) {
                 <tr>
                   <th
                     rowSpan="3"
+                    className="draft-sticky-left-1"
                     style={{
-                      padding: 0,
-                      width: "60px !important",
-                      minWidth: "60px !important",
-                      fontSize: "14px",
+                      fontSize: "20px",
+                      fontWeight: "bold",
                     }}
                   >
                     Chọn
                   </th>
-                  <th rowSpan="3" style={{ padding: "8px 4px" }}>
+                  <th rowSpan="3" className="draft-sticky-left-2" style={{ padding: "8px 4px" }}>
                     STT
                   </th>
-                  <th rowSpan="3" style={{ minWidth: "200px", width: "200px" }}>
+                  <th rowSpan="3" className="draft-sticky-left-3">
                     Z
                   </th>
                   {Array.from({ length: NUM_QS }, (_, qIndex) => {
@@ -1437,15 +1727,14 @@ function InputPage({ accessWarningContent = null }) {
                   </th>
                 </tr>
                 <tr>
-                  {Array.from({ length: NUM_QS }).map((_, qIndex) => {
-                    const baseColor = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd";
-                    return Array.from({ length: 10 }).map((__, tapIndex) => (
+                  {Array.from({ length: NUM_QS }).map((_, qIndex) =>
+                    Array.from({ length: 10 }).map((__, tapIndex) => (
                       <th
                         key={`${qIndex}-${tapIndex}`}
                         colSpan="2"
+                        className={getTapHeaderClass(tapIndex)}
                         style={{
-                          backgroundColor: baseColor,
-                          borderLeft: "1px solid #999",
+                          borderLeft: tapIndex === 0 ? "3px solid red" : "1px solid #999",
                           borderRight: "1px solid #999",
                           borderBottom: "1px solid black",
                           fontSize: "14px",
@@ -1454,24 +1743,21 @@ function InputPage({ accessWarningContent = null }) {
                       >
                         Tập {tapIndex + 1}
                       </th>
-                    ));
-                  })}
+                    )),
+                  )}
                 </tr>
                 <tr>
                   {Array.from({ length: NUM_QS }).map((_, qIndex) => {
-                    const baseColor = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd";
                     return Array.from({ length: 10 }).map((__, tapIndex) => {
                       const colKeyA = `${qIndex}-${tapIndex}-a`;
                       const colKeyB = `${qIndex}-${tapIndex}-b`;
-                      const isActiveA = !!highlightedQCols[colKeyA];
-                      const isActiveB = !!highlightedQCols[colKeyB];
                       return (
                         <Fragment key={`${qIndex}-${tapIndex}`}>
                           <th
+                            data-col-key={colKeyA}
                             onClick={() => handleColClick(colKeyA)}
-                            className={isActiveA ? "draft-col-header-highlighted" : ""}
+                            className={getTapHeaderClass(tapIndex)}
                             style={{
-                              backgroundColor: isActiveA ? undefined : baseColor,
                               borderLeft: "1px solid #999",
                               borderRight: "1px solid #ccc",
                               minWidth: "60px",
@@ -1483,10 +1769,10 @@ function InputPage({ accessWarningContent = null }) {
                             A
                           </th>
                           <th
+                            data-col-key={colKeyB}
                             onClick={() => handleColClick(colKeyB)}
-                            className={isActiveB ? "draft-col-header-highlighted" : ""}
+                            className={getTapHeaderClass(tapIndex)}
                             style={{
-                              backgroundColor: isActiveB ? undefined : baseColor,
                               borderRight: tapIndex === 9 ? "3px double red" : "1px solid #999",
                               minWidth: "60px",
                               cursor: "pointer",
@@ -1503,27 +1789,51 @@ function InputPage({ accessWarningContent = null }) {
                 </tr>
               </thead>
               <tbody>
-                {sortedIndices.map((rowIndex, idx) => (
+                {topSpacerHeight > 0 && (
+                  <tr aria-hidden="true" className="draft-virtual-spacer">
+                    <td
+                      colSpan={DRAFT_TABLE_COLSPAN}
+                      style={{
+                        height: topSpacerHeight,
+                        padding: 0,
+                        border: "none",
+                      }}
+                    />
+                  </tr>
+                )}
+                {visibleIndices.map((rowIndex, localIdx) => (
                   <TaskRow
                     key={rowIndex}
                     rowIndex={rowIndex}
-                    displayRowNumber={idx}
+                    displayRowNumber={virtualRange.start + localIdx}
                     isDeleted={deletedRows[rowIndex]}
-                    isSelected={queue.some((item) => item.rowIndex === rowIndex)}
+                    isSelected={selectedRowSet.has(rowIndex)}
                     zValue={zValues[rowIndex]}
-                    allQData={allQData}
-                    onToggleSelect={(rowIndex) => handleToggleSelect(rowIndex)}
+                    allQDataRef={allQDataRef}
+                    dataSyncKey={dataSyncKey}
+                    onToggleSelect={handleToggleSelect}
                     onZChange={handleZChange}
-                    highlightedQCols={highlightedQCols}
-                    highlightedRows={highlightedRows}
-                    highlightedCells={highlightedCells}
-                    onColClick={handleColClick}
+                    rowHighlightedCells={highlightedCells[rowIndex]}
+                    highlightedQColsRef={highlightedQColsRef}
+                    highlightedRowsRef={highlightedRowsRef}
                     onRowClick={handleRowClick}
-                    onCellClick={handleCellClick}
+                    onCellHighlightToggle={handleCellHighlightToggle}
                     onAChange={handleAChange}
                     onBChange={handleBChange}
                   />
                 ))}
+                {bottomSpacerHeight > 0 && (
+                  <tr aria-hidden="true" className="draft-virtual-spacer">
+                    <td
+                      colSpan={DRAFT_TABLE_COLSPAN}
+                      style={{
+                        height: bottomSpacerHeight,
+                        padding: 0,
+                        border: "none",
+                      }}
+                    />
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
