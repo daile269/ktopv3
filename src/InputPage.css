@@ -224,7 +224,9 @@
 .draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-1,
 .draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-2,
 .draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-3 {
-  background-color: rgba(255, 165, 0, 0.18) !important;
+  background-color: #d1d7ff !important;
+  border-top: 2px solid #a9b3ff !important;
+  border-bottom: 2px solid #a9b3ff !important;
 }
 
 .draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-1 .cell-input,
@@ -315,9 +317,9 @@
 }
 
 .draft-schedule-table td.draft-col-highlighted {
-  background-color: #fff59d !important;
-  border-top: 1.5px solid #fbc02d !important;
-  border-bottom: 1.5px solid #fbc02d !important;
+  background-color: #b3d7ff !important;
+  border-left: 2px solid #90caf9 !important;
+  border-right: 2px solid #90caf9 !important;
 }
 
 .draft-schedule-table td.draft-col-highlighted .cell-input {
@@ -325,14 +327,16 @@
 }
 
 .draft-schedule-table th.draft-col-header-highlighted {
-  background-color: #fdd835 !important;
+  background-color: #90caf9 !important;
   color: #333 !important;
+  border-bottom: 2px solid #64b5f6 !important;
+  font-weight: 700;
 }
 
 .draft-schedule-table tr.draft-row-highlighted > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) {
-  border-top: 2px solid #ffa500 !important;
-  border-bottom: 2px solid #ffa500 !important;
-  background-color: rgba(255, 165, 0, 0.18) !important;
+  border-top: 2px solid #a9b3ff !important;
+  border-bottom: 2px solid #a9b3ff !important;
+  background-color: #d1d7ff !important;
 }
 
 .draft-schedule-table tr.draft-row-highlighted > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) .cell-input {

@@ -1173,7 +1173,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                     : "2px solid #333",
                                 width: "250px",
                                 backgroundColor: isSubHL
-                                  ? "#d3f0ff"
+                                  ? "#90caf9"
                                   : "#f2edf8",
                                 cursor: "pointer",
                               }}
