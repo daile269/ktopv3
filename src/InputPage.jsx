@@ -693,8 +693,6 @@ function InputPage({ accessWarningContent = null }) {
       }
       return [...prev, { rowIndex, displaySTT: rowIndex }];
     });
-    highlightedRowsRef.current[rowIndex] = true;
-    toggleRowHighlightDom(rowIndex, true, rowTrCacheRef.current);
   }, []);
 
   const handleRemoveFromQueue = useCallback((queueIndex) => {
@@ -2061,13 +2059,6 @@ function InputPage({ accessWarningContent = null }) {
           padding: 20px;
           border-radius: 12px;
           box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        .selected-draft-row {
-          background-color: #f3e8ff !important;
-        }
-        .selected-draft-row td {
-          border-top: 1px solid #6f42c1;
-          border-bottom: 1px solid #6f42c1;
         }
         .modal-body {
           padding: 20px 0;

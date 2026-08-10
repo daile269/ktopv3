@@ -224,9 +224,9 @@
 .draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-1,
 .draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-2,
 .draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-3 {
-  background-color: #d1d7ff !important;
-  border-top: 2px solid #a9b3ff !important;
-  border-bottom: 2px solid #a9b3ff !important;
+  background-color: #c8e6c9 !important;
+  border-top: 2px solid #81c784 !important;
+  border-bottom: 2px solid #81c784 !important;
 }
 
 .draft-schedule-table tr.draft-row-highlighted > td.draft-sticky-left-1 .cell-input,
@@ -334,12 +334,26 @@
 }
 
 .draft-schedule-table tr.draft-row-highlighted > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) {
-  border-top: 2px solid #a9b3ff !important;
-  border-bottom: 2px solid #a9b3ff !important;
-  background-color: #d1d7ff !important;
+  border-top: 2px solid #81c784 !important;
+  border-bottom: 2px solid #81c784 !important;
+  background-color: #c8e6c9 !important;
 }
 
 .draft-schedule-table tr.draft-row-highlighted > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) .cell-input {
+  background: transparent !important;
+}
+
+/* Tick Chọn dòng — hồng nhạt (ưu tiên hơn highlight dòng xanh lá mạ) */
+.draft-schedule-table tr.selected-draft-row > td.draft-sticky-left-1,
+.draft-schedule-table tr.selected-draft-row > td.draft-sticky-left-2,
+.draft-schedule-table tr.selected-draft-row > td.draft-sticky-left-3,
+.draft-schedule-table tr.selected-draft-row > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) {
+  background-color: #fce4ec !important;
+  border-top: 1px solid #f48fb1 !important;
+  border-bottom: 1px solid #f48fb1 !important;
+}
+
+.draft-schedule-table tr.selected-draft-row > td:not(.draft-cell-highlighted):not(.draft-col-highlighted) .cell-input {
   background: transparent !important;
 }
 

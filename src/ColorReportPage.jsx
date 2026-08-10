@@ -1194,7 +1194,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                           key={row.rowIdx}
                           style={{
                             backgroundColor: isRowHL
-                              ? "#d1d7ff"
+                              ? "#c8e6c9"
                               : row.isFuture
                                 ? "#ffe3e8"
                                 : index % 2 === 0
@@ -1247,7 +1247,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                   fontWeight: "bold",
                                   fontStyle: row.isFuture ? "italic" : "normal",
                                   backgroundColor: isRowHL
-                                    ? "#d1d7ff"
+                                    ? "#c8e6c9"
                                     : row.isFuture
                                       ? "#ffe3e8"
                                       : "transparent",
@@ -1354,7 +1354,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                         : isColHL
                                           ? "#b3d7ff"
                                           : isRowHL
-                                            ? "#d1d7ff"
+                                            ? "#c8e6c9"
                                             : row.isFuture
                                               ? "#ffe3e8"
                                               : "transparent",

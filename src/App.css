@@ -507,9 +507,9 @@ body {
 
 /* Highlight hàng — chàm nhạt */
 .data-cell.highlighted-row {
-  border-top: 2px solid #a9b3ff !important;
-  border-bottom: 2px solid #a9b3ff !important;
-  background-color: #d1d7ff !important;
+  border-top: 2px solid #81c784 !important;
+  border-bottom: 2px solid #81c784 !important;
+  background-color: #c8e6c9 !important;
   font-weight: 600;
 }
 
@@ -582,9 +582,9 @@ body {
 }
 
 .data-cell.fixed.highlighted-row {
-  border-top: 2px solid #a9b3ff !important;
-  border-bottom: 2px solid #a9b3ff !important;
-  background-color: #d1d7ff !important;
+  border-top: 2px solid #81c784 !important;
+  border-bottom: 2px solid #81c784 !important;
+  background-color: #c8e6c9 !important;
 }
 
 
@@ -1005,9 +1005,9 @@ body {
 
 .tap-section.volume-odd .data-cell.highlighted-row,
 .tap-section.volume-even .data-cell.highlighted-row {
-  background-color: #d1d7ff !important;
-  border-top: 2px solid #a9b3ff !important;
-  border-bottom: 2px solid #a9b3ff !important;
+  background-color: #c8e6c9 !important;
+  border-top: 2px solid #81c784 !important;
+  border-bottom: 2px solid #81c784 !important;
 }
 
 .tap-section.volume-odd .data-cell.highlighted-t-cell,
@@ -1091,9 +1091,9 @@ body {
 .tap-section.volume-odd .future-row td.future-cell.highlighted-row,
 .tap-section.volume-even .future-row td.future-cell.highlighted-row,
 .future-row td.future-cell.highlighted-row {
-  background-color: #d1d7ff !important;
-  border-top: 2px solid #a9b3ff !important;
-  border-bottom: 2px solid #a9b3ff !important;
+  background-color: #c8e6c9 !important;
+  border-top: 2px solid #81c784 !important;
+  border-bottom: 2px solid #81c784 !important;
   font-weight: 600;
 }
 
