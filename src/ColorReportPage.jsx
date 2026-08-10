@@ -1,12 +1,54 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import "./App.css";
-import "./InputPage.css";
+import "./ColorReportPage.css";
 import { loadPageData, saveColorReportSettings } from "./dataService";
 
 const ROWS = 5000;
 const TOTAL_TABLES = 2;
 
 const NUM_QS = 4;
+
+const toggleColorReportRowHighlight = (rowIdx, isActive, rowTrCache) => {
+  const tr =
+    rowTrCache.get(rowIdx) ??
+    document.querySelector(
+      `#report-table-container tr[data-row-index="${rowIdx}"]`,
+    );
+  if (tr) {
+    tr.classList.toggle("color-report-row-highlighted", isActive);
+  }
+};
+
+const toggleColorReportColHighlight = (
+  colKey,
+  isActive,
+  cellCache,
+  headerCache,
+) => {
+  const cells = cellCache.get(colKey);
+  if (cells) {
+    for (let i = 0; i < cells.length; i++) {
+      cells[i].classList.toggle("color-report-col-highlighted", isActive);
+    }
+  } else {
+    document
+      .querySelectorAll(
+        `#report-table-container td[data-col-key="${colKey}"]`,
+      )
+      .forEach((td) => {
+        td.classList.toggle("color-report-col-highlighted", isActive);
+      });
+  }
+
+  const th = headerCache.get(colKey);
+  if (th) {
+    th.classList.toggle("color-report-col-header-highlighted", isActive);
+  } else {
+    document
+      .querySelector(`#report-table-container th[data-col-key="${colKey}"]`)
+      ?.classList.toggle("color-report-col-header-highlighted", isActive);
+  }
+};
 
 function ColorReportPage({ accessWarningContent = null }) {
   const [dateValues, setDateValues] = useState(Array(ROWS).fill(""));
@@ -30,8 +72,11 @@ function ColorReportPage({ accessWarningContent = null }) {
   const [error, setError] = useState("");
   const [orangeCell, setOrangeCell] = useState(null);
   const [searchCount, setSearchCount] = useState("");
-  const [highlightedRows, setHighlightedRows] = useState({});
-  const [highlightedCols, setHighlightedCols] = useState({});
+  const highlightedRowsRef = useRef({});
+  const highlightedColsRef = useRef({});
+  const rowTrCacheRef = useRef(new Map());
+  const colCellCacheRef = useRef(new Map());
+  const colHeaderCacheRef = useRef(new Map());
 
   const [colorReportRanges, setColorReportRanges] = useState({});
   const [selectedCountNum, setSelectedCountNum] = useState(16);
@@ -280,44 +325,107 @@ function ColorReportPage({ accessWarningContent = null }) {
   );
 
   const handleRowClick = useCallback((rowIdx) => {
-    setHighlightedRows((prev) => ({
-      ...prev,
-      [rowIdx]: !prev[rowIdx],
-    }));
+    const isActive = !highlightedRowsRef.current[rowIdx];
+    highlightedRowsRef.current[rowIdx] = isActive;
+    toggleColorReportRowHighlight(rowIdx, isActive, rowTrCacheRef.current);
   }, []);
 
   const handleColClick = useCallback((c, kIndex) => {
     const colKey = `${c}-${kIndex}`;
-    setHighlightedCols((prev) => ({
-      ...prev,
-      [colKey]: !prev[colKey],
-    }));
+    const isActive = !highlightedColsRef.current[colKey];
+    highlightedColsRef.current[colKey] = isActive;
+    toggleColorReportColHighlight(
+      colKey,
+      isActive,
+      colCellCacheRef.current,
+      colHeaderCacheRef.current,
+    );
   }, []);
 
-  const handleMainColClick = useCallback(
-    (c) => {
-      const limit = getLayoutLimitForCount(c);
-      setHighlightedCols((prev) => {
-        const next = { ...prev };
-        let anyHighlighted = false;
-        for (let k = 0; k < limit; k++) {
-          if (prev[`${c}-${k}`]) {
-            anyHighlighted = true;
-            break;
-          }
-        }
-        for (let k = 0; k < limit; k++) {
-          next[`${c}-${k}`] = !anyHighlighted;
-        }
-        return next;
-      });
-    },
-    [getLayoutLimitForCount],
-  );
+  const toggleCountColGroup = useCallback((c) => {
+    const limit = getLayoutLimitForCount(c);
+    let anyHighlighted = false;
+    for (let k = 0; k < limit; k++) {
+      if (highlightedColsRef.current[`${c}-${k}`]) {
+        anyHighlighted = true;
+        break;
+      }
+    }
+    const nextActive = !anyHighlighted;
+    for (let k = 0; k < limit; k++) {
+      const colKey = `${c}-${k}`;
+      highlightedColsRef.current[colKey] = nextActive;
+      toggleColorReportColHighlight(
+        colKey,
+        nextActive,
+        colCellCacheRef.current,
+        colHeaderCacheRef.current,
+      );
+    }
+  }, [getLayoutLimitForCount]);
 
   const clearHighlights = useCallback(() => {
-    setHighlightedRows({});
-    setHighlightedCols({});
+    Object.entries(highlightedColsRef.current).forEach(([colKey, isActive]) => {
+      if (isActive) {
+        toggleColorReportColHighlight(
+          colKey,
+          false,
+          colCellCacheRef.current,
+          colHeaderCacheRef.current,
+        );
+      }
+    });
+    highlightedColsRef.current = {};
+
+    Object.entries(highlightedRowsRef.current).forEach(([rowIdx, isActive]) => {
+      if (isActive) {
+        toggleColorReportRowHighlight(
+          Number(rowIdx),
+          false,
+          rowTrCacheRef.current,
+        );
+      }
+    });
+    highlightedRowsRef.current = {};
+  }, []);
+
+  const rebuildHighlightCaches = useCallback(() => {
+    const container = document.getElementById("report-table-container");
+    if (!container) return;
+
+    const headerCache = new Map();
+    container.querySelectorAll("th[data-col-key]").forEach((th) => {
+      const key = th.getAttribute("data-col-key");
+      if (key) headerCache.set(key, th);
+    });
+    colHeaderCacheRef.current = headerCache;
+
+    const rowCache = new Map();
+    container.querySelectorAll("tr[data-row-index]").forEach((tr) => {
+      const idx = parseInt(tr.getAttribute("data-row-index"), 10);
+      if (!Number.isNaN(idx)) rowCache.set(idx, tr);
+    });
+    rowTrCacheRef.current = rowCache;
+
+    const cellCache = new Map();
+    for (const key of headerCache.keys()) {
+      cellCache.set(
+        key,
+        container.querySelectorAll(`td[data-col-key="${key}"]`),
+      );
+    }
+    colCellCacheRef.current = cellCache;
+
+    for (const [colKey, active] of Object.entries(highlightedColsRef.current)) {
+      if (active) {
+        toggleColorReportColHighlight(colKey, true, cellCache, headerCache);
+      }
+    }
+    for (const [rowIdx, active] of Object.entries(highlightedRowsRef.current)) {
+      if (active) {
+        toggleColorReportRowHighlight(Number(rowIdx), true, rowCache);
+      }
+    }
   }, []);
 
   // Định dạng ngày tháng về dạng chuẩn DD/MM/YYYY
@@ -669,6 +777,28 @@ function ColorReportPage({ accessWarningContent = null }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (isLoading || reportRows.length === 0) return;
+
+    let idleId;
+    let timeoutId;
+
+    if (typeof requestIdleCallback !== "undefined") {
+      idleId = requestIdleCallback(rebuildHighlightCaches, { timeout: 1500 });
+    } else {
+      timeoutId = setTimeout(rebuildHighlightCaches, 0);
+    }
+
+    return () => {
+      if (idleId != null && typeof cancelIdleCallback !== "undefined") {
+        cancelIdleCallback(idleId);
+      }
+      if (timeoutId != null) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [isLoading, reportRows, orangeCell, rebuildHighlightCaches]);
+
   return (
     <div
       style={{
@@ -984,6 +1114,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                 }}
               >
                 <table
+                  className="color-report-table"
                   style={{
                     borderCollapse: "collapse",
                     width: "max-content",
@@ -1005,16 +1136,6 @@ function ColorReportPage({ accessWarningContent = null }) {
                       {/* Headers cho các cột số đếm */}
                       {cols.map((c) => {
                         const limit = getLayoutLimitForCount(c);
-                        const isMainHL = (() => {
-                          let allHL = true;
-                          for (let subK = 0; subK < limit; subK++) {
-                            if (!highlightedCols[`${c}-${subK}`]) {
-                              allHL = false;
-                              break;
-                            }
-                          }
-                          return allHL;
-                        })();
                         return (
                           <th
                             id={`col-count-${c}`}
@@ -1120,25 +1241,12 @@ function ColorReportPage({ accessWarningContent = null }) {
                       {cols.flatMap((c) => {
                         const limit = getLayoutLimitForCount(c);
                         const subHeaders = [];
-                        const isAnySubHL = Array.from({ length: limit }, (_, idx) => highlightedCols[`${c}-${idx}`]).some(Boolean);
-                        
+
                         subHeaders.push(
                           <th
                             key={`${c}-date`}
                             onClick={() => {
-                              const isAnyHL = Array.from({ length: limit }, (_, idx) => highlightedCols[`${c}-${idx}`]).some(Boolean);
-                              setHighlightedCols((prev) => {
-                                const newHL = { ...prev };
-                                for (let idx = 0; idx < limit; idx++) {
-                                  const key = `${c}-${idx}`;
-                                  if (isAnyHL) {
-                                    delete newHL[key];
-                                  } else {
-                                    newHL[key] = true;
-                                  }
-                                }
-                                return newHL;
-                              });
+                              toggleCountColGroup(c);
                             }}
                             style={{
                               padding: "8px 6px",
@@ -1156,10 +1264,10 @@ function ColorReportPage({ accessWarningContent = null }) {
                         );
 
                         for (let k = 1; k <= limit; k++) {
-                          const isSubHL = !!highlightedCols[`${c}-${k - 1}`];
                           subHeaders.push(
                             <th
                               key={`${c}-${k}`}
+                              data-col-key={`${c}-${k - 1}`}
                               onClick={() => {
                                 handleColClick(c, k - 1);
                                 setSelectedCountNum(c);
@@ -1172,9 +1280,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                     ? "12px solid red"
                                     : "2px solid #333",
                                 width: "250px",
-                                backgroundColor: isSubHL
-                                  ? "#90caf9"
-                                  : "#f2edf8",
+                                backgroundColor: "#f2edf8",
                                 cursor: "pointer",
                               }}
                             >
@@ -1188,18 +1294,18 @@ function ColorReportPage({ accessWarningContent = null }) {
                   </thead>
                   <tbody>
                     {reportRows.map((row, index) => {
-                      const isRowHL = !!highlightedRows[row.rowIdx];
+                      const rowClassName = row.isFuture
+                        ? "color-report-row-future"
+                        : index % 2 === 0
+                          ? "color-report-row-even"
+                          : "color-report-row-odd";
+
                       return (
                         <tr
                           key={row.rowIdx}
+                          data-row-index={row.rowIdx}
+                          className={rowClassName}
                           style={{
-                            backgroundColor: isRowHL
-                              ? "#c8e6c9"
-                              : row.isFuture
-                                ? "#ffe3e8"
-                                : index % 2 === 0
-                                  ? "#ffffff"
-                                  : "#fcfcff",
                             borderBottom: "2px solid #333",
                             textAlign: "center",
                           }}
@@ -1234,27 +1340,21 @@ function ColorReportPage({ accessWarningContent = null }) {
                             const isGroupOrange = orangeCell && orangeCell.c === c &&
                               (orangeCell.row === undefined || orangeCell.row === null || String(row.rowIdx) === String(orangeCell.row));
 
-                            const isAnySubHL = Array.from({ length: limit }, (_, idx) => highlightedCols[`${c}-${idx}`]).some(Boolean);
-
                             // 2. Push Date cell first (at the beginning of the group c)
                             cellsArr.push(
                               <td
                                 key={`${c}-date`}
+                                className="color-report-date-cell"
                                 style={{
                                   padding: "8px",
                                   border: "2px solid #333",
-                                  borderRight: "12px solid red", // thick border separating from warning cells
+                                  borderRight: "12px solid red",
                                   fontWeight: "bold",
                                   fontStyle: row.isFuture ? "italic" : "normal",
-                                  backgroundColor: isRowHL
-                                    ? "#c8e6c9"
-                                    : row.isFuture
-                                      ? "#ffe3e8"
-                                      : "transparent",
                                   backgroundClip: "padding-box",
-                                  color: row.isFuture ? "#888" : "#6f42c1", // identical color to N.T column
+                                  color: row.isFuture ? "#888" : "#6f42c1",
                                   cursor: "pointer",
-                                  fontSize: "35px", // identical size to N.T column
+                                  fontSize: "35px",
                                   minWidth: "150px",
                                   whiteSpace: "nowrap",
                                   transition: "all 0.15s ease",
@@ -1311,11 +1411,10 @@ function ColorReportPage({ accessWarningContent = null }) {
                                   return false;
                                 })();
 
-                              const isColHL = !!highlightedCols[`${c}-${k}`];
-
                               cellsArr.push(
                                 <td
                                   key={`${c}-${k}`}
+                                  data-col-key={`${c}-${k}`}
                                   id={isNew ? cell.cellId : undefined}
                                   className={
                                     hasValue
@@ -1351,13 +1450,7 @@ function ColorReportPage({ accessWarningContent = null }) {
                                         : "#91d5ff"
                                       : inColorReportRange
                                         ? "#f8c507bd"
-                                        : isColHL
-                                          ? "#b3d7ff"
-                                          : isRowHL
-                                            ? "#c8e6c9"
-                                            : row.isFuture
-                                              ? "#ffe3e8"
-                                              : "transparent",
+                                        : undefined,
                                     backgroundClip: "padding-box",
                                     color: isOrange
                                       ? cell.isRedCell

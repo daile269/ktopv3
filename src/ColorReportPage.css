@@ -1,0 +1,38 @@
+/* Bảng màu — highlight qua class DOM (không re-render React) */
+
+#report-table-container .color-report-table tbody tr.color-report-row-even {
+  background-color: #ffffff;
+}
+
+#report-table-container .color-report-table tbody tr.color-report-row-odd {
+  background-color: #fcfcff;
+}
+
+#report-table-container .color-report-table tbody tr.color-report-row-future {
+  background-color: #ffe3e8;
+}
+
+#report-table-container .color-report-table tbody tr.color-report-row-future > td.color-report-date-cell {
+  background-color: #ffe3e8;
+}
+
+#report-table-container .color-report-table tbody tr.color-report-row-highlighted > td:not(.color-report-col-highlighted) {
+  background-color: #c8e6c9;
+  border-top: 1px solid #81c784;
+  border-bottom: 1px solid #81c784;
+}
+
+#report-table-container .color-report-table tbody td.color-report-col-highlighted {
+  background-color: #b3d7ff;
+  border-left: 1px solid #90caf9;
+  border-right: 1px solid #90caf9;
+}
+
+#report-table-container .color-report-table tbody tr.color-report-row-highlighted > td.color-report-col-highlighted {
+  background-color: #b3d7ff;
+}
+
+#report-table-container .color-report-table thead th.color-report-col-header-highlighted {
+  background-color: #90caf9 !important;
+  color: #333 !important;
+}
