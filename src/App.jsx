@@ -48,6 +48,9 @@ const TapSection = memo(
     handleBCellClick,
     handleTCellClick,
     handleCellClick,
+    activeStatColumn,
+    setActiveStatColumn,
+    handleStatClick,
   }) => {
     const qIdx = Math.floor(tapIndex / 10);
     const relativeTapIdx = tapIndex % 10;
@@ -102,6 +105,37 @@ const TapSection = memo(
             padding: "20px",
           }}
         >
+          {activeStatColumn && activeStatColumn.tapIndex === tapIndex && (
+            <div className="stat-banner-card">
+              <div className="stat-banner-header">
+                <span className="stat-banner-title">
+                  📊 Thống kê tần suất số (100 dòng đầu) - <strong>{activeStatColumn.label}</strong>
+                  <span style={{ fontSize: "14px", fontWeight: "normal", marginLeft: "12px", color: "#666" }}>
+                    (Đã tính trên {activeStatColumn.processedRowsCount} dòng toán)
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="stat-banner-close-btn"
+                  onClick={() => setActiveStatColumn(null)}
+                  title="Đóng bảng thống kê"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="stat-digit-grid">
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
+                  <div key={digit} className="stat-digit-badge">
+                    <span className="stat-digit-num">Số {digit}</span>
+                    <span className="stat-digit-count">
+                      {activeStatColumn.counts[digit] || 0} <small>lần</small>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div
             className="tables-container"
             style={{
@@ -173,6 +207,83 @@ const TapSection = memo(
                               Thông {tableIndex + 1} - Tập {relativeTapIdx + 1}{" "}
                               - Q{qNumDisplay}
                             </th>
+                          </tr>
+                          <tr className="stat-header-row">
+                            <th colSpan="3" className="stat-header-empty">&nbsp;</th>
+                            {tableIndex === 0 && (
+                              <>
+                                <th className="stat-header-cell">
+                                  <button
+                                    type="button"
+                                    className={`stat-header-btn ${
+                                      activeStatColumn?.tapIndex === tapIndex &&
+                                      activeStatColumn?.tableIndex === tableIndex &&
+                                      activeStatColumn?.colType === "A"
+                                        ? "active"
+                                        : ""
+                                    }`}
+                                    onClick={() =>
+                                      handleStatClick(
+                                        tapIndex,
+                                        tableIndex,
+                                        "A",
+                                        `Cột A - Thông ${tableIndex + 1} - Tập ${relativeTapIdx + 1} - Q${qNumDisplay}`,
+                                      )
+                                    }
+                                    title="Click để xem thống kê tần suất số 0-9 (100 dòng đầu)"
+                                  >
+                                    A
+                                  </button>
+                                </th>
+                                <th className="stat-header-cell">
+                                  <button
+                                    type="button"
+                                    className={`stat-header-btn ${
+                                      activeStatColumn?.tapIndex === tapIndex &&
+                                      activeStatColumn?.tableIndex === tableIndex &&
+                                      activeStatColumn?.colType === "B"
+                                        ? "active"
+                                        : ""
+                                    }`}
+                                    onClick={() =>
+                                      handleStatClick(
+                                        tapIndex,
+                                        tableIndex,
+                                        "B",
+                                        `Cột B - Thông ${tableIndex + 1} - Tập ${relativeTapIdx + 1} - Q${qNumDisplay}`,
+                                      )
+                                    }
+                                    title="Click để xem thống kê tần suất số 0-9 (100 dòng đầu)"
+                                  >
+                                    B
+                                  </button>
+                                </th>
+                              </>
+                            )}
+                            <th className="stat-header-cell">
+                              <button
+                                type="button"
+                                className={`stat-header-btn ${
+                                  activeStatColumn?.tapIndex === tapIndex &&
+                                  activeStatColumn?.tableIndex === tableIndex &&
+                                  activeStatColumn?.colType === "T"
+                                    ? "active"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  handleStatClick(
+                                    tapIndex,
+                                    tableIndex,
+                                    "T",
+                                    `Cột T${tableIndex + 1} - Thông ${tableIndex + 1} - Tập ${relativeTapIdx + 1} - Q${qNumDisplay}`,
+                                  )
+                                }
+                                title="Click để xem thống kê tần suất số 0-9 (100 dòng đầu)"
+                              >
+                                T{tableIndex + 1}
+                              </button>
+                            </th>
+                            <th colSpan="10" className="stat-header-empty">&nbsp;</th>
                           </tr>
                           <tr>
                             <th className="col-header fixed">STT</th>
@@ -759,6 +870,7 @@ function App() {
   const [pageLabel, setPageLabel] = useState("");
 
   const [orangeCell, setOrangeCell] = useState(null);
+  const [activeStatColumn, setActiveStatColumn] = useState(null);
   const [highlightedCells, setHighlightedCells] = useState({});
   const [highlightedTCells, setHighlightedTCells] = useState({});
   const [highlightedACells, setHighlightedACells] = useState({});
@@ -1738,6 +1850,73 @@ function App() {
       };
     });
   };
+
+  const calculateDigitCounts = useCallback(
+    (tapIdx, tableIdx, colType) => {
+      const qIdx = Math.floor(tapIdx / 10);
+      const relativeTapIdx = tapIdx % 10;
+      let valuesArr = [];
+
+      if (colType === "A") {
+        valuesArr = allQData[qIdx]?.tapsData?.[relativeTapIdx]?.aValues || [];
+      } else if (colType === "B") {
+        valuesArr = allQData[qIdx]?.tapsData?.[relativeTapIdx]?.bValues || [];
+      } else if (colType === "T") {
+        valuesArr = tapsTValues[tapIdx]?.[tableIdx] || [];
+      }
+
+      const counts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+      let processedRowsCount = 0;
+
+      for (let r = 0; r < valuesArr.length && processedRowsCount < 100; r++) {
+        if (deletedRows[r]) continue;
+        processedRowsCount++;
+
+        const valStr = String(valuesArr[r] ?? "").trim();
+        if (valStr !== "") {
+          const digits = valStr.match(/\d/g);
+          if (digits) {
+            for (const d of digits) {
+              if (counts[d] !== undefined) {
+                counts[d]++;
+              }
+            }
+          }
+        }
+      }
+
+      return { counts, processedRowsCount };
+    },
+    [allQData, tapsTValues, deletedRows],
+  );
+
+  const handleStatClick = useCallback(
+    (tapIdx, tableIdx, colType, label) => {
+      if (
+        activeStatColumn &&
+        activeStatColumn.tapIndex === tapIdx &&
+        activeStatColumn.tableIndex === tableIdx &&
+        activeStatColumn.colType === colType
+      ) {
+        setActiveStatColumn(null);
+      } else {
+        const { counts, processedRowsCount } = calculateDigitCounts(
+          tapIdx,
+          tableIdx,
+          colType,
+        );
+        setActiveStatColumn({
+          tapIndex: tapIdx,
+          tableIndex: tableIdx,
+          colType,
+          label,
+          counts,
+          processedRowsCount,
+        });
+      }
+    },
+    [activeStatColumn, calculateDigitCounts],
+  );
 
   const handleRowClick = (rowIndex) => {
     setHighlightedRows((prev) => ({
@@ -2755,6 +2934,9 @@ function App() {
               handleBCellClick={handleBCellClick}
               handleTCellClick={handleTCellClick}
               handleCellClick={handleCellClick}
+              activeStatColumn={activeStatColumn}
+              setActiveStatColumn={setActiveStatColumn}
+              handleStatClick={handleStatClick}
             />
           ))}
         </div>
