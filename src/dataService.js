@@ -47,7 +47,6 @@ export const savePageData = async (
 ) => {
   try {
     const realId = getRealPageId(pageId);
-    console.log(`💾 Saving data for REAL ID: ${realId}`);
     const payload = {
       zValues,
       dateValues,
@@ -95,7 +94,6 @@ export const loadPageData = async (pageId, options = {}) => {
   const { compact = false } = options;
   try {
     const realId = getRealPageId(pageId);
-    console.log(`📖 Loading data for REAL ID: ${realId}`);
     const compactQuery = compact ? "&compact=1" : "";
     const response = await fetch(
       `${API_URL}/api/pages/${realId}?t=${Date.now()}${compactQuery}`,
@@ -224,7 +222,6 @@ export const loadPageData = async (pageId, options = {}) => {
         },
       };
     } else {
-      console.log(`No data found for ${pageId}, returning null`);
       return { success: true, data: null };
     }
   } catch (error) {
@@ -265,7 +262,6 @@ export const deletePageData = async (pageId) => {
 export const saveColorReportSettings = async (pageId, colorReportRanges) => {
   try {
     const realId = getRealPageId(pageId);
-    console.log(`💾 Saving Color Report Settings for REAL ID: ${realId}`);
     const response = await fetch(`${API_URL}/api/pages/${realId}`, {
       method: "POST",
       headers: {

@@ -475,6 +475,7 @@ function InputPage({ accessWarningContent = null }) {
   const colHeaderCacheRef = useRef(new Map());
   const rowTrCacheRef = useRef(new Map());
   const [highlightedCells, setHighlightedCells] = useState({});
+  const [activeStatColumn, setActiveStatColumn] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [isAddingToCalc, setIsAddingToCalc] = useState(false);
   const [transferDate, setTransferDate] = useState(() => {
@@ -719,6 +720,68 @@ function InputPage({ accessWarningContent = null }) {
       colHeaderCacheRef.current,
     );
   }, []);
+
+  const calculateDigitCounts = useCallback(
+    (qIndex, tapIndex, colType) => {
+      const qData = allQDataRef.current?.[qIndex];
+      const tapData = qData?.tapsData?.[tapIndex];
+      const valuesArr =
+        colType === "A"
+          ? tapData?.aValues || []
+          : tapData?.bValues || [];
+
+      const counts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+      let processedRowsCount = 0;
+
+      for (let r = 0; r < valuesArr.length && processedRowsCount < 100; r++) {
+        if (deletedRows && deletedRows[r]) continue;
+        processedRowsCount++;
+
+        const valStr = String(valuesArr[r] ?? "").trim();
+        if (valStr !== "") {
+          const digits = valStr.match(/\d/g);
+          if (digits) {
+            for (const d of digits) {
+              if (counts[d] !== undefined) {
+                counts[d]++;
+              }
+            }
+          }
+        }
+      }
+
+      return { counts, processedRowsCount };
+    },
+    [deletedRows],
+  );
+
+  const handleStatClick = useCallback(
+    (qIndex, tapIndex, colType, label) => {
+      if (
+        activeStatColumn &&
+        activeStatColumn.qIndex === qIndex &&
+        activeStatColumn.tapIndex === tapIndex &&
+        activeStatColumn.colType === colType
+      ) {
+        setActiveStatColumn(null);
+      } else {
+        const { counts, processedRowsCount } = calculateDigitCounts(
+          qIndex,
+          tapIndex,
+          colType,
+        );
+        setActiveStatColumn({
+          qIndex,
+          tapIndex,
+          colType,
+          label,
+          counts,
+          processedRowsCount,
+        });
+      }
+    },
+    [activeStatColumn, calculateDigitCounts],
+  );
 
   const handleCellHighlightToggle = useCallback((rowIndex, qIndex, tapIndex, ab) => {
     setHighlightedCells((prev) => {
@@ -1702,6 +1765,38 @@ function InputPage({ accessWarningContent = null }) {
             </div>
           )}
 
+          {/* Card hiển thị thống kê tần suất số 0-9 */}
+          {activeStatColumn && (
+            <div className="stat-banner-card" style={{ margin: "0 auto 12px auto" }}>
+              <div className="stat-banner-header">
+                <span className="stat-banner-title">
+                  📊 Thống kê tần suất số (100 dòng đầu) - <strong>{activeStatColumn.label}</strong>
+                  <span style={{ fontSize: "14px", fontWeight: "normal", marginLeft: "12px", color: "#666" }}>
+                    (Đã tính trên {activeStatColumn.processedRowsCount} dòng toán)
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="stat-banner-close-btn"
+                  onClick={() => setActiveStatColumn(null)}
+                  title="Đóng bảng thống kê"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="stat-digit-grid">
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
+                  <div key={digit} className="stat-digit-badge">
+                    <span className="stat-digit-num">Số {digit}</span>
+                    <span className="stat-digit-count">
+                      {activeStatColumn.counts[digit] || 0} <small>lần</small>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Giao diện lưới nhập liệu — scroll ngang/dọc trong viewport */}
           <div
             ref={scrollContainerRef}
@@ -1712,13 +1807,13 @@ function InputPage({ accessWarningContent = null }) {
               <DraftTableColgroup />
               <thead>
                 <tr>
-                  <th rowSpan="3" className="draft-sticky-left-1">
+                  <th rowSpan="4" className="draft-sticky-left-1">
                     Chọn
                   </th>
-                  <th rowSpan="3" className="draft-sticky-left-2">
+                  <th rowSpan="4" className="draft-sticky-left-2">
                     STT
                   </th>
-                  <th rowSpan="3" className="draft-sticky-left-3">
+                  <th rowSpan="4" className="draft-sticky-left-3">
                     Z
                   </th>
                   {Array.from({ length: NUM_QS }, (_, qIndex) => {
@@ -1741,11 +1836,11 @@ function InputPage({ accessWarningContent = null }) {
                       </th>
                     );
                   })}
-                  <th rowSpan="3" style={{ padding: "8px 4px" }}>
+                  <th rowSpan="4" style={{ padding: "8px 4px" }}>
                     STT
                   </th>
                   <th
-                    rowSpan="3"
+                    rowSpan="4"
                     style={{
                       padding: 0,
                       width: "60px !important",
@@ -1772,6 +1867,73 @@ function InputPage({ accessWarningContent = null }) {
                       >
                         Tập {tapIndex + 1}
                       </th>
+                    )),
+                  )}
+                </tr>
+                <tr className="stat-header-row">
+                  {Array.from({ length: NUM_QS }).map((_, qIndex) =>
+                    Array.from({ length: 10 }).map((__, tapIndex) => (
+                      <Fragment key={`${qIndex}-${tapIndex}`}>
+                        <th
+                          className={`${getTapHeaderClass(tapIndex)} draft-stat-header-cell`}
+                          style={{
+                            borderLeft: tapIndex === 0 ? "3px solid red" : "1px solid #999",
+                            borderRight: "1px solid #ccc",
+                            padding: "2px",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className={`stat-header-btn ${
+                              activeStatColumn?.qIndex === qIndex &&
+                              activeStatColumn?.tapIndex === tapIndex &&
+                              activeStatColumn?.colType === "A"
+                                ? "active"
+                                : ""
+                            }`}
+                            onClick={() =>
+                              handleStatClick(
+                                qIndex,
+                                tapIndex,
+                                "A",
+                                `Cột A - Tập ${tapIndex + 1} - Q${qIndex + 1 + qOffset}`
+                              )
+                            }
+                            title="Click để xem thống kê tần suất số 0-9 (100 dòng đầu)"
+                          >
+                            A
+                          </button>
+                        </th>
+                        <th
+                          className={`${getTapHeaderClass(tapIndex)} draft-stat-header-cell`}
+                          style={{
+                            borderRight: tapIndex === 9 ? "3px double red" : "1px solid #999",
+                            padding: "2px",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className={`stat-header-btn ${
+                              activeStatColumn?.qIndex === qIndex &&
+                              activeStatColumn?.tapIndex === tapIndex &&
+                              activeStatColumn?.colType === "B"
+                                ? "active"
+                                : ""
+                            }`}
+                            onClick={() =>
+                              handleStatClick(
+                                qIndex,
+                                tapIndex,
+                                "B",
+                                `Cột B - Tập ${tapIndex + 1} - Q${qIndex + 1 + qOffset}`
+                              )
+                            }
+                            title="Click để xem thống kê tần suất số 0-9 (100 dòng đầu)"
+                          >
+                            B
+                          </button>
+                        </th>
+                      </Fragment>
                     )),
                   )}
                 </tr>

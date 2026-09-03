@@ -205,9 +205,19 @@
   min-width: calc(var(--draft-data-col-width) * 2);
 }
 
-.draft-schedule-table thead tr:nth-child(3) th.draft-ab-header {
+.draft-schedule-table thead tr:nth-child(3) th.draft-stat-header-cell {
   position: sticky;
   top: 108px;
+  z-index: 7;
+  background: #f0f4f8 !important;
+  padding: 2px 4px !important;
+  text-align: center;
+  border: 1px solid #999;
+}
+
+.draft-schedule-table thead tr:nth-child(4) th.draft-ab-header {
+  position: sticky;
+  top: 154px;
   z-index: 7;
   background: white;
   font-size: 26px !important;

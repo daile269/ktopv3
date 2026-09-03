@@ -212,20 +212,12 @@ function ColorReportPage({ accessWarningContent = null }) {
           const tryScroll = () => {
             let scrolled = false;
 
-            console.log(
-              `[SCROLL CHECK] Attempt ${attempts}: qVal=${qVal}, xVal=${xVal}, yVal=${yVal}, gVal=${gVal}, count=${num}, rowVal=${rowVal}`,
-            );
-
             if (qVal && xVal && yVal && gVal) {
               const selector =
                 rowVal !== null
                   ? `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-${num}-"][id$="-${rowVal}"]`
                   : `[id^="cell-report-${qVal}-${xVal}-${yVal}-${gVal}-${num}-"]`;
               const cellElement = document.querySelector(selector);
-              console.log(
-                `[SCROLL CHECK] Cell selector: "${selector}", Found:`,
-                !!cellElement,
-              );
               if (cellElement) {
                 cellElement.scrollIntoView({
                   behavior: "smooth",
@@ -248,10 +240,6 @@ function ColorReportPage({ accessWarningContent = null }) {
             if (!scrolled) {
               const headerId = `col-count-${num}`;
               const element = document.getElementById(headerId);
-              console.log(
-                `[SCROLL CHECK] Header ID: "${headerId}", Found:`,
-                !!element,
-              );
               if (element) {
                 element.scrollIntoView({
                   behavior: "smooth",
@@ -268,16 +256,11 @@ function ColorReportPage({ accessWarningContent = null }) {
             }
 
             if (scrolled) {
-              console.log("[SCROLL CHECK] Successfully scrolled!");
               const newUrl = window.location.pathname;
               window.history.replaceState({}, "", newUrl);
             } else if (attempts < maxAttempts) {
               attempts++;
               setTimeout(tryScroll, 50);
-            } else {
-              console.log(
-                "[SCROLL CHECK] Reached max attempts, scrolling failed.",
-              );
             }
           };
 

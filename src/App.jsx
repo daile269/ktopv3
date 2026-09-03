@@ -1356,7 +1356,6 @@ function App() {
 
           const tryScroll = () => {
             let scrolled = false;
-            console.log(`[SCROLL CHECK MAIN] Attempt ${attempts}: tableIndex=${tableIndex}, rowIndex=${rowIndex}, colIndex=${colIndex}`);
             if (
               rowIndex !== null &&
               !isNaN(rowIndex) &&
@@ -1365,7 +1364,6 @@ function App() {
             ) {
               const cellId = `cell-${tableIndex}-${rowIndex}-${colIndex}`;
               const cellElement = document.getElementById(cellId);
-              console.log(`[SCROLL CHECK MAIN] Cell ID: "${cellId}", Found:`, !!cellElement);
               if (cellElement) {
                 cellElement.scrollIntoView({
                   behavior: "smooth",
@@ -1381,7 +1379,6 @@ function App() {
             if (!scrolled) {
               const elements = document.querySelectorAll(".table-section");
               const tableElement = elements[tableIndex];
-              console.log(`[SCROLL CHECK MAIN] Table index: ${tableIndex}, Found table element:`, !!tableElement);
               if (tableElement) {
                 tableElement.scrollIntoView({
                   behavior: "smooth",
@@ -1393,14 +1390,11 @@ function App() {
             }
 
             if (scrolled) {
-              console.log("[SCROLL CHECK MAIN] Successfully scrolled!");
               const newUrl = window.location.pathname;
               window.history.replaceState({}, "", newUrl);
             } else if (attempts < maxAttempts) {
               attempts++;
               setTimeout(tryScroll, 50);
-            } else {
-              console.log("[SCROLL CHECK MAIN] Reached max attempts, scrolling failed.");
             }
           };
 
@@ -1410,19 +1404,14 @@ function App() {
         // Scroll to the bottom when opening the page without target cell
         let scrollAttempts = 0;
         const maxScrollAttempts = 80; // 2.4 seconds total coverage
-        console.log("[SCROLL TO BOTTOM] Triggered scroll-to-bottom interval loop (30ms interval).");
         const scrollInterval = setInterval(() => {
           const mainContent = document.querySelector(".main-content");
           if (mainContent) {
-            console.log(`[SCROLL TO BOTTOM] Attempt ${scrollAttempts}: scrollHeight: ${mainContent.scrollHeight}, scrollTop before: ${mainContent.scrollTop}`);
             mainContent.scrollTop = mainContent.scrollHeight;
-          } else {
-            console.log(`[SCROLL TO BOTTOM] Attempt ${scrollAttempts}: mainContent container not found in DOM`);
           }
           scrollAttempts++;
           if (scrollAttempts >= maxScrollAttempts) {
             clearInterval(scrollInterval);
-            console.log("[SCROLL TO BOTTOM] Interval loop finished.");
           }
         }, 30);
       }
